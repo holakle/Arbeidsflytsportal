@@ -12,6 +12,9 @@ import { EquipmentModule } from './modules/equipment/equipment.module.js';
 import { TimesheetsModule } from './modules/timesheets/timesheets.module.js';
 import { TodosModule } from './modules/todos/todos.module.js';
 import { DashboardModule } from './modules/dashboard/dashboard.module.js';
+import { DevAuthModule } from './modules/dev-auth/dev-auth.module.js';
+
+const enableDevAuth = process.env.ENABLE_DEV_AUTH === 'true' || process.env.NODE_ENV !== 'production';
 
 @Module({
   imports: [
@@ -33,6 +36,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module.js';
     TimesheetsModule,
     TodosModule,
     DashboardModule,
+    ...(enableDevAuth ? [DevAuthModule] : []),
   ],
   providers: [
     {
