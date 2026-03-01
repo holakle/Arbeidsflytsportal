@@ -8,11 +8,14 @@ export default function HomePage() {
       <p>MVP med Del 1 (arbeidsordre) og Del 4 (personlig oversikt).</p>
       <ConnectionStatus />
       <div className="flex gap-3">
+        <Link className="rounded border px-3 py-2" href="/overview">
+          Oversikt (MVP)
+        </Link>
         <Link className="rounded bg-accent px-3 py-2 text-white" href="/planner">
           Planner
         </Link>
         <Link className="rounded border px-3 py-2" href="/dashboard">
-          Dashboard
+          Min side
         </Link>
       </div>
       <section className="rounded border bg-white p-4">

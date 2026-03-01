@@ -1,8 +1,12 @@
-﻿import { HttpClient } from './http-client';
+import type { z } from 'zod';
 import type { MeResponse } from '../schemas/auth.schema';
+import type { equipmentItemSchema, equipmentReservationSchema } from '../schemas/equipment.schema';
 import type { WorkOrder } from '../schemas/workorder.schema';
+import { HttpClient } from './http-client';
 
 type Paged<T> = { items: T[]; page: number; limit: number; total: number };
+type EquipmentItem = z.infer<typeof equipmentItemSchema>;
+type EquipmentReservation = z.infer<typeof equipmentReservationSchema>;
 
 export class ApiClient {
   private readonly http: HttpClient;
@@ -31,8 +35,12 @@ export class ApiClient {
     return this.http.request(`/workorders/${id}`, { method: 'PATCH', body });
   }
 
-  listEquipment(): Promise<unknown[]> {
+  listEquipment(): Promise<EquipmentItem[]> {
     return this.http.request('/equipment');
+  }
+
+  listEquipmentReservations(query = ''): Promise<Paged<EquipmentReservation>> {
+    return this.http.request(`/equipment/reservations${query ? `?${query}` : ''}`);
   }
 
   reserveEquipment(body: Record<string, unknown>): Promise<unknown> {
@@ -67,4 +75,3 @@ export class ApiClient {
     return this.http.request('/dashboard', { method: 'PUT', body });
   }
 }
-

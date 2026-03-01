@@ -1,4 +1,4 @@
-﻿import { z } from 'zod';
+import { z } from 'zod';
 
 export const equipmentItemSchema = z.object({
   id: z.string().uuid(),
@@ -15,3 +15,24 @@ export const reserveEquipmentSchema = z.object({
   endAt: z.string().datetime(),
 });
 
+export const equipmentReservationSchema = z.object({
+  id: z.string().uuid(),
+  equipmentItemId: z.string().uuid(),
+  workOrderId: z.string().uuid(),
+  startAt: z.string(),
+  endAt: z.string(),
+  equipmentItem: z
+    .object({
+      id: z.string().uuid(),
+      name: z.string().min(1),
+      serialNumber: z.string().nullable(),
+    })
+    .optional(),
+  workOrder: z
+    .object({
+      id: z.string().uuid(),
+      title: z.string().min(1),
+      status: z.string(),
+    })
+    .optional(),
+});
