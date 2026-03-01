@@ -5,7 +5,9 @@ import jwt from 'jsonwebtoken';
 import { INestApplication } from '@nestjs/common';
 import { AppModule } from '../src/app.module.js';
 
-describe('API e2e', () => {
+const maybeDescribe = process.env.DATABASE_URL ? describe : describe.skip;
+
+maybeDescribe('API e2e', () => {
   let app: INestApplication;
   let token: string;
 
@@ -51,4 +53,3 @@ describe('API e2e', () => {
     expect([200, 500]).toContain(res.status);
   });
 });
-

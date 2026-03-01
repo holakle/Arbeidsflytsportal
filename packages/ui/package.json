@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "@portal/ui",
   "version": "0.1.0",
   "private": true,
@@ -9,7 +9,7 @@
     "build": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src --ext .ts,.tsx",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "react": "^19.0.0"

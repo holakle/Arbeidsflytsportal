@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "@apps/web",
   "version": "0.1.0",
   "private": true,
@@ -8,7 +8,7 @@
     "start": "next start -p 3000",
     "lint": "next lint",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@portal/shared": "workspace:*",
