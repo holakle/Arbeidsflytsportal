@@ -10,6 +10,7 @@ coverage
 .expo
 .turbo
 **/.turbo
+*.tsbuildinfo
 .idea
 .vscode
 .DS_Store
