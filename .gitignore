@@ -8,6 +8,8 @@ build
 coverage
 .next
 .expo
+.turbo
+**/.turbo
 .idea
 .vscode
 .DS_Store
