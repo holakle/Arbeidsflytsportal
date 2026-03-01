@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { ActiveUserChip } from '@/components/dev/active-user-chip';
 import './globals.css';
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <Link className="rounded px-3 py-2 text-sm font-medium hover:bg-slate-100" href="/planner">
               Planner
             </Link>
+            <ActiveUserChip />
           </nav>
         </header>
         {children}
