@@ -269,7 +269,7 @@ async function main() {
   await prisma.timesheetEntry.upsert({
     where: { id: ids.timesheet1 },
     update: {
-      userId: tech.id,
+      userId: planner.id,
       organizationId: organization.id,
       date: new Date('2026-03-01T00:00:00.000Z'),
       hours: new Prisma.Decimal(6.5),
@@ -280,7 +280,7 @@ async function main() {
     },
     create: {
       id: ids.timesheet1,
-      userId: tech.id,
+      userId: planner.id,
       organizationId: organization.id,
       date: new Date('2026-03-01T00:00:00.000Z'),
       hours: new Prisma.Decimal(6.5),
@@ -294,7 +294,7 @@ async function main() {
   await prisma.timesheetEntry.upsert({
     where: { id: ids.timesheet2 },
     update: {
-      userId: tech.id,
+      userId: planner.id,
       organizationId: organization.id,
       date: new Date('2026-03-01T00:00:00.000Z'),
       hours: new Prisma.Decimal(1.5),
@@ -305,7 +305,7 @@ async function main() {
     },
     create: {
       id: ids.timesheet2,
-      userId: tech.id,
+      userId: planner.id,
       organizationId: organization.id,
       date: new Date('2026-03-01T00:00:00.000Z'),
       hours: new Prisma.Decimal(1.5),
