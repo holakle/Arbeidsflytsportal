@@ -1,8 +1,9 @@
-﻿import {
+import {
   Body,
   Controller,
   Delete,
   Get,
+  Inject,
   Param,
   Patch,
   Post,
@@ -28,7 +29,7 @@ import { WorkOrdersService } from './workorders.service.js';
 @Controller('workorders')
 @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
 export class WorkOrdersController {
-  constructor(private readonly service: WorkOrdersService) {}
+  constructor(@Inject(WorkOrdersService) private readonly service: WorkOrdersService) {}
 
   @Get()
   @Roles('planner', 'technician', 'org_admin')
@@ -74,4 +75,3 @@ export class WorkOrdersController {
     return this.service.assign(user.organizationId, user.id, id, body);
   }
 }
-

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { getDevToken } from '@/lib/auth';
+import { ConnectionStatus } from '@/components/dev/connection-status';
 
 type WorkOrder = {
   id: string;
@@ -18,33 +19,58 @@ export default function PlannerPage() {
   const [equipmentItemId, setEquipmentItemId] = useState('');
   const [reserveStart, setReserveStart] = useState('');
   const [reserveEnd, setReserveEnd] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const token = getDevToken();
 
   async function load() {
-    const data = await apiClient(getDevToken()).listWorkOrders('page=1&limit=20');
-    setItems(data.items as WorkOrder[]);
+    if (!token) {
+      setError('Mangler NEXT_PUBLIC_DEV_TOKEN i apps/web/.env.local');
+      return;
+    }
+    try {
+      const data = await apiClient(token).listWorkOrders('page=1&limit=20');
+      setItems(data.items as WorkOrder[]);
+      setError(null);
+    } catch {
+      setError('Kunne ikke hente arbeidsordre. Sjekk at API kjører og token er gyldig.');
+    }
   }
 
   async function createWorkOrder() {
-    if (!title) return;
-    await apiClient(getDevToken()).createWorkOrder({ title });
-    setTitle('');
-    await load();
+    if (!title || !token) return;
+    try {
+      await apiClient(token).createWorkOrder({ title });
+      setTitle('');
+      await load();
+    } catch {
+      setError('Kunne ikke opprette arbeidsordre.');
+    }
   }
 
   async function assignUser() {
-    if (!selectedWorkOrderId || !assigneeUserId) return;
-    await apiClient(getDevToken()).assignWorkOrder(selectedWorkOrderId, { assigneeUserId });
-    setAssigneeUserId('');
+    if (!selectedWorkOrderId || !assigneeUserId || !token) return;
+    try {
+      await apiClient(token).assignWorkOrder(selectedWorkOrderId, { assigneeUserId });
+      setAssigneeUserId('');
+      setError(null);
+    } catch {
+      setError('Kunne ikke tildele arbeidsordre.');
+    }
   }
 
   async function reserveEquipment() {
-    if (!selectedWorkOrderId || !equipmentItemId || !reserveStart || !reserveEnd) return;
-    await apiClient(getDevToken()).reserveEquipment({
-      workOrderId: selectedWorkOrderId,
-      equipmentItemId,
-      startAt: reserveStart,
-      endAt: reserveEnd,
-    });
+    if (!selectedWorkOrderId || !equipmentItemId || !reserveStart || !reserveEnd || !token) return;
+    try {
+      await apiClient(token).reserveEquipment({
+        workOrderId: selectedWorkOrderId,
+        equipmentItemId,
+        startAt: reserveStart,
+        endAt: reserveEnd,
+      });
+      setError(null);
+    } catch {
+      setError('Kunne ikke booke utstyr.');
+    }
   }
 
   useEffect(() => {
@@ -53,7 +79,11 @@ export default function PlannerPage() {
 
   return (
     <main className="space-y-4">
-      <h1 className="text-2xl font-semibold">Planner</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Planner</h1>
+        <ConnectionStatus />
+      </div>
+      {error ? <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</div> : null}
       <div className="rounded border bg-white p-4">
         <h2 className="mb-2 text-lg">Opprett arbeidsordre</h2>
         <div className="flex gap-2">
@@ -134,4 +164,3 @@ export default function PlannerPage() {
     </main>
   );
 }
-

@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service.js';
 
 const defaultWidgets = [
@@ -10,7 +10,7 @@ const defaultWidgets = [
 
 @Injectable()
 export class DashboardService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async getOrCreate(organizationId: string, userId: string) {
     let dashboard = await this.prisma.dashboard.findFirst({

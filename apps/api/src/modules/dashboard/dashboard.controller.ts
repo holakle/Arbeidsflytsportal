@@ -1,4 +1,4 @@
-﻿import { Body, Controller, Get, Put, UseGuards, UsePipes } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Put, UseGuards, UsePipes } from '@nestjs/common';
 import { updateDashboardSchema } from '@portal/shared';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator.js';
 import { Roles } from '../../common/auth/decorators/roles.decorator.js';
@@ -12,7 +12,7 @@ import { DashboardService } from './dashboard.service.js';
 @Controller('dashboard')
 @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
 export class DashboardController {
-  constructor(private readonly service: DashboardService) {}
+  constructor(@Inject(DashboardService) private readonly service: DashboardService) {}
 
   @Get()
   @Roles('planner', 'technician', 'member', 'org_admin')

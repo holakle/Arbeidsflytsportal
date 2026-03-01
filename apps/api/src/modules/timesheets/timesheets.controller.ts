@@ -1,4 +1,4 @@
-﻿import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards, UsePipes } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Query, UseGuards, UsePipes } from '@nestjs/common';
 import { createTimesheetSchema, updateTimesheetSchema } from '@portal/shared';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator.js';
 import { Roles } from '../../common/auth/decorators/roles.decorator.js';
@@ -12,7 +12,7 @@ import { TimesheetsService } from './timesheets.service.js';
 @Controller('timesheets')
 @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
 export class TimesheetsController {
-  constructor(private readonly service: TimesheetsService) {}
+  constructor(@Inject(TimesheetsService) private readonly service: TimesheetsService) {}
 
   @Get()
   @Roles('planner', 'technician', 'member', 'org_admin')

@@ -1,4 +1,4 @@
-﻿import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards, UsePipes } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Query, UseGuards, UsePipes } from '@nestjs/common';
 import { createTodoSchema, updateTodoSchema } from '@portal/shared';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator.js';
 import { Roles } from '../../common/auth/decorators/roles.decorator.js';
@@ -12,7 +12,7 @@ import { TodosService } from './todos.service.js';
 @Controller('todos')
 @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
 export class TodosController {
-  constructor(private readonly service: TodosService) {}
+  constructor(@Inject(TodosService) private readonly service: TodosService) {}
 
   @Get()
   @Roles('planner', 'technician', 'member', 'org_admin')

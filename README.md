@@ -38,15 +38,17 @@ Produksjonsrettet monorepo med `pnpm workspaces` + `turborepo` for montasjeplatt
 
 ## Lokal oppstart
 1. Kopier `.env.example` til `.env` og juster ved behov.
-2. Start database:
+2. Kopier `.env` til `apps/api/.env` for Prisma CLI lokalt:
+   - `Copy-Item .env apps/api/.env` (PowerShell)
+3. Start database:
    - `docker compose up -d postgres`
-3. Installer avhengigheter:
+4. Installer avhengigheter:
    - `pnpm install`
-4. Prisma:
+5. Prisma:
    - `pnpm --filter @apps/api prisma:generate`
    - `pnpm --filter @apps/api prisma:migrate:dev`
    - `pnpm --filter @apps/api prisma:seed`
-5. Kjør alt:
+6. Kjør alt:
    - `pnpm dev`
 
 ## Dev token (lokal auth)
@@ -60,6 +62,13 @@ Bruk token i:
 - Web: `NEXT_PUBLIC_DEV_TOKEN`
 - Mobile: lagre token i SecureStore
 - API-kall: `Authorization: Bearer <token>`
+
+Opprett `apps/web/.env.local`:
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:3001
+NEXT_PUBLIC_DEV_TOKEN=<token>
+```
 
 ## Kvalitet
 - `pnpm lint`

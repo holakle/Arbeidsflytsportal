@@ -25,6 +25,7 @@
     "@nestjs/throttler": "^6.4.0",
     "@prisma/client": "^6.4.1",
     "@portal/shared": "workspace:*",
+    "dotenv": "^16.4.7",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "reflect-metadata": "^0.2.2",

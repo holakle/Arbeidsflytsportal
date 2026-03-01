@@ -1,4 +1,4 @@
-﻿import { Body, Controller, Get, Post, UseGuards, UsePipes } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Post, UseGuards, UsePipes } from '@nestjs/common';
 import { reserveEquipmentSchema } from '@portal/shared';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator.js';
 import { Roles } from '../../common/auth/decorators/roles.decorator.js';
@@ -12,7 +12,7 @@ import { EquipmentService } from './equipment.service.js';
 @Controller('equipment')
 @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
 export class EquipmentController {
-  constructor(private readonly service: EquipmentService) {}
+  constructor(@Inject(EquipmentService) private readonly service: EquipmentService) {}
 
   @Get()
   @Roles('planner', 'technician', 'org_admin')

@@ -1,7 +1,13 @@
 ﻿import 'reflect-metadata';
+import { config as loadEnv } from 'dotenv';
+import { resolve } from 'node:path';
 import { NestFactory } from '@nestjs/core';
 import helmet from 'helmet';
 import { AppModule } from './app.module.js';
+
+for (const envPath of [resolve(process.cwd(), '.env'), resolve(process.cwd(), '../../.env')]) {
+  loadEnv({ path: envPath });
+}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -21,4 +27,3 @@ async function bootstrap() {
 }
 
 bootstrap();
-

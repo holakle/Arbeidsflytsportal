@@ -1,4 +1,4 @@
-﻿import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Inject, UseGuards } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service.js';
 import { JwtAuthGuard } from '../../common/auth/guards/jwt-auth.guard.js';
 import { TenantGuard } from '../../common/auth/guards/tenant.guard.js';
@@ -8,7 +8,7 @@ import type { AuthUser } from '../../common/auth/types.js';
 @Controller('me')
 @UseGuards(JwtAuthGuard, TenantGuard)
 export class MeController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   @Get()
   async me(@CurrentUser() user: AuthUser) {

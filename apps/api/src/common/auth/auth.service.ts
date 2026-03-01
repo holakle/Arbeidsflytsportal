@@ -1,9 +1,9 @@
-﻿import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { DevJwtAdapter } from './oidc/dev-jwt.adapter.js';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly oidcAdapter: DevJwtAdapter) {}
+  constructor(@Inject(DevJwtAdapter) private readonly oidcAdapter: DevJwtAdapter) {}
 
   async verifyBearerToken(header?: string) {
     if (!header?.startsWith('Bearer ')) {

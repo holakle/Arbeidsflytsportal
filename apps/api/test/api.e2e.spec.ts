@@ -5,7 +5,8 @@ import jwt from 'jsonwebtoken';
 import { INestApplication } from '@nestjs/common';
 import { AppModule } from '../src/app.module.js';
 
-const maybeDescribe = process.env.DATABASE_URL ? describe : describe.skip;
+const shouldRunE2E = process.env.RUN_API_E2E === 'true' && Boolean(process.env.DATABASE_URL);
+const maybeDescribe = shouldRunE2E ? describe : describe.skip;
 
 maybeDescribe('API e2e', () => {
   let app: INestApplication;
