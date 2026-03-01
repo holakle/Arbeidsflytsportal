@@ -1,0 +1,22 @@
+﻿{
+  "name": "arbeidsflytsportal",
+  "private": true,
+  "packageManager": "pnpm@10.6.2",
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.9",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^10.0.2",
+    "prettier": "^3.5.2",
+    "turbo": "^2.4.4",
+    "typescript": "^5.8.2"
+  }
+}
+

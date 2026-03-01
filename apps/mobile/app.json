@@ -1,0 +1,11 @@
+﻿{
+  "expo": {
+    "name": "Arbeidsflytsportal",
+    "slug": "arbeidsflytsportal",
+    "scheme": "arbeidsflyt",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light"
+  }
+}
+

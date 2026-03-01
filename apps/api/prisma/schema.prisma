@@ -1,0 +1,268 @@
+﻿generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id          String   @id @default(uuid())
+  name        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  departments Department[]
+  locations   Location[]
+  projects    Project[]
+  users       User[]
+  teams       Team[]
+  roles       Role[]
+  workOrders  WorkOrder[]
+  equipmentItems EquipmentItem[]
+  timesheetEntries TimesheetEntry[]
+  todoItems   TodoItem[]
+  dashboards  Dashboard[]
+  auditLogs   AuditLog[]
+}
+
+model Department {
+  id             String   @id @default(uuid())
+  name           String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  projects       Project[]
+  workOrders     WorkOrder[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Location {
+  id             String   @id @default(uuid())
+  name           String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  projects       Project[]
+  workOrders     WorkOrder[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Project {
+  id             String   @id @default(uuid())
+  name           String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  departmentId   String?
+  department     Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  locationId     String?
+  location       Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  workOrders     WorkOrder[]
+  timesheetEntries TimesheetEntry[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model User {
+  id             String   @id @default(uuid())
+  email          String   @unique
+  displayName    String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userRoles      UserRole[]
+  teamMemberships TeamMembership[]
+  assignments    Assignment[] @relation("AssignmentUser")
+  workOrdersCreated WorkOrder[] @relation("WorkOrderCreator")
+  timesheetEntries TimesheetEntry[]
+  todoItems      TodoItem[]
+  dashboards     Dashboard[]
+  auditLogs      AuditLog[] @relation("AuditActor")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Role {
+  id             String   @id @default(uuid())
+  code           String
+  name           String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userRoles      UserRole[]
+  @@unique([organizationId, code])
+}
+
+model UserRole {
+  id             String   @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId         String
+  role           Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  @@unique([userId, roleId, organizationId])
+}
+
+model Team {
+  id             String   @id @default(uuid())
+  name           String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  memberships    TeamMembership[]
+  assignments    Assignment[] @relation("AssignmentTeam")
+  todoItems      TodoItem[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model TeamMembership {
+  id        String @id @default(uuid())
+  teamId    String
+  team      Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([teamId, userId])
+}
+
+model Dashboard {
+  id             String @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  widgets        WidgetInstance[]
+  layout         DashboardLayout?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  @@unique([organizationId, userId])
+}
+
+model WidgetInstance {
+  id          String @id @default(uuid())
+  dashboardId String
+  dashboard   Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  type        String
+  title       String
+  config      Json
+}
+
+model DashboardLayout {
+  id          String @id @default(uuid())
+  dashboardId String @unique
+  dashboard   Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  columns     Int @default(4)
+  layout      Json
+}
+
+model AuditLog {
+  id             String @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actorUserId    String?
+  actorUser      User? @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  action         String
+  entityType     String
+  entityId       String
+  before         Json?
+  after          Json?
+  ip             String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+}
+
+model WorkOrder {
+  id             String   @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title          String
+  description    String?
+  status         String @default("OPEN")
+  departmentId   String?
+  department     Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  locationId     String?
+  location       Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  projectId      String?
+  project        Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  createdByUserId String
+  createdByUser   User @relation("WorkOrderCreator", fields: [createdByUserId], references: [id])
+  assignments    Assignment[]
+  tasks          WorkTask[]
+  reservations   EquipmentReservation[]
+  timesheetEntries TimesheetEntry[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+}
+
+model WorkTask {
+  id          String @id @default(uuid())
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  title       String
+  done        Boolean @default(false)
+}
+
+model Assignment {
+  id             String @id @default(uuid())
+  workOrderId    String
+  workOrder      WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  assigneeUserId String?
+  assigneeUser   User? @relation("AssignmentUser", fields: [assigneeUserId], references: [id], onDelete: SetNull)
+  assigneeTeamId String?
+  assigneeTeam   Team? @relation("AssignmentTeam", fields: [assigneeTeamId], references: [id], onDelete: SetNull)
+  createdAt      DateTime @default(now())
+}
+
+model EquipmentItem {
+  id             String @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  serialNumber   String?
+  active         Boolean @default(true)
+  reservations   EquipmentReservation[]
+}
+
+model EquipmentReservation {
+  id              String @id @default(uuid())
+  equipmentItemId String
+  equipmentItem   EquipmentItem @relation(fields: [equipmentItemId], references: [id], onDelete: Cascade)
+  workOrderId     String
+  workOrder       WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  startAt         DateTime
+  endAt           DateTime
+  @@index([equipmentItemId, startAt, endAt])
+}
+
+model TimesheetEntry {
+  id             String @id @default(uuid())
+  userId         String
+  user           User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  date           DateTime
+  hours          Decimal @db.Decimal(5,2)
+  activityType   String
+  workOrderId    String?
+  workOrder      WorkOrder? @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+  projectId      String?
+  project        Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  note           String?
+  submittedAt    DateTime @default(now())
+}
+
+model TodoItem {
+  id             String @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String?
+  user           User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  teamId         String?
+  team           Team? @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  title          String
+  description    String?
+  status         String @default("OPEN")
+  dueDate        DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
