@@ -18,7 +18,7 @@ export class EquipmentService {
     query: { page: number; limit: number; equipmentItemId?: string; from?: string; to?: string },
   ) {
     const where = {
-      equipmentItem: { organizationId },
+      equipmentItem: { is: { organizationId } },
       ...(query.equipmentItemId ? { equipmentItemId: query.equipmentItemId } : {}),
       ...(query.from || query.to
         ? {
