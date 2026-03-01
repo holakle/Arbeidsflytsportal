@@ -1,5 +1,6 @@
 ﻿export * from './enums';
 export * from './schemas/auth.schema';
+export * from './schemas/dev-auth.schema';
 export * from './schemas/workorder.schema';
 export * from './schemas/equipment.schema';
 export * from './schemas/timesheet.schema';

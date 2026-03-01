@@ -1,5 +1,6 @@
 import type { z } from 'zod';
 import type { MeResponse } from '../schemas/auth.schema';
+import type { DevAuthUser, IssueDevTokenResponse } from '../schemas/dev-auth.schema';
 import type { equipmentItemSchema, equipmentReservationSchema } from '../schemas/equipment.schema';
 import type { WorkOrder } from '../schemas/workorder.schema';
 import { HttpClient } from './http-client';
@@ -17,6 +18,14 @@ export class ApiClient {
 
   me(): Promise<MeResponse> {
     return this.http.request('/me');
+  }
+
+  listDevUsers(): Promise<DevAuthUser[]> {
+    return this.http.request('/dev-auth/users');
+  }
+
+  issueDevToken(userId: string): Promise<IssueDevTokenResponse> {
+    return this.http.request('/dev-auth/token', { method: 'POST', body: { userId } });
   }
 
   listWorkOrders(query = ''): Promise<Paged<WorkOrder>> {
