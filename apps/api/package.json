@@ -1,14 +1,17 @@
-﻿{
+{
   "name": "@apps/api",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/main.ts",
+    "prebuild": "prisma generate",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
     "lint": "eslint src test prisma --ext .ts",
+    "pretypecheck": "prisma generate",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "pretest": "prisma generate",
     "test": "vitest run",
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",
