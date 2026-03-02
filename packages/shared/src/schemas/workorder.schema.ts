@@ -18,10 +18,10 @@ export const workOrderSchema = z.object({
 export const createWorkOrderSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
-  departmentId: z.string().uuid().nullable().optional(),
-  locationId: z.string().uuid().nullable().optional(),
-  projectId: z.string().uuid().nullable().optional(),
-  planningOwnerUserId: z.string().uuid().nullable().optional(),
+  departmentId: z.string().min(1).nullable().optional(),
+  locationId: z.string().min(1).nullable().optional(),
+  projectId: z.string().min(1).nullable().optional(),
+  planningOwnerUserId: z.string().min(1).nullable().optional(),
 });
 
 export const updateWorkOrderSchema = createWorkOrderSchema.partial().extend({
@@ -30,8 +30,8 @@ export const updateWorkOrderSchema = createWorkOrderSchema.partial().extend({
 
 export const assignWorkOrderSchema = z
   .object({
-    assigneeUserId: z.string().uuid().optional(),
-    assigneeTeamId: z.string().uuid().optional(),
+    assigneeUserId: z.string().min(1).optional(),
+    assigneeTeamId: z.string().min(1).optional(),
   })
   .refine((v) => Boolean(v.assigneeUserId) !== Boolean(v.assigneeTeamId), {
     message: 'Exactly one of assigneeUserId or assigneeTeamId is required',
@@ -45,7 +45,7 @@ export const workOrderListQuerySchema = z.object({
 });
 
 export const addWorkOrderConsumableSchema = z.object({
-  equipmentItemId: z.string().uuid(),
+  equipmentItemId: z.string().min(1),
   quantity: z.coerce.number().int().min(1).default(1),
   note: z.string().trim().min(1).max(500).optional(),
 });

@@ -17,8 +17,9 @@ export const createTimesheetSchema = z.object({
   date: z.string(),
   hours: z.number().positive().max(24),
   activityType: z.enum(activityTypes),
-  workOrderId: z.string().uuid().nullable().optional(),
-  projectId: z.string().uuid().nullable().optional(),
+  userId: z.string().min(1).nullable().optional(),
+  workOrderId: z.string().min(1).nullable().optional(),
+  projectId: z.string().min(1).nullable().optional(),
   note: z.string().optional(),
 });
 

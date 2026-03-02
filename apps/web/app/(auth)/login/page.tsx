@@ -3,19 +3,19 @@
 import type { DevAuthUser } from '@portal/shared';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { clearDevSession, getActiveUser, setDevSession } from '@/lib/auth';
 
 function reasonMessage(reason: string | null) {
   if (!reason) return null;
-  if (reason === 'missing-token') return 'Du mangler innlogging/token for å åpne siden.';
-  if (reason === 'invalid-token') return 'Token er ugyldig eller utløpt.';
+  if (reason === 'missing-token') return 'Du mangler innlogging/token for a apne siden.';
+  if (reason === 'invalid-token') return 'Token er ugyldig eller utlopet.';
   if (reason === 'overview-access') return 'Du har ikke rolle for tilgang til Oversikt.';
   return 'Innlogging kreves.';
 }
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [users, setUsers] = useState<DevAuthUser[]>([]);
@@ -126,5 +126,20 @@ export default function LoginPage() {
         </Link>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="space-y-4">
+          <h1 className="text-2xl font-semibold">Dev Login</h1>
+          <p className="text-sm text-slate-600">Laster ...</p>
+        </main>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   );
 }

@@ -16,6 +16,17 @@ Et tenant-basert, skalerbart system for arbeidsprosesser i montasjeselskap: arbe
 - Project er en valgfri, flytende dimensjon (nullable) og skal ikke låse flyt/hierarki.
 - TimesheetEntry kan knyttes til workOrderId og/eller projectId (begge nullable) + activityType brukes ved “annet arbeid”.
 
+## Rollestruktur (pilot)
+- Planlegger:
+  - planlegger arbeidsoppdrag og har bred tilgang.
+  - skal ikke bookes pa jobber.
+- Ressursstyrer:
+  - delegerer ressurser og booker.
+  - i dagens pilot mappes dette til admin/planner-funksjoner.
+- Montor:
+  - utforer arbeid og skal kunne bookes pa oppdrag.
+  - i dagens pilot mappes dette primart til `technician`/`member`.
+
 ## Sikkerhetsprinsipper
 - OIDC/OAuth2-adapter (dev JWT først, prod senere)
 - RBAC guards + Tenant enforcement på alle routes
@@ -43,6 +54,15 @@ Et tenant-basert, skalerbart system for arbeidsprosesser i montasjeselskap: arbe
   - Issuer token: `POST /dev-auth/token`
   - Lagre token i `portal_dev_token` cookie / localStorage (web)
 - I produksjonsmodus skal `dev-auth`-ruter ikke eksistere (route-fravaer, ikke bare forbidden).
+- For server-side kall i web (RSC): bruk `INTERNAL_API_URL`/`SERVER_API_URL` (ikke relativ `/api`) for stabil token-validering.
+
+## V7 oppdatering (timer + tildeling)
+- `/times` bruker dropdowns for arbeidsordre og project (project-valg utledes fra eksisterende workorders).
+- `worker` i timeforing:
+  - `technician/member`: auto = innlogget bruker.
+  - `planner/org_admin/system_admin`: kan velge bruker i dropdown (foring pa vegne av andre).
+- `POST /timesheets`, `GET /timesheets`, `GET /timesheets/weekly-summary` stotter optional `userId` med RBAC-regler.
+- Planner-assign/schedule tillater alle roller (tidligere blokkering av planner/admin er fjernet).
 
 ## Viktige env-flagg
 - `ENABLE_DEV_AUTH`:
@@ -74,6 +94,15 @@ Et tenant-basert, skalerbart system for arbeidsprosesser i montasjeselskap: arbe
   - redigering av arbeidsordre, planansvarlig, schedule entries og forbruksmateriell.
 - `/equipment`:
   - utstyrsoversikt med typefilter og inngang til scanner på `/equipment/scan`.
+- `/mannskap`:
+  - samlet oversikt over ansatte med lokasjon, telefon og bosted.
+  - navn i lister skal vaere klikkbart til ansattside (`/employees/[id]`).
+
+## UI-basiselementer
+- Klikkbare navn:
+  - navn som vises i lister skal som hovedregel vaere klikkbar lenke til relevant detaljside.
+  - utstyr-navn -> `/equipment/[id]`.
+  - ansatt-navn -> `/employees/[id]`.
 
 ## V4/V5 runbook (dev)
 1. Synk DB og seed:

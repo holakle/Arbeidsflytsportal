@@ -104,6 +104,59 @@ maybeDescribe('API e2e', () => {
     expect(res.status).toBe(401);
   });
 
+  it('POST /timesheets allows planner to create on behalf of another user', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/timesheets')
+      .set('Authorization', `Bearer ${plannerToken}`)
+      .send({
+        date: '2026-03-03T00:00:00.000Z',
+        hours: 2.5,
+        activityType: 'ADMIN',
+        userId: '33333333-3333-3333-3333-333333333333',
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.userId).toBe('33333333-3333-3333-3333-333333333333');
+  });
+
+  it('POST /timesheets blocks member from creating on behalf of another user', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/timesheets')
+      .set('Authorization', `Bearer ${memberToken}`)
+      .send({
+        date: '2026-03-03T00:00:00.000Z',
+        hours: 1.5,
+        activityType: 'ADMIN',
+        userId: '33333333-3333-3333-3333-333333333333',
+      });
+    expect(res.status).toBe(403);
+  });
+
+  it('GET /timesheets supports userId for planner and blocks member', async () => {
+    const plannerRes = await request(app.getHttpServer())
+      .get('/timesheets?userId=33333333-3333-3333-3333-333333333333')
+      .set('Authorization', `Bearer ${plannerToken}`);
+    expect(plannerRes.status).toBe(200);
+    expect(Array.isArray(plannerRes.body)).toBe(true);
+
+    const memberRes = await request(app.getHttpServer())
+      .get('/timesheets?userId=33333333-3333-3333-3333-333333333333')
+      .set('Authorization', `Bearer ${memberToken}`);
+    expect(memberRes.status).toBe(403);
+  });
+
+  it('GET /timesheets/weekly-summary supports userId for planner and blocks member', async () => {
+    const plannerRes = await request(app.getHttpServer())
+      .get('/timesheets/weekly-summary?userId=33333333-3333-3333-3333-333333333333')
+      .set('Authorization', `Bearer ${plannerToken}`);
+    expect(plannerRes.status).toBe(200);
+    expect(typeof plannerRes.body.totalHours).toBe('number');
+
+    const memberRes = await request(app.getHttpServer())
+      .get('/timesheets/weekly-summary?userId=33333333-3333-3333-3333-333333333333')
+      .set('Authorization', `Bearer ${memberToken}`);
+    expect(memberRes.status).toBe(403);
+  });
+
   it('GET /equipment/lookup returns found=true for seeded barcode', async () => {
     const res = await request(app.getHttpServer())
       .get('/equipment/lookup?code=wf-lift-20m-001')
@@ -230,6 +283,32 @@ maybeDescribe('API e2e', () => {
         endAt: '2026-03-05T10:00:00.000Z',
       });
     expect(res.status).toBe(400);
+  });
+
+  it('POST /workorders/:id/assign allows planner as assignee', async () => {
+    const workOrderId = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+    const res = await request(app.getHttpServer())
+      .post(`/workorders/${workOrderId}/assign`)
+      .set('Authorization', `Bearer ${plannerToken}`)
+      .send({
+        assigneeUserId: '22222222-2222-2222-2222-222222222222',
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+  });
+
+  it('POST /workorders/:id/schedule allows planner as assignee', async () => {
+    const workOrderId = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+    const res = await request(app.getHttpServer())
+      .post(`/workorders/${workOrderId}/schedule`)
+      .set('Authorization', `Bearer ${plannerToken}`)
+      .send({
+        assigneeUserId: '22222222-2222-2222-2222-222222222222',
+        startAt: '2026-03-05T11:00:00.000Z',
+        endAt: '2026-03-05T12:00:00.000Z',
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.assigneeUserId).toBe('22222222-2222-2222-2222-222222222222');
   });
 
   it('POST /workorders/:id/schedule returns 404 across tenants', async () => {

@@ -1,0 +1,226 @@
+'use client';
+
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { apiClient } from '@/lib/api-client';
+import { getDevToken } from '@/lib/auth';
+import { ConnectionStatus } from '@/components/dev/connection-status';
+
+type DevAuthUser = {
+  id: string;
+  email: string;
+  displayName: string;
+  roles: string[];
+};
+
+type MeResponse = {
+  user: { id: string; email: string; displayName: string; organizationId: string };
+  roles: string[];
+  organizationId: string;
+};
+
+type EmployeeProfileData = {
+  skills: string[];
+  courses: string[];
+  notes: string;
+  updatedAt: string;
+};
+
+function profileStorageKey(userId: string) {
+  return `employee_profile_${userId}`;
+}
+
+function parseLines(raw: string) {
+  return raw
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+export default function EmployeeDetailPage() {
+  const token = getDevToken();
+  const params = useParams<{ id: string }>();
+  const employeeId = params?.id ?? '';
+
+  const [me, setMe] = useState<MeResponse | null>(null);
+  const [users, setUsers] = useState<DevAuthUser[]>([]);
+  const [employee, setEmployee] = useState<DevAuthUser | null>(null);
+  const [skillsText, setSkillsText] = useState('');
+  const [coursesText, setCoursesText] = useState('');
+  const [notes, setNotes] = useState('');
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const canEdit = useMemo(() => {
+    if (!me || !employeeId) return false;
+    if (me.user.id === employeeId) return true;
+    return me.roles.some((role) => role === 'planner' || role === 'org_admin' || role === 'system_admin');
+  }, [employeeId, me]);
+
+  useEffect(() => {
+    async function load() {
+      if (!token) {
+        setError('Mangler token. Logg inn pa nytt.');
+        return;
+      }
+      try {
+        const [meRes, userRes] = await Promise.all([
+          apiClient(token).me().then((res) => res as MeResponse),
+          apiClient(token).listDevUsers().then((res) => res as DevAuthUser[]),
+        ]);
+        setMe(meRes);
+        setUsers(userRes);
+        const found = userRes.find((u) => u.id === employeeId) ?? null;
+        setEmployee(found);
+
+        const raw = window.localStorage.getItem(profileStorageKey(employeeId));
+        if (raw) {
+          const parsed = JSON.parse(raw) as EmployeeProfileData;
+          setSkillsText(parsed.skills.join('\n'));
+          setCoursesText(parsed.courses.join('\n'));
+          setNotes(parsed.notes ?? '');
+          setUpdatedAt(parsed.updatedAt ?? null);
+        } else {
+          setSkillsText('');
+          setCoursesText('');
+          setNotes('');
+          setUpdatedAt(null);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Kunne ikke hente ansattdata.');
+      }
+    }
+
+    if (employeeId) {
+      void load();
+    }
+  }, [employeeId, token]);
+
+  function saveProfile() {
+    if (!canEdit || !employeeId) return;
+    const payload: EmployeeProfileData = {
+      skills: parseLines(skillsText),
+      courses: parseLines(coursesText),
+      notes: notes.trim(),
+      updatedAt: new Date().toISOString(),
+    };
+    window.localStorage.setItem(profileStorageKey(employeeId), JSON.stringify(payload));
+    setUpdatedAt(payload.updatedAt);
+    setSuccess('Ansattprofil lagret lokalt.');
+    setError(null);
+  }
+
+  return (
+    <main className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <Link className="text-sm text-sky-700 hover:underline" href="/overview">
+            ← Tilbake til Oversikt
+          </Link>
+          <h1 className="text-2xl font-semibold">Ansattprofil</h1>
+        </div>
+        <ConnectionStatus />
+      </div>
+
+      {error ? <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</div> : null}
+      {success ? <div className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{success}</div> : null}
+
+      <section className="rounded border bg-white p-4">
+        <h2 className="mb-2 text-lg">Ansatt</h2>
+        {employee ? (
+          <div className="space-y-1 text-sm">
+            <p>
+              <strong>{employee.displayName}</strong>
+            </p>
+            <p>{employee.email}</p>
+            <div className="flex flex-wrap gap-1">
+              {employee.roles.map((role) => (
+                <span key={role} className="rounded bg-slate-100 px-2 py-1 text-xs">
+                  {role}
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-slate-600">Fant ikke ansatt med denne ID-en.</p>
+        )}
+      </section>
+
+      <section className="rounded border bg-white p-4">
+        <h2 className="mb-2 text-lg">Ferdigheter og kompetanse/kurs</h2>
+        <p className="mb-3 text-xs text-slate-600">
+          Redigering er tillatt for egen profil og for admin/planner. Data lagres lokalt i nettleseren (pilotmodus).
+        </p>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Ferdigheter (en per linje)</label>
+            <textarea
+              className="min-h-40 w-full rounded border px-3 py-2 text-sm"
+              value={skillsText}
+              onChange={(e) => setSkillsText(e.target.value)}
+              disabled={!canEdit}
+              placeholder="F.eks. Fiberterminering&#10;Sveis&#10;Servicebil"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Kurs/kompetanse (en per linje)</label>
+            <textarea
+              className="min-h-40 w-full rounded border px-3 py-2 text-sm"
+              value={coursesText}
+              onChange={(e) => setCoursesText(e.target.value)}
+              disabled={!canEdit}
+              placeholder="F.eks. FSE 2026&#10;Fallsikring&#10;Varme arbeider"
+            />
+          </div>
+        </div>
+        <div className="mt-3 space-y-2">
+          <label className="text-sm font-medium">Notater</label>
+          <textarea
+            className="min-h-24 w-full rounded border px-3 py-2 text-sm"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            disabled={!canEdit}
+            placeholder="Frivillige notater om erfaring, sertifiseringer, begrensninger osv."
+          />
+        </div>
+        <div className="mt-3 flex items-center gap-3">
+          <button className="rounded bg-accent px-3 py-2 text-sm text-white disabled:opacity-40" onClick={saveProfile} disabled={!canEdit}>
+            Lagre profil
+          </button>
+          {updatedAt ? <span className="text-xs text-slate-600">Sist oppdatert: {new Date(updatedAt).toLocaleString('no-NO')}</span> : null}
+          {!canEdit ? <span className="text-xs text-amber-700">Du har ikke redigeringstilgang for denne profilen.</span> : null}
+        </div>
+      </section>
+
+      <section className="rounded border bg-white p-4">
+        <h2 className="mb-2 text-lg">Mannskap</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead>
+              <tr className="border-b text-slate-600">
+                <th className="py-2">Navn</th>
+                <th className="py-2">E-post</th>
+                <th className="py-2">Roller</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr key={user.id} className="border-b">
+                  <td className="py-2">
+                    <Link className="text-sky-700 hover:underline" href={`/employees/${user.id}`}>
+                      {user.displayName}
+                    </Link>
+                  </td>
+                  <td className="py-2">{user.email}</td>
+                  <td className="py-2 text-xs">{user.roles.join(', ') || '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  );
+}

@@ -5,8 +5,12 @@ const prisma = new PrismaClient();
 const ids = {
   organization: '11111111-1111-1111-1111-111111111111',
   planner: '22222222-2222-2222-2222-222222222222',
+  resourceManager: '23232323-2323-2323-2323-232323232323',
   tech: '33333333-3333-3333-3333-333333333333',
+  tech2: '34343434-3434-3434-3434-343434343434',
+  tech3: '35353535-3535-3535-3535-353535353535',
   member: '66666666-6666-6666-6666-666666666666',
+  member2: '67676767-6767-6767-6767-676767676767',
   teamNord: '44444444-4444-4444-4444-444444444444',
   departmentOslo: '77777777-7777-7777-7777-777777777777',
   locationBygdoy: '88888888-8888-8888-8888-888888888888',
@@ -36,34 +40,78 @@ async function main() {
   });
 
   const planner = await prisma.user.upsert({
-    where: { email: 'planner@demo.no' },
-    update: { displayName: 'Planner Demo', organizationId: organization.id },
+    where: { id: ids.planner },
+    update: { displayName: 'Ingrid Nilsen', organizationId: organization.id },
     create: {
       id: ids.planner,
-      email: 'planner@demo.no',
-      displayName: 'Planner Demo',
+      email: 'ingrid.nilsen@demo.no',
+      displayName: 'Ingrid Nilsen',
+      organizationId: organization.id,
+    },
+  });
+
+  const resourceManager = await prisma.user.upsert({
+    where: { id: ids.resourceManager },
+    update: { displayName: 'Martin Hagen', organizationId: organization.id },
+    create: {
+      id: ids.resourceManager,
+      email: 'martin.hagen@demo.no',
+      displayName: 'Martin Hagen',
       organizationId: organization.id,
     },
   });
 
   const tech = await prisma.user.upsert({
-    where: { email: 'tech@demo.no' },
-    update: { displayName: 'Tekniker Demo', organizationId: organization.id },
+    where: { id: ids.tech },
+    update: { displayName: 'Ole Andersen', organizationId: organization.id },
     create: {
       id: ids.tech,
-      email: 'tech@demo.no',
-      displayName: 'Tekniker Demo',
+      email: 'ole.andersen@demo.no',
+      displayName: 'Ole Andersen',
+      organizationId: organization.id,
+    },
+  });
+
+  const tech2 = await prisma.user.upsert({
+    where: { id: ids.tech2 },
+    update: { displayName: 'Sara Lunde', organizationId: organization.id },
+    create: {
+      id: ids.tech2,
+      email: 'sara.lunde@demo.no',
+      displayName: 'Sara Lunde',
+      organizationId: organization.id,
+    },
+  });
+
+  const tech3 = await prisma.user.upsert({
+    where: { id: ids.tech3 },
+    update: { displayName: 'Jonas Berntsen', organizationId: organization.id },
+    create: {
+      id: ids.tech3,
+      email: 'jonas.berntsen@demo.no',
+      displayName: 'Jonas Berntsen',
       organizationId: organization.id,
     },
   });
 
   const member = await prisma.user.upsert({
-    where: { email: 'member@demo.no' },
-    update: { displayName: 'Medarbeider Demo', organizationId: organization.id },
+    where: { id: ids.member },
+    update: { displayName: 'Maria Solberg', organizationId: organization.id },
     create: {
       id: ids.member,
-      email: 'member@demo.no',
-      displayName: 'Medarbeider Demo',
+      email: 'maria.solberg@demo.no',
+      displayName: 'Maria Solberg',
+      organizationId: organization.id,
+    },
+  });
+
+  const member2 = await prisma.user.upsert({
+    where: { id: ids.member2 },
+    update: { displayName: 'Kristian Dahl', organizationId: organization.id },
+    create: {
+      id: ids.member2,
+      email: 'kristian.dahl@demo.no',
+      displayName: 'Kristian Dahl',
       organizationId: organization.id,
     },
   });
@@ -85,6 +133,21 @@ async function main() {
     update: {},
     create: { teamId: team.id, userId: member.id },
   });
+  await prisma.teamMembership.upsert({
+    where: { teamId_userId: { teamId: team.id, userId: tech2.id } },
+    update: {},
+    create: { teamId: team.id, userId: tech2.id },
+  });
+  await prisma.teamMembership.upsert({
+    where: { teamId_userId: { teamId: team.id, userId: tech3.id } },
+    update: {},
+    create: { teamId: team.id, userId: tech3.id },
+  });
+  await prisma.teamMembership.upsert({
+    where: { teamId_userId: { teamId: team.id, userId: member2.id } },
+    update: {},
+    create: { teamId: team.id, userId: member2.id },
+  });
 
   const roleCodes = ['org_admin', 'planner', 'technician', 'member'];
   for (const code of roleCodes) {
@@ -96,6 +159,7 @@ async function main() {
   }
 
   const plannerRole = await prisma.role.findFirstOrThrow({ where: { organizationId: organization.id, code: 'planner' } });
+  const adminRole = await prisma.role.findFirstOrThrow({ where: { organizationId: organization.id, code: 'org_admin' } });
   const techRole = await prisma.role.findFirstOrThrow({ where: { organizationId: organization.id, code: 'technician' } });
   const memberRole = await prisma.role.findFirstOrThrow({ where: { organizationId: organization.id, code: 'member' } });
 
@@ -110,11 +174,37 @@ async function main() {
     update: {},
     create: { userId: tech.id, roleId: techRole.id, organizationId: organization.id },
   });
+  await prisma.userRole.upsert({
+    where: { userId_roleId_organizationId: { userId: tech2.id, roleId: techRole.id, organizationId: organization.id } },
+    update: {},
+    create: { userId: tech2.id, roleId: techRole.id, organizationId: organization.id },
+  });
+  await prisma.userRole.upsert({
+    where: { userId_roleId_organizationId: { userId: tech3.id, roleId: techRole.id, organizationId: organization.id } },
+    update: {},
+    create: { userId: tech3.id, roleId: techRole.id, organizationId: organization.id },
+  });
 
   await prisma.userRole.upsert({
     where: { userId_roleId_organizationId: { userId: member.id, roleId: memberRole.id, organizationId: organization.id } },
     update: {},
     create: { userId: member.id, roleId: memberRole.id, organizationId: organization.id },
+  });
+  await prisma.userRole.upsert({
+    where: { userId_roleId_organizationId: { userId: member2.id, roleId: memberRole.id, organizationId: organization.id } },
+    update: {},
+    create: { userId: member2.id, roleId: memberRole.id, organizationId: organization.id },
+  });
+  await prisma.userRole.upsert({
+    where: {
+      userId_roleId_organizationId: {
+        userId: resourceManager.id,
+        roleId: adminRole.id,
+        organizationId: organization.id,
+      },
+    },
+    update: {},
+    create: { userId: resourceManager.id, roleId: adminRole.id, organizationId: organization.id },
   });
 
   const department = await prisma.department.upsert({

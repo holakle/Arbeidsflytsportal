@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../../common/audit/audit.service.js';
 import { PrismaService } from '../../common/prisma/prisma.service.js';
@@ -19,11 +19,12 @@ export class TimesheetsService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  list(organizationId: string, userId: string, from?: string, to?: string) {
+  async list(organizationId: string, userId: string, roles: string[], from?: string, to?: string, requestedUserId?: string) {
+    const targetUserId = await this.resolveTargetUserId(organizationId, userId, roles, requestedUserId);
     return this.prisma.timesheetEntry.findMany({
       where: {
         organizationId,
-        userId,
+        userId: targetUserId,
         ...(from || to
           ? {
               date: {
@@ -40,12 +41,22 @@ export class TimesheetsService {
   async create(
     organizationId: string,
     userId: string,
-    payload: { date: string; hours: number; activityType: string; workOrderId?: string | null; projectId?: string | null; note?: string },
+    roles: string[],
+    payload: {
+      date: string;
+      hours: number;
+      activityType: string;
+      userId?: string | null;
+      workOrderId?: string | null;
+      projectId?: string | null;
+      note?: string;
+    },
   ) {
+    const targetUserId = await this.resolveTargetUserId(organizationId, userId, roles, payload.userId ?? undefined);
     const entry = await this.prisma.timesheetEntry.create({
       data: {
         organizationId,
-        userId,
+        userId: targetUserId,
         date: new Date(payload.date),
         hours: new Prisma.Decimal(payload.hours),
         activityType: payload.activityType,
@@ -61,7 +72,7 @@ export class TimesheetsService {
       action: 'timesheet.submitted',
       entityType: 'TimesheetEntry',
       entityId: entry.id,
-      after: payload,
+      after: { ...payload, userId: targetUserId },
     });
 
     return entry;
@@ -90,13 +101,14 @@ export class TimesheetsService {
     return this.prisma.timesheetEntry.delete({ where: { id } });
   }
 
-  async weeklySummary(organizationId: string, userId: string, weekStartRaw?: string) {
+  async weeklySummary(organizationId: string, userId: string, roles: string[], weekStartRaw?: string, requestedUserId?: string) {
+    const targetUserId = await this.resolveTargetUserId(organizationId, userId, roles, requestedUserId);
     const weekStart = weekStartRaw ? new Date(weekStartRaw) : toWeekStart(new Date());
     const weekEnd = new Date(weekStart);
     weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
 
     const entries = await this.prisma.timesheetEntry.findMany({
-      where: { organizationId, userId, date: { gte: weekStart, lt: weekEnd } },
+      where: { organizationId, userId: targetUserId, date: { gte: weekStart, lt: weekEnd } },
     });
 
     const byActivityType: Record<string, number> = {};
@@ -113,6 +125,29 @@ export class TimesheetsService {
       totalHours,
       byActivityType,
     };
+  }
+
+  private canManageOtherUsers(roles: string[]) {
+    return roles.includes('planner') || roles.includes('org_admin') || roles.includes('system_admin');
+  }
+
+  private async resolveTargetUserId(organizationId: string, actorUserId: string, roles: string[], requestedUserId?: string) {
+    if (!requestedUserId || requestedUserId === actorUserId) {
+      return actorUserId;
+    }
+
+    if (!this.canManageOtherUsers(roles)) {
+      throw new ForbiddenException('Not allowed to manage timesheets for other users');
+    }
+
+    const targetUser = await this.prisma.user.findFirst({
+      where: { id: requestedUserId, organizationId },
+      select: { id: true },
+    });
+    if (!targetUser) {
+      throw new NotFoundException('Target user not found');
+    }
+    return targetUser.id;
   }
 }
 

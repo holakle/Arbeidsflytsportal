@@ -15,35 +15,40 @@ export class TimesheetsController {
   constructor(@Inject(TimesheetsService) private readonly service: TimesheetsService) {}
 
   @Get()
-  @Roles('planner', 'technician', 'member', 'org_admin')
-  list(@CurrentUser() user: AuthUser, @Query('from') from?: string, @Query('to') to?: string) {
-    return this.service.list(user.organizationId, user.id, from, to);
+  @Roles('planner', 'technician', 'member', 'org_admin', 'system_admin')
+  list(
+    @CurrentUser() user: AuthUser,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('userId') targetUserId?: string,
+  ) {
+    return this.service.list(user.organizationId, user.id, user.roles, from, to, targetUserId);
   }
 
   @Post()
-  @Roles('planner', 'technician', 'member', 'org_admin')
+  @Roles('planner', 'technician', 'member', 'org_admin', 'system_admin')
   @UsePipes(new ZodValidationPipe(createTimesheetSchema))
   create(@CurrentUser() user: AuthUser, @Body() body: any) {
-    return this.service.create(user.organizationId, user.id, body);
+    return this.service.create(user.organizationId, user.id, user.roles, body);
   }
 
   @Patch(':id')
-  @Roles('planner', 'technician', 'member', 'org_admin')
+  @Roles('planner', 'technician', 'member', 'org_admin', 'system_admin')
   @UsePipes(new ZodValidationPipe(updateTimesheetSchema))
   update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() body: Record<string, unknown>) {
     return this.service.update(user.organizationId, user.id, id, body);
   }
 
   @Delete(':id')
-  @Roles('planner', 'technician', 'member', 'org_admin')
+  @Roles('planner', 'technician', 'member', 'org_admin', 'system_admin')
   remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.service.remove(user.organizationId, user.id, id);
   }
 
   @Get('weekly-summary')
-  @Roles('planner', 'technician', 'member', 'org_admin')
-  weeklySummary(@CurrentUser() user: AuthUser, @Query('weekStart') weekStart?: string) {
-    return this.service.weeklySummary(user.organizationId, user.id, weekStart);
+  @Roles('planner', 'technician', 'member', 'org_admin', 'system_admin')
+  weeklySummary(@CurrentUser() user: AuthUser, @Query('weekStart') weekStart?: string, @Query('userId') targetUserId?: string) {
+    return this.service.weeklySummary(user.organizationId, user.id, user.roles, weekStart, targetUserId);
   }
 }
 

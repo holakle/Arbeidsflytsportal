@@ -1,7 +1,9 @@
 'use client';
 
 import { widgetTypes } from '@portal/shared';
-import { useEffect, useMemo, useState } from 'react';
+import JsBarcode from 'jsbarcode';
+import Link from 'next/link';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ConnectionStatus } from '@/components/dev/connection-status';
 import { apiClient } from '@/lib/api-client';
@@ -62,6 +64,7 @@ type DashboardData = {
   layout: { id: string; columns: number; layout: Array<{ widgetInstanceId: string; x: number; y: number; w: number; h: number } | { widgetIndex: number; x: number; y: number; w: number; h: number }> } | null;
 };
 type Me = { user: { id: string; email: string; displayName: string; organizationId: string }; roles: string[] };
+type DevAuthUser = { id: string; email: string; displayName: string; roles: string[] };
 type DetailState = { title: string; payload: unknown } | null;
 
 export type OverviewSections = {
@@ -151,6 +154,36 @@ function TablePager({ page, totalPages, onPage }: { page: number; totalPages: nu
   );
 }
 
+function BarcodePreview({ code }: { code: string | null }) {
+  const svgRef = useRef<SVGSVGElement | null>(null);
+
+  useEffect(() => {
+    if (!code || !svgRef.current) return;
+    try {
+      JsBarcode(svgRef.current, code, {
+        format: 'CODE128',
+        displayValue: false,
+        margin: 0,
+        height: 32,
+        width: 1.1,
+        background: '#ffffff',
+        lineColor: '#000000',
+      });
+    } catch {
+      // Keep text fallback if rendering fails.
+    }
+  }, [code]);
+
+  if (!code) return <span className="text-slate-400">-</span>;
+
+  return (
+    <div className="inline-flex flex-col">
+      <svg ref={svgRef} className="h-8 w-[170px]" aria-label={`Strekkode ${code}`} />
+      <span className="text-[10px] tracking-wide text-slate-500">{code}</span>
+    </div>
+  );
+}
+
 export default function OverviewClient({ me, sections }: { me: Me; sections: OverviewSections }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -165,6 +198,7 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
   const todos = getData(sections.todos, []);
   const dashboard = getData(sections.dashboard, { widgets: [], layout: null });
   const token = getDevToken();
+  const [crewUsers, setCrewUsers] = useState<DevAuthUser[]>([]);
 
   const [woSearch, setWoSearch] = useState('');
   const [woStatus, setWoStatus] = useState('ALL');
@@ -192,6 +226,14 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
     setItemPage(1);
     setReservationPage(1);
   }, [requestedEquipmentId]);
+
+  useEffect(() => {
+    if (!token) return;
+    apiClient(token)
+      .listDevUsers()
+      .then((users) => setCrewUsers((users as DevAuthUser[]) ?? []))
+      .catch(() => setCrewUsers([]));
+  }, [token]);
 
   const assignments = useMemo(
     () =>
@@ -367,21 +409,27 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
             <option value="ALL">Alt utstyr</option>{equipmentItems.map((item) => (<option key={item.id} value={item.id}>{item.name}</option>))}
           </select>
         </div>
-        <div className="overflow-x-auto"><table className="min-w-full text-left text-sm"><thead><tr className="border-b text-slate-600"><th className="py-2">Utstyr</th><th className="py-2">WorkOrder</th><th className="py-2">Start</th><th className="py-2">Slutt</th><th className="py-2">Detaljer</th></tr></thead><tbody>{reservationPaging.pageItems.map((row) => (<tr key={row.id} className="border-b"><td className="py-2">{row.equipmentItem?.name ?? row.equipmentItemId}</td><td className="py-2">{row.workOrder?.title ?? row.workOrderId}</td><td className="py-2 text-xs">{formatDate(row.startAt)}</td><td className="py-2 text-xs">{formatDate(row.endAt)}</td><td className="py-2"><button className="rounded border px-2 py-1 text-xs" onClick={() => setDetail({ title: 'EquipmentReservation', payload: row })}>Inspect</button></td></tr>))}</tbody></table></div>
+        <div className="overflow-x-auto"><table className="min-w-full text-left text-sm"><thead><tr className="border-b text-slate-600"><th className="py-2">Utstyr</th><th className="py-2">WorkOrder</th><th className="py-2">Start</th><th className="py-2">Slutt</th><th className="py-2">Detaljer</th></tr></thead><tbody>{reservationPaging.pageItems.map((row) => (<tr key={row.id} className="border-b"><td className="py-2">{row.equipmentItem?.id ? <Link className="text-sky-700 hover:underline" href={`/equipment/${row.equipmentItem.id}`}>{row.equipmentItem.name}</Link> : row.equipmentItem?.name ?? row.equipmentItemId}</td><td className="py-2">{row.workOrder?.title ?? row.workOrderId}</td><td className="py-2 text-xs">{formatDate(row.startAt)}</td><td className="py-2 text-xs">{formatDate(row.endAt)}</td><td className="py-2"><button className="rounded border px-2 py-1 text-xs" onClick={() => setDetail({ title: 'EquipmentReservation', payload: row })}>Inspect</button></td></tr>))}</tbody></table></div>
         <TablePager page={reservationPaging.page} totalPages={reservationPaging.totalPages} onPage={setReservationPage} />
       </SectionShell>
 
       <SectionShell title="EquipmentItems" subtitle="Tilgjengelighet basert pa aktive reservasjoner" kpis={[`Total: ${equipmentItems.length}`, `Tilgjengelig na: ${equipmentItems.filter((item) => !equipmentReservedNow.has(item.id)).length}`, `Booket na: ${equipmentItems.filter((item) => equipmentReservedNow.has(item.id)).length}`]} error={sections.equipmentItems.status === 'error' ? sections.equipmentItems.message : undefined} onRefresh={() => router.refresh()}>
         <input className="mb-2 w-full rounded border px-3 py-2 text-sm" placeholder="Sok pa utstyr" value={itemSearch} onChange={(e) => { setItemSearch(e.target.value); setItemPage(1); }} />
-        <div className="overflow-x-auto"><table className="min-w-full text-left text-sm"><thead><tr className="border-b text-slate-600"><th className="py-2">Navn</th><th className="py-2">Serial</th><th className="py-2">Barcode</th><th className="py-2">Status</th><th className="py-2">Detaljer</th></tr></thead><tbody>{itemPaging.pageItems.map((row) => (<tr key={row.id} className={`border-b ${requestedEquipmentId === row.id ? 'bg-amber-50' : ''}`}><td className="py-2">{row.name}</td><td className="py-2">{row.serialNumber ?? '-'}</td><td className="py-2 text-xs">{row.barcode ?? '-'}</td><td className="py-2">{equipmentReservedNow.has(row.id) ? 'Booket' : 'Ledig'}</td><td className="py-2"><button className="rounded border px-2 py-1 text-xs" onClick={() => setDetail({ title: 'EquipmentItem', payload: row })}>Inspect</button></td></tr>))}</tbody></table></div>
+        <div className="overflow-x-auto"><table className="min-w-full text-left text-sm"><thead><tr className="border-b text-slate-600"><th className="py-2">Navn</th><th className="py-2">Serial</th><th className="py-2">Strekkode</th><th className="py-2">Status</th><th className="py-2">Detaljer</th></tr></thead><tbody>{itemPaging.pageItems.map((row) => (<tr key={row.id} className={`border-b ${requestedEquipmentId === row.id ? 'bg-amber-50' : ''}`}><td className="py-2"><Link className="text-sky-700 hover:underline" href={`/equipment/${row.id}`}>{row.name}</Link></td><td className="py-2">{row.serialNumber ?? '-'}</td><td className="py-2 text-xs"><BarcodePreview code={row.barcode} /></td><td className="py-2">{equipmentReservedNow.has(row.id) ? 'Booket' : 'Ledig'}</td><td className="py-2"><button className="rounded border px-2 py-1 text-xs" onClick={() => setDetail({ title: 'EquipmentItem', payload: row })}>Inspect</button></td></tr>))}</tbody></table></div>
         <TablePager page={itemPaging.page} totalPages={itemPaging.totalPages} onPage={setItemPage} />
       </SectionShell>
 
-      <SectionShell title="Users/Teams" subtitle="Roller fra /me + team IDs observert i data" kpis={[`Bruker: ${me.user.displayName}`, `Roller: ${usersAndTeams.roles.length}`, `Team IDs: ${usersAndTeams.teamIds.length}`]} onRefresh={() => router.refresh()}>
-        <div className="grid gap-3 md:grid-cols-2">
-          <article className="rounded border border-slate-200 p-3 text-sm"><h3 className="mb-2 font-medium">Current User</h3><p>{me.user.displayName}</p><p className="text-xs text-slate-600">{me.user.email}</p><div className="mt-2 flex flex-wrap gap-1">{usersAndTeams.roles.map((role) => (<span key={role} className="rounded bg-slate-100 px-2 py-1 text-xs">{role}</span>))}</div></article>
-          <article className="rounded border border-slate-200 p-3 text-sm"><h3 className="mb-2 font-medium">Team Membership (IDs)</h3><ul className="space-y-1 text-xs text-slate-700">{usersAndTeams.teamIds.length === 0 ? <li>Ingen funnet i lastede data.</li> : null}{usersAndTeams.teamIds.map((teamId) => (<li key={teamId}>{teamId}</li>))}</ul></article>
+      <SectionShell title="Users/Teams" subtitle="Roller fra /me + team IDs observert i data + klikkbar mannskapsliste" kpis={[`Bruker: ${me.user.displayName}`, `Roller: ${usersAndTeams.roles.length}`, `Team IDs: ${usersAndTeams.teamIds.length}`, `Mannskap: ${crewUsers.length}`]} onRefresh={() => router.refresh()}>
+        <div className="mb-2">
+          <Link className="rounded border px-3 py-1 text-xs text-sky-700 hover:bg-slate-50" href="/mannskap">
+            Apne mannskapsside
+          </Link>
         </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <article className="rounded border border-slate-200 p-3 text-sm"><h3 className="mb-2 font-medium">Current User</h3><p>{me.user.displayName}</p><p className="text-xs text-slate-600">{me.user.email}</p><div className="mt-2 flex flex-wrap gap-1">{usersAndTeams.roles.map((role) => (<span key={role} className="rounded bg-slate-100 px-2 py-1 text-xs">{role}</span>))}</div><Link className="mt-3 inline-block rounded border px-2 py-1 text-xs text-sky-700 hover:bg-slate-50" href={`/employees/${me.user.id}`}>Apne ansattside</Link></article>
+          <article className="rounded border border-slate-200 p-3 text-sm"><h3 className="mb-2 font-medium">Team Membership</h3><ul className="space-y-1 text-xs text-slate-700">{usersAndTeams.teamIds.length === 0 ? <li>Ingen funnet i lastede data.</li> : null}{usersAndTeams.teamIds.map((teamId) => (<li key={teamId}>Team {teamId.slice(0, 8)} ({teamId})</li>))}</ul></article>
+        </div>
+        <div className="mt-3 overflow-x-auto"><table className="min-w-full text-left text-sm"><thead><tr className="border-b text-slate-600"><th className="py-2">Navn</th><th className="py-2">E-post</th><th className="py-2">Roller</th><th className="py-2">Profil</th></tr></thead><tbody>{crewUsers.map((user) => (<tr key={user.id} className="border-b"><td className="py-2"><Link className="text-sky-700 hover:underline" href={`/employees/${user.id}`}>{user.displayName}</Link></td><td className="py-2 text-xs">{user.email}</td><td className="py-2 text-xs">{user.roles.join(', ') || '-'}</td><td className="py-2"><Link className="rounded border px-2 py-1 text-xs hover:bg-slate-50" href={`/employees/${user.id}`}>Apne</Link></td></tr>))}</tbody></table></div>
       </SectionShell>
 
       <SectionShell title="Timesheets" subtitle="Daglige entries + ukesummering" kpis={[`Entries: ${timesheets.length}`, `Uke-start: ${weekly.weekStart}`, `Timer uke: ${weekly.totalHours}`, `Nullable links: ${timesheets.filter((t) => t.workOrderId === null || t.projectId === null).length}`]} error={sections.timesheets.status === 'error' ? sections.timesheets.message : sections.weeklySummary.status === 'error' ? sections.weeklySummary.message : undefined} onRefresh={() => router.refresh()}>

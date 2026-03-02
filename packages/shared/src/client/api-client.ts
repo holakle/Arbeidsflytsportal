@@ -110,8 +110,17 @@ export class ApiClient {
     return this.http.request(`/equipment/${id}/barcode`, { method: 'POST', body: { barcode } });
   }
 
-  listTimesheets(query = ''): Promise<unknown[]> {
-    return this.http.request(`/timesheets${query ? `?${query}` : ''}`);
+  listTimesheets(query?: string | { from?: string; to?: string; userId?: string }): Promise<unknown[]> {
+    if (typeof query === 'string') {
+      return this.http.request(`/timesheets${query ? `?${query}` : ''}`);
+    }
+
+    const params = new URLSearchParams();
+    if (query?.from) params.set('from', query.from);
+    if (query?.to) params.set('to', query.to);
+    if (query?.userId) params.set('userId', query.userId);
+    const qs = params.toString();
+    return this.http.request(`/timesheets${qs ? `?${qs}` : ''}`);
   }
 
   createTimesheet(body: Record<string, unknown>): Promise<unknown> {
@@ -126,8 +135,12 @@ export class ApiClient {
     return this.http.request(`/timesheets/${id}`, { method: 'DELETE' });
   }
 
-  weeklySummary(weekStart?: string): Promise<unknown> {
-    return this.http.request(`/timesheets/weekly-summary${weekStart ? `?weekStart=${weekStart}` : ''}`);
+  weeklySummary(weekStart?: string, userId?: string): Promise<unknown> {
+    const params = new URLSearchParams();
+    if (weekStart) params.set('weekStart', weekStart);
+    if (userId) params.set('userId', userId);
+    const qs = params.toString();
+    return this.http.request(`/timesheets/weekly-summary${qs ? `?${qs}` : ''}`);
   }
 
   listTodos(query = ''): Promise<unknown[]> {

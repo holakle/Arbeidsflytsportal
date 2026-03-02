@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import JsBarcode from 'jsbarcode';
 import { apiClient } from '@/lib/api-client';
 import { getDevToken } from '@/lib/auth';
 import { ConnectionStatus } from '@/components/dev/connection-status';
@@ -33,6 +34,35 @@ function formatDate(value: string) {
 function toErrorMessage(error: unknown, fallback: string) {
   if (error instanceof Error) return error.message;
   return fallback;
+}
+
+function BarcodePreview({ code }: { code: string | null }) {
+  if (!code) return <span className="text-slate-400">-</span>;
+  const svgRef = useRef<SVGSVGElement | null>(null);
+
+  useEffect(() => {
+    if (!svgRef.current) return;
+    try {
+      JsBarcode(svgRef.current, code, {
+        format: 'CODE128',
+        displayValue: false,
+        margin: 0,
+        height: 36,
+        width: 1.3,
+        background: '#ffffff',
+        lineColor: '#000000',
+      });
+    } catch {
+      // If rendering fails for unexpected value, keep the text fallback below.
+    }
+  }, [code]);
+
+  return (
+    <div className="inline-flex flex-col">
+      <svg ref={svgRef} className="h-9 w-[180px]" aria-label={`Strekkode ${code}`} />
+      <span className="text-[10px] tracking-wide text-slate-500">{code}</span>
+    </div>
+  );
 }
 
 export default function EquipmentPage() {
@@ -123,19 +153,25 @@ export default function EquipmentPage() {
               <tr className="border-b text-slate-600">
                 <th className="py-2">Navn</th>
                 <th className="py-2">Serial</th>
-                <th className="py-2">Barcode</th>
                 <th className="py-2">Type</th>
                 <th className="py-2">Status</th>
+                <th className="py-2">Strekkode</th>
               </tr>
             </thead>
             <tbody>
               {filteredItems.map((item) => (
                 <tr key={item.id} className="border-b">
-                  <td className="py-2">{item.name}</td>
+                  <td className="py-2">
+                    <Link className="text-sky-700 hover:underline" href={`/equipment/${item.id}`}>
+                      {item.name}
+                    </Link>
+                  </td>
                   <td className="py-2">{item.serialNumber ?? '-'}</td>
-                  <td className="py-2">{item.barcode ?? '-'}</td>
                   <td className="py-2">{item.type === 'CONSUMABLE' ? 'Forbruksmateriell' : 'Utstyr'}</td>
                   <td className="py-2">{item.type === 'CONSUMABLE' ? 'Legges manuelt pa WO' : reservedNow.has(item.id) ? 'Booket na' : 'Ledig na'}</td>
+                  <td className="py-2">
+                    <BarcodePreview code={item.barcode} />
+                  </td>
                 </tr>
               ))}
             </tbody>

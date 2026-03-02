@@ -4,19 +4,19 @@ export const scheduleQuerySchema = z.object({
   from: z.string().datetime(),
   to: z.string().datetime(),
   scope: z.enum(['mine', 'all']).optional(),
-  assigneeUserId: z.string().uuid().optional(),
-  assigneeTeamId: z.string().uuid().optional(),
-  equipmentItemId: z.string().uuid().optional(),
+  assigneeUserId: z.string().min(1).optional(),
+  assigneeTeamId: z.string().min(1).optional(),
+  equipmentItemId: z.string().min(1).optional(),
 });
 
 export const setPlanningOwnerSchema = z.object({
-  planningOwnerUserId: z.string().uuid().nullable(),
+  planningOwnerUserId: z.string().min(1).nullable(),
 });
 
 export const createWorkOrderScheduleSchema = z
   .object({
-    assigneeUserId: z.string().uuid().optional(),
-    assigneeTeamId: z.string().uuid().optional(),
+    assigneeUserId: z.string().min(1).optional(),
+    assigneeTeamId: z.string().min(1).optional(),
     startAt: z.string().datetime(),
     endAt: z.string().datetime(),
     note: z.string().trim().min(1).max(500).optional(),

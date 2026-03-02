@@ -12,8 +12,8 @@ export const equipmentItemSchema = z.object({
 });
 
 export const reserveEquipmentSchema = z.object({
-  equipmentItemId: z.string().uuid(),
-  workOrderId: z.string().uuid(),
+  equipmentItemId: z.string().min(1),
+  workOrderId: z.string().min(1),
   startAt: z.string().datetime(),
   endAt: z.string().datetime(),
 });

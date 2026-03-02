@@ -307,5 +307,6 @@ export class WorkOrdersService {
   private canManagePlanning(roles: string[]) {
     return roles.includes('planner') || roles.includes('org_admin') || roles.includes('system_admin');
   }
+
 }
 

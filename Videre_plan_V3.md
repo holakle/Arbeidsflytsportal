@@ -447,3 +447,42 @@ Dette gjør modellen lett å forstå for alle.
 - Tildelt arbeid (tidspunkt) opprett/slett
 - visning av eksisterende schedule entries
 4. FULLFORT: API e2e utvidet for schedule RBAC/tenant + consumables-regler.
+
+## Kontekst (laast for pilot)
+
+Rollestruktur:
+- Planlegger: planlegger arbeidsoppdrag og har bred tilgang, men skal ikke kunne bookes pa jobber.
+- Ressursstyrer: delegerer ressurser og booker, har bred tilgang.
+- Montor: utforer arbeid og skal kunne bookes pa oppdrag.
+
+Dummybrukere for pilot (realistiske navn + brukernavn):
+- Ingrid Nilsen (brukernavn: ingrid.nilsen, rolle: planner)
+- Martin Hagen (brukernavn: martin.hagen, rolle: org_admin / ressursstyrer)
+- Ole Andersen (brukernavn: ole.andersen, rolle: technician)
+- Sara Lunde (brukernavn: sara.lunde, rolle: technician)
+- Jonas Berntsen (brukernavn: jonas.berntsen, rolle: technician)
+- Maria Solberg (brukernavn: maria.solberg, rolle: member)
+- Kristian Dahl (brukernavn: kristian.dahl, rolle: member)
+
+Merknad:
+- User-modellen har ikke eget username-felt. I pilot brukes e-post local-part som brukernavn (f.eks. ingrid.nilsen@demo.no -> ingrid.nilsen).
+
+## Statusoppdatering 2026-03-02 (V7 timer/login/assign)
+
+1. FULLFORT: Login/token-stabilitet forbedret i web:
+- server-side API-base leses fra `INTERNAL_API_URL`/`SERVER_API_URL` (fallback localhost API)
+- klientkall handterer `401` med auto logout + redirect til `/login?reason=invalid-token`
+
+2. FULLFORT: `/times` UX oppdatert:
+- WorkOrder og Project er dropdowns (project utledet fra workorders)
+- Worker er auto for montor/member, dropdown for planner/admin/system_admin
+- oppretting sender `userId` kun nar admin/planner forer pa vegne av andre
+
+3. FULLFORT: API/shared for timesheets utvidet:
+- `POST /timesheets`, `GET /timesheets`, `GET /timesheets/weekly-summary` stotter optional `userId`
+- RBAC: kun planner/org_admin/system_admin kan foresporre/fore pa vegne av andre
+
+4. FULLFORT: Planner assign/schedule 400-blokkering fjernet:
+- rollebasert \"ikke bookbar\"-sjekk er fjernet i workorders service
+
+5. NOTAT: Seed-IDer i repoet er ikke RFC-UUID. Input-validering er derfor gjort tolerant (`string().min(1)`) i relevante request-skjemaer for at flytene skal fungere med dagens data.
