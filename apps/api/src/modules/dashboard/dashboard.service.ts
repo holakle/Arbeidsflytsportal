@@ -6,6 +6,7 @@ const defaultWidgets = [
   { type: 'BOOKINGS', title: 'Bookinger', config: {} },
   { type: 'HOURS_THIS_WEEK', title: 'Timer denne uken', config: {} },
   { type: 'TODO', title: 'Todo', config: {} },
+  { type: 'MY_CALENDAR', title: 'Kalender (mine bookinger)', config: { rangeDays: 14, showEquipment: true } },
 ];
 
 @Injectable()
@@ -33,6 +34,39 @@ export class DashboardService {
         },
         include: { widgets: true, layout: true },
       });
+    } else if (!dashboard.widgets.some((widget) => widget.type === 'MY_CALENDAR')) {
+      const createdWidget = await this.prisma.widgetInstance.create({
+        data: {
+          dashboardId: dashboard.id,
+          type: 'MY_CALENDAR',
+          title: 'Kalender (mine bookinger)',
+          config: { rangeDays: 14, showEquipment: true },
+        },
+      });
+
+      const layoutItems = Array.isArray(dashboard.layout?.layout) ? (dashboard.layout?.layout as any[]) : [];
+      const maxY = layoutItems.reduce((max, item) => Math.max(max, Number(item?.y ?? 0) + Number(item?.h ?? 0)), 0);
+      const nextLayout = [...layoutItems, { widgetInstanceId: createdWidget.id, x: 0, y: maxY + 1, w: 2, h: 2 }];
+
+      if (dashboard.layout) {
+        await this.prisma.dashboardLayout.update({
+          where: { id: dashboard.layout.id },
+          data: { layout: nextLayout },
+        });
+      } else {
+        await this.prisma.dashboardLayout.create({
+          data: { dashboardId: dashboard.id, columns: 4, layout: nextLayout },
+        });
+      }
+
+      dashboard = await this.prisma.dashboard.findFirst({
+        where: { organizationId, userId },
+        include: { widgets: true, layout: true },
+      });
+    }
+
+    if (!dashboard) {
+      throw new Error('Dashboard not found after getOrCreate');
     }
 
     return {

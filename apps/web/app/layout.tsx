@@ -21,6 +21,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <Link className="rounded px-3 py-2 text-sm font-medium hover:bg-slate-100" href="/equipment">
               Utstyr
             </Link>
+            <Link className="rounded px-3 py-2 text-sm font-medium hover:bg-slate-100" href="/times">
+              Timer
+            </Link>
+            <Link className="rounded px-3 py-2 text-sm font-medium hover:bg-slate-100" href="/todos">
+              Todos
+            </Link>
             <ActiveUserChip />
           </nav>
         </header>

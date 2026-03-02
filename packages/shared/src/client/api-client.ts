@@ -118,6 +118,14 @@ export class ApiClient {
     return this.http.request('/timesheets', { method: 'POST', body });
   }
 
+  updateTimesheet(id: string, body: Record<string, unknown>): Promise<unknown> {
+    return this.http.request(`/timesheets/${id}`, { method: 'PATCH', body });
+  }
+
+  deleteTimesheet(id: string): Promise<unknown> {
+    return this.http.request(`/timesheets/${id}`, { method: 'DELETE' });
+  }
+
   weeklySummary(weekStart?: string): Promise<unknown> {
     return this.http.request(`/timesheets/weekly-summary${weekStart ? `?weekStart=${weekStart}` : ''}`);
   }
@@ -128,6 +136,14 @@ export class ApiClient {
 
   createTodo(body: Record<string, unknown>): Promise<unknown> {
     return this.http.request('/todos', { method: 'POST', body });
+  }
+
+  updateTodo(id: string, body: Record<string, unknown>): Promise<unknown> {
+    return this.http.request(`/todos/${id}`, { method: 'PATCH', body });
+  }
+
+  deleteTodo(id: string): Promise<unknown> {
+    return this.http.request(`/todos/${id}`, { method: 'DELETE' });
   }
 
   getDashboard(): Promise<unknown> {

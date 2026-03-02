@@ -2,7 +2,7 @@
 export const workOrderStatuses = ['OPEN', 'IN_PROGRESS', 'DONE', 'BLOCKED', 'CANCELLED'] as const;
 export const todoStatuses = ['OPEN', 'IN_PROGRESS', 'DONE', 'CANCELLED'] as const;
 export const activityTypes = ['INSTALLATION', 'TRAVEL', 'MEETING', 'ADMIN', 'OTHER'] as const;
-export const widgetTypes = ['MY_WORKORDERS', 'BOOKINGS', 'HOURS_THIS_WEEK', 'TODO'] as const;
+export const widgetTypes = ['MY_WORKORDERS', 'BOOKINGS', 'HOURS_THIS_WEEK', 'TODO', 'MY_CALENDAR'] as const;
 export const equipmentItemTypes = ['EQUIPMENT', 'CONSUMABLE'] as const;
 
 export type RoleCode = (typeof roleCodes)[number];

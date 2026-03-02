@@ -66,6 +66,10 @@ Et tenant-basert, skalerbart system for arbeidsprosesser i montasjeselskap: arbe
 - `/planner`:
   - operativ planlegging (opprette arbeidsordre, tildele, booke utstyr).
   - kalender for mannskap/utstyr via `/schedule`.
+- `/times`:
+  - egen side for timeliste, ny føring og ukesummering.
+- `/todos`:
+  - egen side for todo-liste, oppretting, statusendring og sletting.
 - `/workorders/[id]`:
   - redigering av arbeidsordre, planansvarlig, schedule entries og forbruksmateriell.
 - `/equipment`:
