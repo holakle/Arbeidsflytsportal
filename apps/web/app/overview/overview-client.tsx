@@ -1,9 +1,11 @@
 'use client';
 
 import { widgetTypes } from '@portal/shared';
-import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ConnectionStatus } from '@/components/dev/connection-status';
+import { apiClient } from '@/lib/api-client';
+import { getDevToken } from '@/lib/auth';
 
 type SectionResult<T> = { status: 'ok'; data: T } | { status: 'error'; message: string };
 
@@ -25,7 +27,7 @@ type Assignment = {
   assigneeTeamId: string | null;
 };
 
-type EquipmentItem = { id: string; name: string; serialNumber: string | null; active: boolean };
+type EquipmentItem = { id: string; name: string; serialNumber: string | null; barcode: string | null; active: boolean };
 type EquipmentReservation = {
   id: string;
   equipmentItemId: string;
@@ -57,7 +59,7 @@ type Todo = {
 };
 type DashboardData = {
   widgets: Array<{ id: string; type: string; title: string; config: Record<string, unknown> }>;
-  layout: { id: string; columns: number; layout: unknown[] } | null;
+  layout: { id: string; columns: number; layout: Array<{ widgetInstanceId: string; x: number; y: number; w: number; h: number } | { widgetIndex: number; x: number; y: number; w: number; h: number }> } | null;
 };
 type Me = { user: { id: string; email: string; displayName: string; organizationId: string }; roles: string[] };
 type DetailState = { title: string; payload: unknown } | null;
@@ -151,7 +153,9 @@ function TablePager({ page, totalPages, onPage }: { page: number; totalPages: nu
 
 export default function OverviewClient({ me, sections }: { me: Me; sections: OverviewSections }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [detail, setDetail] = useState<DetailState>(null);
+  const [pinMessage, setPinMessage] = useState<string | null>(null);
 
   const workOrders = getData(sections.workOrders, { items: [], page: 1, limit: 100, total: 0 }).items;
   const equipmentItems = getData(sections.equipmentItems, []);
@@ -160,6 +164,7 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
   const weekly = getData(sections.weeklySummary, { weekStart: '-', totalHours: 0, byActivityType: {} });
   const todos = getData(sections.todos, []);
   const dashboard = getData(sections.dashboard, { widgets: [], layout: null });
+  const token = getDevToken();
 
   const [woSearch, setWoSearch] = useState('');
   const [woStatus, setWoStatus] = useState('ALL');
@@ -178,6 +183,15 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
   const [todoPage, setTodoPage] = useState(1);
   const [widgetSearch, setWidgetSearch] = useState('');
   const [widgetPage, setWidgetPage] = useState(1);
+  const requestedEquipmentId = searchParams.get('equipmentId');
+
+  useEffect(() => {
+    if (!requestedEquipmentId) return;
+    setItemSearch(requestedEquipmentId);
+    setReservationEquipment(requestedEquipmentId);
+    setItemPage(1);
+    setReservationPage(1);
+  }, [requestedEquipmentId]);
 
   const assignments = useMemo(
     () =>
@@ -222,7 +236,7 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
   const filteredEquipmentItems = useMemo(() => {
     const q = itemSearch.trim().toLowerCase();
     if (!q) return equipmentItems;
-    return equipmentItems.filter((item) => [item.id, item.name, item.serialNumber ?? ''].join(' ').toLowerCase().includes(q));
+    return equipmentItems.filter((item) => [item.id, item.name, item.serialNumber ?? '', item.barcode ?? ''].join(' ').toLowerCase().includes(q));
   }, [equipmentItems, itemSearch]);
   const filteredReservations = useMemo(
     () =>
@@ -265,6 +279,57 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
   const todoPaging = paginate(filteredTodos, todoPage);
   const widgetPaging = paginate(widgetRows, widgetPage);
 
+  async function pinWidget(type: string, title: string, config: Record<string, unknown> = {}) {
+    if (!token) {
+      setPinMessage('Mangler token for pinning.');
+      return;
+    }
+
+    try {
+      const client = apiClient(token);
+      const current = (await client.getDashboard()) as DashboardData;
+
+      const duplicate = current.widgets.some(
+        (widget) => widget.type === type && JSON.stringify(widget.config ?? {}) === JSON.stringify(config),
+      );
+      if (duplicate) {
+        setPinMessage('Widget finnes allerede pa Min side.');
+        return;
+      }
+
+      const newWidgetId = crypto.randomUUID();
+      const widgets = [...current.widgets, { id: newWidgetId, type, title, config }];
+
+      const existingLayoutRaw = Array.isArray(current.layout?.layout) ? current.layout?.layout : [];
+      const existingLayout = existingLayoutRaw
+        .map((entry) => {
+          if ('widgetInstanceId' in entry && entry.widgetInstanceId) {
+            return { ...entry, widgetInstanceId: entry.widgetInstanceId };
+          }
+          if ('widgetIndex' in entry) {
+            const existingWidget = current.widgets.at(entry.widgetIndex);
+            if (!existingWidget) return null;
+            return { ...entry, widgetInstanceId: existingWidget.id };
+          }
+          return null;
+        })
+        .filter((entry): entry is { widgetInstanceId: string; x: number; y: number; w: number; h: number } => Boolean(entry));
+
+      const maxY = existingLayout.reduce((max, entry) => Math.max(max, entry.y + entry.h), 0);
+      const layout = {
+        id: current.layout?.id ?? crypto.randomUUID(),
+        columns: current.layout?.columns ?? 4,
+        layout: [...existingLayout, { widgetInstanceId: newWidgetId, x: 0, y: maxY + 2, w: 2, h: 2 }],
+      };
+
+      await client.updateDashboard({ widgets, layout });
+      setPinMessage('Lagt til pa Min side. Apne /dashboard for a se widgeten.');
+      router.refresh();
+    } catch (error) {
+      setPinMessage(`Kunne ikke pinne widget: ${error instanceof Error ? error.message : 'ukjent feil'}`);
+    }
+  }
+
   return (
     <main className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -274,8 +339,10 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
         </div>
         <ConnectionStatus />
       </div>
+      {pinMessage ? <div className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{pinMessage}</div> : null}
 
       <SectionShell title="WorkOrders" subtitle="Status, nullable dimensjoner og assignments per ordre" kpis={[`Total: ${workOrders.length}`, `OPEN: ${workOrders.filter((w) => w.status === 'OPEN').length}`, `IN_PROGRESS: ${workOrders.filter((w) => w.status === 'IN_PROGRESS').length}`]} error={sections.workOrders.status === 'error' ? sections.workOrders.message : undefined} onRefresh={() => router.refresh()}>
+        <div className="mb-2"><button className="rounded border px-3 py-1 text-xs" onClick={() => void pinWidget('MY_WORKORDERS', 'Mine arbeidsordre', { source: 'overview.workorders' })}>Legg til pa Min side</button></div>
         <div className="mb-2 grid gap-2 md:grid-cols-3">
           <input className="rounded border px-3 py-2 text-sm" placeholder="Sok pa tittel/id" value={woSearch} onChange={(e) => { setWoSearch(e.target.value); setWoPage(1); }} />
           <select className="rounded border px-3 py-2 text-sm" value={woStatus} onChange={(e) => { setWoStatus(e.target.value); setWoPage(1); }}>
@@ -293,6 +360,7 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
       </SectionShell>
 
       <SectionShell title="EquipmentReservations" subtitle="Tidspunkt + overlap/context per utstyr" kpis={[`Total: ${reservations.length}`, `Neste 7 dager: ${reservations.filter((r) => new Date(r.startAt) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)).length}`, `Utstyr med bookinger: ${new Set(reservations.map((r) => r.equipmentItemId)).size}`]} error={sections.reservations.status === 'error' ? sections.reservations.message : undefined} onRefresh={() => router.refresh()}>
+        <div className="mb-2"><button className="rounded border px-3 py-1 text-xs" onClick={() => void pinWidget('BOOKINGS', 'Bookinger', { source: 'overview.reservations' })}>Legg til pa Min side</button></div>
         <div className="mb-2 grid gap-2 md:grid-cols-3">
           <input className="rounded border px-3 py-2 text-sm" placeholder="Sok pa utstyr/workorder" value={reservationSearch} onChange={(e) => { setReservationSearch(e.target.value); setReservationPage(1); }} />
           <select className="rounded border px-3 py-2 text-sm" value={reservationEquipment} onChange={(e) => { setReservationEquipment(e.target.value); setReservationPage(1); }}>
@@ -305,7 +373,7 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
 
       <SectionShell title="EquipmentItems" subtitle="Tilgjengelighet basert pa aktive reservasjoner" kpis={[`Total: ${equipmentItems.length}`, `Tilgjengelig na: ${equipmentItems.filter((item) => !equipmentReservedNow.has(item.id)).length}`, `Booket na: ${equipmentItems.filter((item) => equipmentReservedNow.has(item.id)).length}`]} error={sections.equipmentItems.status === 'error' ? sections.equipmentItems.message : undefined} onRefresh={() => router.refresh()}>
         <input className="mb-2 w-full rounded border px-3 py-2 text-sm" placeholder="Sok pa utstyr" value={itemSearch} onChange={(e) => { setItemSearch(e.target.value); setItemPage(1); }} />
-        <div className="overflow-x-auto"><table className="min-w-full text-left text-sm"><thead><tr className="border-b text-slate-600"><th className="py-2">Navn</th><th className="py-2">Serial</th><th className="py-2">Status</th><th className="py-2">Detaljer</th></tr></thead><tbody>{itemPaging.pageItems.map((row) => (<tr key={row.id} className="border-b"><td className="py-2">{row.name}</td><td className="py-2">{row.serialNumber ?? '-'}</td><td className="py-2">{equipmentReservedNow.has(row.id) ? 'Booket' : 'Ledig'}</td><td className="py-2"><button className="rounded border px-2 py-1 text-xs" onClick={() => setDetail({ title: 'EquipmentItem', payload: row })}>Inspect</button></td></tr>))}</tbody></table></div>
+        <div className="overflow-x-auto"><table className="min-w-full text-left text-sm"><thead><tr className="border-b text-slate-600"><th className="py-2">Navn</th><th className="py-2">Serial</th><th className="py-2">Barcode</th><th className="py-2">Status</th><th className="py-2">Detaljer</th></tr></thead><tbody>{itemPaging.pageItems.map((row) => (<tr key={row.id} className={`border-b ${requestedEquipmentId === row.id ? 'bg-amber-50' : ''}`}><td className="py-2">{row.name}</td><td className="py-2">{row.serialNumber ?? '-'}</td><td className="py-2 text-xs">{row.barcode ?? '-'}</td><td className="py-2">{equipmentReservedNow.has(row.id) ? 'Booket' : 'Ledig'}</td><td className="py-2"><button className="rounded border px-2 py-1 text-xs" onClick={() => setDetail({ title: 'EquipmentItem', payload: row })}>Inspect</button></td></tr>))}</tbody></table></div>
         <TablePager page={itemPaging.page} totalPages={itemPaging.totalPages} onPage={setItemPage} />
       </SectionShell>
 
@@ -317,12 +385,14 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
       </SectionShell>
 
       <SectionShell title="Timesheets" subtitle="Daglige entries + ukesummering" kpis={[`Entries: ${timesheets.length}`, `Uke-start: ${weekly.weekStart}`, `Timer uke: ${weekly.totalHours}`, `Nullable links: ${timesheets.filter((t) => t.workOrderId === null || t.projectId === null).length}`]} error={sections.timesheets.status === 'error' ? sections.timesheets.message : sections.weeklySummary.status === 'error' ? sections.weeklySummary.message : undefined} onRefresh={() => router.refresh()}>
+        <div className="mb-2"><button className="rounded border px-3 py-1 text-xs" onClick={() => void pinWidget('HOURS_THIS_WEEK', 'Timer denne uken', { source: 'overview.weekly-summary' })}>Legg til pa Min side</button></div>
         <input className="mb-2 w-full rounded border px-3 py-2 text-sm" placeholder="Sok pa activity/workorder/project" value={timesheetSearch} onChange={(e) => { setTimesheetSearch(e.target.value); setTimesheetPage(1); }} />
         <div className="overflow-x-auto"><table className="min-w-full text-left text-sm"><thead><tr className="border-b text-slate-600"><th className="py-2">Dato</th><th className="py-2">Timer</th><th className="py-2">Type</th><th className="py-2">WO/Project</th><th className="py-2">Detaljer</th></tr></thead><tbody>{timesheetPaging.pageItems.map((row) => (<tr key={row.id} className="border-b"><td className="py-2">{formatDate(row.date)}</td><td className="py-2">{toNumber(row.hours)}</td><td className="py-2">{row.activityType}</td><td className="py-2 text-xs">{row.workOrderId ?? 'null'} / {row.projectId ?? 'null'}</td><td className="py-2"><button className="rounded border px-2 py-1 text-xs" onClick={() => setDetail({ title: 'Timesheet', payload: row })}>Inspect</button></td></tr>))}</tbody></table></div>
         <TablePager page={timesheetPaging.page} totalPages={timesheetPaging.totalPages} onPage={setTimesheetPage} />
       </SectionShell>
 
       <SectionShell title="Todos" subtitle="Mine/team med status og forfallsdato" kpis={[`Total: ${todos.length}`, `OPEN: ${todos.filter((t) => t.status === 'OPEN').length}`, `Team: ${todos.filter((t) => t.teamId).length}`, `Mine: ${todos.filter((t) => t.userId === me.user.id).length}`]} error={sections.todos.status === 'error' ? sections.todos.message : undefined} onRefresh={() => router.refresh()}>
+        <div className="mb-2"><button className="rounded border px-3 py-1 text-xs" onClick={() => void pinWidget('TODO', 'Todo', { source: 'overview.todos' })}>Legg til pa Min side</button></div>
         <div className="mb-2 grid gap-2 md:grid-cols-3">
           <input className="rounded border px-3 py-2 text-sm" placeholder="Sok pa todo" value={todoSearch} onChange={(e) => { setTodoSearch(e.target.value); setTodoPage(1); }} />
           <select className="rounded border px-3 py-2 text-sm" value={todoStatus} onChange={(e) => { setTodoStatus(e.target.value); setTodoPage(1); }}>

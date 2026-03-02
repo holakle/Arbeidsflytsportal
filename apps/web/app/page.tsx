@@ -17,6 +17,9 @@ export default function HomePage() {
         <Link className="rounded border px-3 py-2" href="/dashboard">
           Min side
         </Link>
+        <Link className="rounded border px-3 py-2" href="/equipment">
+          Utstyr
+        </Link>
       </div>
       <section className="rounded border bg-white p-4">
         <h2 className="mb-2 text-lg font-medium">Lokal setup-checklist</h2>
