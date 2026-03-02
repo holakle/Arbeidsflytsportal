@@ -2,7 +2,7 @@
 
 1. Kopier `.env.example` til `.env`.
 2. Kopier `.env` til `apps/api/.env`.
-3. Start DB: `docker compose up -d postgres`
+3. Start DB: `pnpm infra:up`
 4. Installer avhengigheter: `pnpm install`
 5. Prisma:
    - `pnpm --filter @apps/api prisma:generate`
@@ -11,71 +11,42 @@
 6. Sett `apps/web/.env.local`:
    - `NEXT_PUBLIC_API_URL=http://localhost:3001`
    - `NEXT_PUBLIC_DEV_TOKEN=<token>`
-7. Start: `pnpm dev`
-8. Åpne: `http://localhost:3000/scan`
+7. Start alt: `pnpm dev`
+   - Merk: `pnpm dev` inkluderer mobile og kan feile pga Expo/Metro.
+   - Anbefalt for PC/web: `pnpm dev:core`
+8. Apne: `http://localhost:3000/scan`
+
+## Anbefalt daglig flyt (core uten mobile)
+1. Start DB: `pnpm infra:up`
+2. Start API+web: `pnpm dev:core`
+3. Verifiser:
+   - API: `http://localhost:3001/health`
+   - Web: `http://localhost:3000/login`
+4. Start TryCloudflare ved behov: `pnpm tunnel:up`
+5. Hent tunnel-URL: `docker logs workflow-tunnel --tail 80`
 
 ## Mobil HTTPS (valgfritt)
-
 - Caddy LAN:
   - `docker compose --profile https up -d https`
   - sett `NEXT_PUBLIC_API_URL=https://<LAN_HOST>/api`
 - Cloudflare tunnel:
-  - sett `CLOUDFLARE_TUNNEL_TOKEN` i `.env`
-  - `docker compose --profile https --profile tunnel up -d https tunnel`
+  - `pnpm tunnel:up`
 
-
-# 0) Hent repo
-git clone https://github.com/holakle/Arbeidsflytsportal.git
-cd Arbeidsflytsportal
-
-# 1) Sikre riktig pnpm-versjon (repoet forventer pnpm@10.6.2)
-corepack enable
-corepack prepare pnpm@10.6.2 --activate
-pnpm -v
-
-# 2) Lag .env fra .env.example (repoets .env.example er én linje -> splitt til én variabel per linje)
-(Get-Content .env.example -Raw) -split '\s+' | Where-Object { $_ } | Set-Content .env
-
-# 3) Prisma CLI kjører fra apps/api, så legg env der også
-Copy-Item .env apps/api/.env -Force
-
-# 4) (Valgfritt men ryddig) Sett web sin .env.local (API-URL + valgfri fallback token)
-@"
-NEXT_PUBLIC_API_URL=http://localhost:3001
-# NEXT_PUBLIC_DEV_TOKEN=
-"@ | Set-Content apps/web/.env.local
-
-# 5) Start Postgres
-docker compose up -d postgres
-
-# 6) Installer deps
-pnpm install
-
-# 7) Prisma (generate -> migrate -> seed)
-pnpm --filter @apps/api prisma:generate
-pnpm --filter @apps/api prisma:migrate:dev
-pnpm --filter @apps/api prisma:seed
-
-# 8) Start alt (turbo dev i parallell: api+web(+mobile+worker))
-pnpm dev
-
-# dglig oppstrt
-
-cd Arbeidsflytsportal
-docker compose up -d postgres
-pnpm dev
-
-
-
-# bare starte web+api:
+## Manuell oppstart uten scripts
+```powershell
 docker compose up -d postgres
 pnpm --filter @apps/api dev
+```
 
-# i en ny terminal:
+I ny terminal:
+
+```powershell
 pnpm --filter @apps/web dev
+```
 
-# stopp prossesser
+Stopp:
 
-ctrl +c i terminal
-
+```powershell
+ctrl +c
 docker compose stop postgres
+```

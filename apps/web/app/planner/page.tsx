@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -12,6 +11,7 @@ import type { DatesSetArg, EventClickArg, EventInput } from '@fullcalendar/core'
 import { apiClient } from '@/lib/api-client';
 import { getDevToken } from '@/lib/auth';
 import { ConnectionStatus } from '@/components/dev/connection-status';
+import { FullCalendarCompat, type FullCalendarCompatRef } from '@/components/planner/fullcalendar-compat';
 
 type WorkOrder = {
   id: string;
@@ -92,7 +92,7 @@ function toDateInputValue(value: Date) {
 function PlannerPageInner() {
   const searchParams = useSearchParams();
   const token = getDevToken();
-  const calendarRef = useRef<FullCalendar | null>(null);
+  const calendarRef = useRef<FullCalendarCompatRef | null>(null);
 
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [users, setUsers] = useState<DevUser[]>([]);
@@ -498,7 +498,7 @@ function PlannerPageInner() {
             </div>
 
             <div className="overflow-hidden rounded border bg-white p-2">
-              <FullCalendar
+              <FullCalendarCompat
                 ref={calendarRef}
                 plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
                 locale={nbLocale}

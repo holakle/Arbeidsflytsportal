@@ -4,6 +4,12 @@
   "packageManager": "pnpm@10.6.2",
   "scripts": {
     "dev": "turbo run dev --parallel",
+    "dev:core": "turbo run dev --parallel --filter=@apps/api --filter=@apps/web",
+    "dev:api": "pnpm --filter @apps/api dev",
+    "dev:web": "pnpm --filter @apps/web dev",
+    "infra:up": "docker compose up -d postgres",
+    "tunnel:up": "docker compose --profile https --profile tunnel up -d https tunnel",
+    "tunnel:down": "docker compose --profile https --profile tunnel stop tunnel https",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",

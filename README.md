@@ -53,8 +53,22 @@ Produksjonsrettet monorepo med `pnpm workspaces` + `turborepo` for montasjeplatt
    - Hvis du har gammel lokal DB med inkonsistent migrasjonshistorikk: `pnpm --filter @apps/api exec prisma migrate reset --force`
 6. Kjør alt:
    - `pnpm dev`
+   - Merk: `pnpm dev` inkluderer mobile og kan feile pga Expo/Metro lokalt.
+   - Anbefalt for PC/web-pilot: `pnpm dev:core`
 7. Scanner pilot:
    - Åpne `http://localhost:3000/scan`
+
+## Anbefalt daglig drift (web+api)
+1. Start database:
+   - `pnpm infra:up`
+2. Start core-apps:
+   - `pnpm dev:core`
+3. Verifiser:
+   - API: `http://localhost:3001/health`
+   - Web: `http://localhost:3000/login`
+4. Start tunnel ved behov:
+   - `pnpm tunnel:up`
+   - Les URL: `docker logs workflow-tunnel --tail 80`
 
 ## Dev token (lokal auth)
 Generer et dev JWT med claims som matcher seed-data (`planner@demo.no`):
