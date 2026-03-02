@@ -1,10 +1,13 @@
 import { z } from 'zod';
+import { equipmentItemTypes } from '../enums';
 
 export const equipmentItemSchema = z.object({
   id: z.string().uuid(),
   organizationId: z.string().uuid(),
   name: z.string().min(1),
   serialNumber: z.string().nullable(),
+  barcode: z.string().nullable(),
+  type: z.enum(equipmentItemTypes),
   active: z.boolean(),
 });
 
@@ -26,6 +29,7 @@ export const equipmentReservationSchema = z.object({
       id: z.string().uuid(),
       name: z.string().min(1),
       serialNumber: z.string().nullable(),
+      barcode: z.string().nullable().optional(),
     })
     .optional(),
   workOrder: z
@@ -35,4 +39,20 @@ export const equipmentReservationSchema = z.object({
       status: z.string(),
     })
     .optional(),
+});
+
+export const attachBarcodeRequestSchema = z.object({
+  barcode: z.string().min(1),
+});
+
+export const attachBarcodeResponseSchema = z.object({
+  item: equipmentItemSchema,
+});
+
+export const equipmentLookupResponseSchema = z.object({
+  code: z.string(),
+  found: z.boolean(),
+  item: equipmentItemSchema.nullable(),
+  status: z.enum(['AVAILABLE', 'RESERVED_ACTIVE', 'CONSUMABLE', 'NOT_FOUND']),
+  activeReservation: equipmentReservationSchema.nullable(),
 });

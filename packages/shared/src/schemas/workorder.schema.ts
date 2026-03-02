@@ -10,6 +10,7 @@ export const workOrderSchema = z.object({
   departmentId: z.string().uuid().nullable(),
   locationId: z.string().uuid().nullable(),
   projectId: z.string().uuid().nullable(),
+  planningOwnerUserId: z.string().uuid().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -20,6 +21,7 @@ export const createWorkOrderSchema = z.object({
   departmentId: z.string().uuid().nullable().optional(),
   locationId: z.string().uuid().nullable().optional(),
   projectId: z.string().uuid().nullable().optional(),
+  planningOwnerUserId: z.string().uuid().nullable().optional(),
 });
 
 export const updateWorkOrderSchema = createWorkOrderSchema.partial().extend({
@@ -40,6 +42,31 @@ export const workOrderListQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
   status: z.enum(workOrderStatuses).optional(),
   assignedToMe: z.coerce.boolean().optional(),
+});
+
+export const addWorkOrderConsumableSchema = z.object({
+  equipmentItemId: z.string().uuid(),
+  quantity: z.coerce.number().int().min(1).default(1),
+  note: z.string().trim().min(1).max(500).optional(),
+});
+
+export const workOrderConsumableSchema = z.object({
+  id: z.string().uuid(),
+  organizationId: z.string().uuid(),
+  workOrderId: z.string().uuid(),
+  equipmentItemId: z.string().uuid(),
+  quantity: z.number().int().min(1),
+  note: z.string().nullable(),
+  createdAt: z.string(),
+  equipmentItem: z
+    .object({
+      id: z.string().uuid(),
+      name: z.string().min(1),
+      serialNumber: z.string().nullable(),
+      barcode: z.string().nullable(),
+      type: z.literal('CONSUMABLE'),
+    })
+    .optional(),
 });
 
 export type WorkOrder = z.infer<typeof workOrderSchema>;

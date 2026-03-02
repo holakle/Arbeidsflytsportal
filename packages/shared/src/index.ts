@@ -6,5 +6,6 @@ export * from './schemas/equipment.schema';
 export * from './schemas/timesheet.schema';
 export * from './schemas/todo.schema';
 export * from './schemas/dashboard.schema';
+export * from './schemas/schedule.schema';
 export * from './client/api-client';
 

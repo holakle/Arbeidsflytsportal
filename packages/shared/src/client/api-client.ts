@@ -1,13 +1,21 @@
 import type { z } from 'zod';
 import type { MeResponse } from '../schemas/auth.schema';
 import type { DevAuthUser, IssueDevTokenResponse } from '../schemas/dev-auth.schema';
-import type { equipmentItemSchema, equipmentReservationSchema } from '../schemas/equipment.schema';
-import type { WorkOrder } from '../schemas/workorder.schema';
+import type {
+  attachBarcodeResponseSchema,
+  equipmentItemSchema,
+  equipmentLookupResponseSchema,
+  equipmentReservationSchema,
+} from '../schemas/equipment.schema';
+import type { WorkOrder, workOrderConsumableSchema } from '../schemas/workorder.schema';
 import { HttpClient } from './http-client';
 
 type Paged<T> = { items: T[]; page: number; limit: number; total: number };
 type EquipmentItem = z.infer<typeof equipmentItemSchema>;
 type EquipmentReservation = z.infer<typeof equipmentReservationSchema>;
+type EquipmentLookupResponse = z.infer<typeof equipmentLookupResponseSchema>;
+type AttachBarcodeResponse = z.infer<typeof attachBarcodeResponseSchema>;
+type WorkOrderConsumable = z.infer<typeof workOrderConsumableSchema>;
 
 export class ApiClient {
   private readonly http: HttpClient;
@@ -36,6 +44,10 @@ export class ApiClient {
     return this.http.request('/workorders', { method: 'POST', body });
   }
 
+  getWorkOrder(id: string): Promise<WorkOrder> {
+    return this.http.request(`/workorders/${id}`);
+  }
+
   assignWorkOrder(id: string, body: Record<string, unknown>): Promise<{ success: true }> {
     return this.http.request(`/workorders/${id}/assign`, { method: 'POST', body });
   }
@@ -44,8 +56,41 @@ export class ApiClient {
     return this.http.request(`/workorders/${id}`, { method: 'PATCH', body });
   }
 
-  listEquipment(): Promise<EquipmentItem[]> {
-    return this.http.request('/equipment');
+  listWorkOrderConsumables(id: string): Promise<WorkOrderConsumable[]> {
+    return this.http.request(`/workorders/${id}/consumables`);
+  }
+
+  addWorkOrderConsumable(
+    id: string,
+    body: { equipmentItemId: string; quantity?: number; note?: string },
+  ): Promise<WorkOrderConsumable> {
+    return this.http.request(`/workorders/${id}/consumables`, { method: 'POST', body });
+  }
+
+  setPlanningOwner(id: string, planningOwnerUserId: string | null): Promise<WorkOrder> {
+    return this.http.request(`/workorders/${id}/planning-owner`, {
+      method: 'POST',
+      body: { planningOwnerUserId },
+    });
+  }
+
+  listWorkOrderSchedule(id: string): Promise<unknown[]> {
+    return this.http.request(`/workorders/${id}/schedule`);
+  }
+
+  createWorkOrderSchedule(
+    id: string,
+    body: { assigneeUserId?: string; assigneeTeamId?: string; startAt: string; endAt: string; note?: string; status?: string },
+  ): Promise<unknown> {
+    return this.http.request(`/workorders/${id}/schedule`, { method: 'POST', body });
+  }
+
+  deleteWorkOrderSchedule(id: string, scheduleId: string): Promise<{ success: true }> {
+    return this.http.request(`/workorders/${id}/schedule/${scheduleId}`, { method: 'DELETE' });
+  }
+
+  listEquipment(query = ''): Promise<EquipmentItem[]> {
+    return this.http.request(`/equipment${query ? `?${query}` : ''}`);
   }
 
   listEquipmentReservations(query = ''): Promise<Paged<EquipmentReservation>> {
@@ -54,6 +99,15 @@ export class ApiClient {
 
   reserveEquipment(body: Record<string, unknown>): Promise<unknown> {
     return this.http.request('/equipment/reserve', { method: 'POST', body });
+  }
+
+  lookupEquipmentByCode(code: string): Promise<EquipmentLookupResponse> {
+    const query = new URLSearchParams({ code }).toString();
+    return this.http.request(`/equipment/lookup?${query}`);
+  }
+
+  attachEquipmentBarcode(id: string, barcode: string): Promise<AttachBarcodeResponse> {
+    return this.http.request(`/equipment/${id}/barcode`, { method: 'POST', body: { barcode } });
   }
 
   listTimesheets(query = ''): Promise<unknown[]> {
@@ -82,5 +136,23 @@ export class ApiClient {
 
   updateDashboard(body: Record<string, unknown>): Promise<unknown> {
     return this.http.request('/dashboard', { method: 'PUT', body });
+  }
+
+  listSchedule(query: {
+    from: string;
+    to: string;
+    scope?: 'mine' | 'all';
+    assigneeUserId?: string;
+    assigneeTeamId?: string;
+    equipmentItemId?: string;
+  }): Promise<unknown[]> {
+    const params = new URLSearchParams();
+    params.set('from', query.from);
+    params.set('to', query.to);
+    if (query.scope) params.set('scope', query.scope);
+    if (query.assigneeUserId) params.set('assigneeUserId', query.assigneeUserId);
+    if (query.assigneeTeamId) params.set('assigneeTeamId', query.assigneeTeamId);
+    if (query.equipmentItemId) params.set('equipmentItemId', query.equipmentItemId);
+    return this.http.request(`/schedule?${params.toString()}`);
   }
 }
