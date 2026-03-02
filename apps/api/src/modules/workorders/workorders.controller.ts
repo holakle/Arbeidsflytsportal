@@ -12,8 +12,11 @@ import {
   UsePipes,
 } from '@nestjs/common';
 import {
+  addWorkOrderConsumableSchema,
   assignWorkOrderSchema,
+  createWorkOrderScheduleSchema,
   createWorkOrderSchema,
+  setPlanningOwnerSchema,
   updateWorkOrderSchema,
   workOrderListQuerySchema,
 } from '@portal/shared';
@@ -73,5 +76,56 @@ export class WorkOrdersController {
     @Body() body: { assigneeUserId?: string; assigneeTeamId?: string },
   ) {
     return this.service.assign(user.organizationId, user.id, id, body);
+  }
+
+  @Get(':id/consumables')
+  @Roles('planner', 'technician', 'org_admin')
+  listConsumables(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.service.listConsumables(user.organizationId, id);
+  }
+
+  @Post(':id/consumables')
+  @Roles('planner', 'technician', 'org_admin')
+  @UsePipes(new ZodValidationPipe(addWorkOrderConsumableSchema))
+  addConsumable(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() body: { equipmentItemId: string; quantity?: number; note?: string },
+  ) {
+    return this.service.addConsumable(user.organizationId, user.id, id, body);
+  }
+
+  @Get(':id/schedule')
+  @Roles('planner', 'technician', 'org_admin', 'member')
+  listSchedule(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.service.listScheduleForWorkOrder(user.organizationId, user.id, user.roles, id);
+  }
+
+  @Post(':id/planning-owner')
+  @Roles('planner', 'org_admin')
+  @UsePipes(new ZodValidationPipe(setPlanningOwnerSchema))
+  setPlanningOwner(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() body: { planningOwnerUserId: string | null },
+  ) {
+    return this.service.setPlanningOwner(user.organizationId, user.id, id, body.planningOwnerUserId);
+  }
+
+  @Post(':id/schedule')
+  @Roles('planner', 'org_admin')
+  @UsePipes(new ZodValidationPipe(createWorkOrderScheduleSchema))
+  createSchedule(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() body: { assigneeUserId?: string; assigneeTeamId?: string; startAt: string; endAt: string; note?: string; status?: string },
+  ) {
+    return this.service.createSchedule(user.organizationId, user.id, id, body);
+  }
+
+  @Delete(':id/schedule/:scheduleId')
+  @Roles('planner', 'org_admin')
+  removeSchedule(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('scheduleId') scheduleId: string) {
+    return this.service.deleteSchedule(user.organizationId, user.id, id, scheduleId);
   }
 }

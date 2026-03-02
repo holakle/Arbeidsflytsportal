@@ -1,4 +1,4 @@
-import { ConflictException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { AuditService } from '../../common/audit/audit.service.js';
 import { PrismaService } from '../../common/prisma/prisma.service.js';
 
@@ -9,8 +9,10 @@ export class EquipmentService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  list(organizationId: string) {
-    return this.prisma.equipmentItem.findMany({ where: { organizationId, active: true } });
+  list(organizationId: string, query?: { type?: 'EQUIPMENT' | 'CONSUMABLE' }) {
+    return this.prisma.equipmentItem.findMany({
+      where: { organizationId, active: true, ...(query?.type ? { type: query.type } : {}) },
+    });
   }
 
   async listReservations(
@@ -37,7 +39,7 @@ export class EquipmentService {
         skip: (query.page - 1) * query.limit,
         take: query.limit,
         include: {
-          equipmentItem: { select: { id: true, name: true, serialNumber: true } },
+          equipmentItem: { select: { id: true, name: true, serialNumber: true, barcode: true } },
           workOrder: { select: { id: true, title: true, status: true } },
         },
       }),
@@ -47,6 +49,119 @@ export class EquipmentService {
     return { items, page: query.page, limit: query.limit, total };
   }
 
+  async lookupByCode(organizationId: string, actorUserId: string, rawCode: string) {
+    const code = this.normalizeBarcode(rawCode);
+    const item = await this.prisma.equipmentItem.findFirst({
+      where: { organizationId, barcode: code, active: true },
+    });
+
+    if (!item) {
+      await this.audit.log({
+        organizationId,
+        actorUserId,
+        action: 'equipment.lookup',
+        entityType: 'EquipmentItem',
+        entityId: `barcode:${code}`,
+        after: { code, found: false },
+      });
+      return {
+        code,
+        found: false,
+        item: null,
+        status: 'NOT_FOUND' as const,
+        activeReservation: null,
+      };
+    }
+
+    if (item.type === 'CONSUMABLE') {
+      await this.audit.log({
+        organizationId,
+        actorUserId,
+        action: 'equipment.lookup',
+        entityType: 'EquipmentItem',
+        entityId: item.id,
+        after: { code, found: true, status: 'CONSUMABLE' },
+      });
+      return {
+        code,
+        found: true,
+        item,
+        status: 'CONSUMABLE' as const,
+        activeReservation: null,
+      };
+    }
+
+    const now = new Date();
+    const activeReservation = await this.prisma.equipmentReservation.findFirst({
+      where: {
+        equipmentItemId: item.id,
+        equipmentItem: { is: { organizationId } },
+        startAt: { lte: now },
+        endAt: { gte: now },
+      },
+      orderBy: { startAt: 'desc' },
+      include: {
+        equipmentItem: { select: { id: true, name: true, serialNumber: true, barcode: true } },
+        workOrder: { select: { id: true, title: true, status: true } },
+      },
+    });
+
+    const status = activeReservation ? 'RESERVED_ACTIVE' : 'AVAILABLE';
+
+    await this.audit.log({
+      organizationId,
+      actorUserId,
+      action: 'equipment.lookup',
+      entityType: 'EquipmentItem',
+      entityId: item.id,
+      after: { code, found: true, status },
+    });
+
+    return {
+      code,
+      found: true,
+      item,
+      status,
+      activeReservation: activeReservation ?? null,
+    };
+  }
+
+  async attachBarcode(organizationId: string, actorUserId: string, itemId: string, rawBarcode: string) {
+    const barcode = this.normalizeBarcode(rawBarcode);
+
+    const item = await this.prisma.equipmentItem.findFirst({
+      where: { id: itemId, organizationId },
+    });
+    if (!item) {
+      throw new NotFoundException('Equipment item not found');
+    }
+
+    const conflict = await this.prisma.equipmentItem.findFirst({
+      where: { organizationId, barcode, id: { not: itemId } },
+      select: { id: true },
+    });
+    if (conflict) {
+      throw new ConflictException('Barcode already attached to another item');
+    }
+
+    const updated = await this.prisma.equipmentItem.update({
+      where: { id: itemId },
+      data: { barcode },
+    });
+
+    await this.audit.log({
+      organizationId,
+      actorUserId,
+      action: 'equipment.barcode_attached',
+      entityType: 'EquipmentItem',
+      entityId: updated.id,
+      before: { barcode: item.barcode },
+      after: { barcode: updated.barcode },
+    });
+
+    return { item: updated };
+  }
+
   async reserve(
     organizationId: string,
     actorUserId: string,
@@ -54,6 +169,17 @@ export class EquipmentService {
   ) {
     const startAt = new Date(payload.startAt);
     const endAt = new Date(payload.endAt);
+
+    const item = await this.prisma.equipmentItem.findFirst({
+      where: { id: payload.equipmentItemId, organizationId, active: true },
+      select: { id: true, type: true },
+    });
+    if (!item) {
+      throw new NotFoundException('Equipment item not found');
+    }
+    if (item.type !== 'EQUIPMENT') {
+      throw new BadRequestException('Consumables cannot be reserved');
+    }
 
     const conflict = await this.prisma.equipmentReservation.findFirst({
       where: {
@@ -85,5 +211,13 @@ export class EquipmentService {
     });
 
     return reservation;
+  }
+
+  private normalizeBarcode(value: string) {
+    const normalized = value.trim().toUpperCase();
+    if (!normalized) {
+      throw new BadRequestException('Barcode cannot be empty');
+    }
+    return normalized;
   }
 }

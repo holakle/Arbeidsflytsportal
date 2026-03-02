@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Inject, Post, Query, UseGuards, UsePipes } from '@nestjs/common';
-import { reserveEquipmentSchema } from '@portal/shared';
+import { Body, Controller, Get, Inject, Param, Post, Query, UseGuards, UsePipes } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import { attachBarcodeRequestSchema, reserveEquipmentSchema } from '@portal/shared';
 import { z } from 'zod';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator.js';
 import { Roles } from '../../common/auth/decorators/roles.decorator.js';
@@ -18,6 +19,14 @@ const listReservationsQuerySchema = z.object({
   to: z.string().datetime().optional(),
 });
 
+const listEquipmentQuerySchema = z.object({
+  type: z.enum(['EQUIPMENT', 'CONSUMABLE']).optional(),
+});
+
+const lookupEquipmentQuerySchema = z.object({
+  code: z.string().min(1),
+});
+
 @Controller('equipment')
 @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
 export class EquipmentController {
@@ -25,8 +34,9 @@ export class EquipmentController {
 
   @Get()
   @Roles('planner', 'technician', 'org_admin')
-  list(@CurrentUser() user: AuthUser) {
-    return this.service.list(user.organizationId);
+  list(@CurrentUser() user: AuthUser, @Query() query: Record<string, string>) {
+    const parsed = listEquipmentQuerySchema.parse(query);
+    return this.service.list(user.organizationId, parsed);
   }
 
   @Get('reservations')
@@ -44,5 +54,20 @@ export class EquipmentController {
     @Body() body: { equipmentItemId: string; workOrderId: string; startAt: string; endAt: string },
   ) {
     return this.service.reserve(user.organizationId, user.id, body);
+  }
+
+  @Get('lookup')
+  @Roles('planner', 'technician', 'org_admin', 'member')
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  lookup(@CurrentUser() user: AuthUser, @Query() query: Record<string, string>) {
+    const parsed = lookupEquipmentQuerySchema.parse(query);
+    return this.service.lookupByCode(user.organizationId, user.id, parsed.code);
+  }
+
+  @Post(':id/barcode')
+  @Roles('planner', 'org_admin')
+  @UsePipes(new ZodValidationPipe(attachBarcodeRequestSchema))
+  attachBarcode(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() body: { barcode: string }) {
+    return this.service.attachBarcode(user.organizationId, user.id, id, body.barcode);
   }
 }
