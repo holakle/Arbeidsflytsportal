@@ -116,7 +116,7 @@ function WidgetRenderer({ widget, data }: { widget: DashboardWidget; data: Widge
             ))}
           </div>
           <Link className="inline-block text-xs underline" href="/times">
-            Gå til timer
+            GÃ¥ til timer
           </Link>
         </div>
       );
@@ -133,7 +133,7 @@ function WidgetRenderer({ widget, data }: { widget: DashboardWidget; data: Widge
           ))}
           {data.todos.length === 0 ? <div className="text-xs text-slate-500">Ingen todo funnet.</div> : null}
           <Link className="inline-block text-xs underline" href="/todos">
-            Gå til todos
+            GÃ¥ til todos
           </Link>
         </div>
       );
@@ -241,7 +241,7 @@ export default function DashboardPage() {
           <article key={widget.id} className="rounded border bg-white p-4">
             <h3 className="font-medium">{widget.title}</h3>
             <p className="mb-2 text-xs text-slate-600">
-              Type: {widget.type} · Antall: {widgetCountByType[widget.type] ?? 0}
+              Type: {widget.type} Â· Antall: {widgetCountByType[widget.type] ?? 0}
             </p>
             <WidgetRenderer widget={widget} data={widgetData} />
           </article>

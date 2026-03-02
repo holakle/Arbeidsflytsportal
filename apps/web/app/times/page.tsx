@@ -83,7 +83,7 @@ export default function TimesPage() {
     if (!token) return;
     const numericHours = Number(hours);
     if (!Number.isFinite(numericHours) || numericHours <= 0) {
-      setError('Timer må være et positivt tall.');
+      setError('Timer mÃ¥ vÃ¦re et positivt tall.');
       return;
     }
 
@@ -143,7 +143,7 @@ export default function TimesPage() {
       </section>
 
       <section className="rounded border bg-white p-4">
-        <h2 className="mb-2 text-lg">Ny timeføring</h2>
+        <h2 className="mb-2 text-lg">Ny timefÃ¸ring</h2>
         <div className="grid gap-2 md:grid-cols-3">
           <input className="rounded border px-3 py-2" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           <input className="rounded border px-3 py-2" value={hours} onChange={(e) => setHours(e.target.value)} placeholder="Timer" />
@@ -164,7 +164,7 @@ export default function TimesPage() {
       </section>
 
       <section className="rounded border bg-white p-4">
-        <h2 className="mb-2 text-lg">Føringer</h2>
+        <h2 className="mb-2 text-lg">FÃ¸ringer</h2>
         <p className="mb-2 text-xs text-slate-600">Sum i listen: {totalListedHours.toFixed(2)} timer</p>
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
