@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from '@prisma/client';
+﻿import { Prisma, PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -13,12 +13,15 @@ const ids = {
   projectMuseum: '99999999-9999-9999-9999-999999999999',
   equipmentLift: '55555555-5555-5555-5555-555555555555',
   equipmentScanner: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+  consumableScrews: 'abababab-abab-abab-abab-abababababab',
   workOrder1: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
   workOrder2: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
   workOrder3: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
   assignment1: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
   assignment2: 'ffffffff-ffff-ffff-ffff-ffffffffffff',
   reservation1: '12121212-1212-1212-1212-121212121212',
+  schedule1: '18181818-1818-1818-1818-181818181818',
+  schedule2: '19191919-1919-1919-1919-191919191919',
   timesheet1: '13131313-1313-1313-1313-131313131313',
   timesheet2: '14141414-1414-1414-1414-141414141414',
   todo1: '15151515-1515-1515-1515-151515151515',
@@ -129,14 +132,14 @@ async function main() {
   const project = await prisma.project.upsert({
     where: { id: ids.projectMuseum },
     update: {
-      name: 'Museum Ny Fl�y',
+      name: 'Museum Ny Fløy',
       organizationId: organization.id,
       departmentId: department.id,
       locationId: location.id,
     },
     create: {
       id: ids.projectMuseum,
-      name: 'Museum Ny Fl�y',
+      name: 'Museum Ny Fløy',
       organizationId: organization.id,
       departmentId: department.id,
       locationId: location.id,
@@ -145,24 +148,42 @@ async function main() {
 
   await prisma.equipmentItem.upsert({
     where: { id: ids.equipmentLift },
-    update: { name: 'Lift 20m', serialNumber: 'LIFT-20-001', active: true },
+    update: { name: 'Lift 20m', serialNumber: 'LIFT-20-001', barcode: 'WF-LIFT-20M-001', type: 'EQUIPMENT', active: true },
     create: {
       id: ids.equipmentLift,
       organizationId: organization.id,
       name: 'Lift 20m',
       serialNumber: 'LIFT-20-001',
+      barcode: 'WF-LIFT-20M-001',
+      type: 'EQUIPMENT',
       active: true,
     },
   });
 
   await prisma.equipmentItem.upsert({
     where: { id: ids.equipmentScanner },
-    update: { name: 'Laser Scanner', serialNumber: 'SCAN-XL-007', active: true },
+    update: { name: 'Laser Scanner', serialNumber: 'SCAN-XL-007', barcode: 'QR:DEMO:SCAN-XL-007', type: 'EQUIPMENT', active: true },
     create: {
       id: ids.equipmentScanner,
       organizationId: organization.id,
       name: 'Laser Scanner',
       serialNumber: 'SCAN-XL-007',
+      barcode: 'QR:DEMO:SCAN-XL-007',
+      type: 'EQUIPMENT',
+      active: true,
+    },
+  });
+
+  await prisma.equipmentItem.upsert({
+    where: { id: ids.consumableScrews },
+    update: { name: 'Skruer 6x40', serialNumber: null, barcode: 'MAT-SCREW-6X40', type: 'CONSUMABLE', active: true },
+    create: {
+      id: ids.consumableScrews,
+      organizationId: organization.id,
+      name: 'Skruer 6x40',
+      serialNumber: null,
+      barcode: 'MAT-SCREW-6X40',
+      type: 'CONSUMABLE',
       active: true,
     },
   });
@@ -170,24 +191,26 @@ async function main() {
   const workOrder1 = await prisma.workOrder.upsert({
     where: { id: ids.workOrder1 },
     update: {
-      title: 'Monter st�lrammer i fl�y A',
-      description: 'Bruk lift og scanner for justering f�r feste.',
+      title: 'Monter stålrammer i fløy A',
+      description: 'Bruk lift og scanner for justering før feste.',
       status: 'IN_PROGRESS',
       departmentId: department.id,
       locationId: location.id,
       projectId: project.id,
+      planningOwnerUserId: planner.id,
       createdByUserId: planner.id,
       organizationId: organization.id,
       deletedAt: null,
     },
     create: {
       id: ids.workOrder1,
-      title: 'Monter st�lrammer i fl�y A',
-      description: 'Bruk lift og scanner for justering f�r feste.',
+      title: 'Monter stålrammer i fløy A',
+      description: 'Bruk lift og scanner for justering før feste.',
       status: 'IN_PROGRESS',
       departmentId: department.id,
       locationId: location.id,
       projectId: project.id,
+      planningOwnerUserId: planner.id,
       createdByUserId: planner.id,
       organizationId: organization.id,
     },
@@ -196,20 +219,22 @@ async function main() {
   const workOrder2 = await prisma.workOrder.upsert({
     where: { id: ids.workOrder2 },
     update: {
-      title: 'Kabeltrekking sceneomr�de',
+      title: 'Kabeltrekking sceneområde',
       description: 'Trekk og merk kabler i teknisk rom.',
       status: 'OPEN',
       locationId: location.id,
+      planningOwnerUserId: planner.id,
       createdByUserId: planner.id,
       organizationId: organization.id,
       deletedAt: null,
     },
     create: {
       id: ids.workOrder2,
-      title: 'Kabeltrekking sceneomr�de',
+      title: 'Kabeltrekking sceneområde',
       description: 'Trekk og merk kabler i teknisk rom.',
       status: 'OPEN',
       locationId: location.id,
+      planningOwnerUserId: planner.id,
       createdByUserId: planner.id,
       organizationId: organization.id,
     },
@@ -219,9 +244,10 @@ async function main() {
     where: { id: ids.workOrder3 },
     update: {
       title: 'Sluttkontroll av installasjon',
-      description: 'Sjekk l�spunkter og m�l avvik.',
+      description: 'Sjekk låspunkter og mål avvik.',
       status: 'DONE',
       projectId: project.id,
+      planningOwnerUserId: planner.id,
       createdByUserId: planner.id,
       organizationId: organization.id,
       deletedAt: null,
@@ -229,9 +255,10 @@ async function main() {
     create: {
       id: ids.workOrder3,
       title: 'Sluttkontroll av installasjon',
-      description: 'Sjekk l�spunkter og m�l avvik.',
+      description: 'Sjekk låspunkter og mål avvik.',
       status: 'DONE',
       projectId: project.id,
+      planningOwnerUserId: planner.id,
       createdByUserId: planner.id,
       organizationId: organization.id,
     },
@@ -266,6 +293,73 @@ async function main() {
     },
   });
 
+  await prisma.workOrderConsumable.upsert({
+    where: { id: '17171717-1717-1717-1717-171717171717' },
+    update: {
+      organizationId: organization.id,
+      workOrderId: workOrder1.id,
+      equipmentItemId: ids.consumableScrews,
+      quantity: 20,
+      note: 'Brukt i festepunkter ramme A1',
+    },
+    create: {
+      id: '17171717-1717-1717-1717-171717171717',
+      organizationId: organization.id,
+      workOrderId: workOrder1.id,
+      equipmentItemId: ids.consumableScrews,
+      quantity: 20,
+      note: 'Brukt i festepunkter ramme A1',
+    },
+  });
+
+  await prisma.workOrderSchedule.upsert({
+    where: { id: ids.schedule1 },
+    update: {
+      organizationId: organization.id,
+      workOrderId: workOrder1.id,
+      assigneeUserId: tech.id,
+      assigneeTeamId: null,
+      startAt: new Date('2026-03-02T07:00:00.000Z'),
+      endAt: new Date('2026-03-02T11:00:00.000Z'),
+      note: 'Montering rammer',
+      status: 'PLANNED',
+    },
+    create: {
+      id: ids.schedule1,
+      organizationId: organization.id,
+      workOrderId: workOrder1.id,
+      assigneeUserId: tech.id,
+      startAt: new Date('2026-03-02T07:00:00.000Z'),
+      endAt: new Date('2026-03-02T11:00:00.000Z'),
+      note: 'Montering rammer',
+      status: 'PLANNED',
+    },
+  });
+
+  await prisma.workOrderSchedule.upsert({
+    where: { id: ids.schedule2 },
+    update: {
+      organizationId: organization.id,
+      workOrderId: workOrder2.id,
+      assigneeUserId: null,
+      assigneeTeamId: team.id,
+      startAt: new Date('2026-03-03T08:00:00.000Z'),
+      endAt: new Date('2026-03-03T12:00:00.000Z'),
+      note: 'Team-oppdrag kabling',
+      status: 'PLANNED',
+    },
+    create: {
+      id: ids.schedule2,
+      organizationId: organization.id,
+      workOrderId: workOrder2.id,
+      assigneeTeamId: team.id,
+      startAt: new Date('2026-03-03T08:00:00.000Z'),
+      endAt: new Date('2026-03-03T12:00:00.000Z'),
+      note: 'Team-oppdrag kabling',
+      status: 'PLANNED',
+    },
+  });
+
   await prisma.timesheetEntry.upsert({
     where: { id: ids.timesheet1 },
     update: {
@@ -276,7 +370,7 @@ async function main() {
       activityType: 'INSTALLATION',
       workOrderId: workOrder1.id,
       projectId: project.id,
-      note: 'Montering og oppm�ling i fl�y A',
+      note: 'Montering og oppmåling i fløy A',
     },
     create: {
       id: ids.timesheet1,
@@ -287,7 +381,7 @@ async function main() {
       activityType: 'INSTALLATION',
       workOrderId: workOrder1.id,
       projectId: project.id,
-      note: 'Montering og oppm�ling i fl�y A',
+      note: 'Montering og oppmåling i fløy A',
     },
   });
 
@@ -323,7 +417,7 @@ async function main() {
       userId: tech.id,
       teamId: null,
       title: 'Send ferdigmelding for WO-1',
-      description: 'Oppdater bilder og kommentarfelt f�r innsending.',
+      description: 'Oppdater bilder og kommentarfelt før innsending.',
       status: 'OPEN',
       dueDate: new Date('2026-03-03T15:00:00.000Z'),
     },
@@ -332,7 +426,7 @@ async function main() {
       organizationId: organization.id,
       userId: tech.id,
       title: 'Send ferdigmelding for WO-1',
-      description: 'Oppdater bilder og kommentarfelt f�r innsending.',
+      description: 'Oppdater bilder og kommentarfelt før innsending.',
       status: 'OPEN',
       dueDate: new Date('2026-03-03T15:00:00.000Z'),
     },
@@ -344,8 +438,8 @@ async function main() {
       organizationId: organization.id,
       userId: null,
       teamId: team.id,
-      title: 'Ukesjekk verkt�ybil',
-      description: 'Sjekk batterier, m�lere og sikkerhetsutstyr.',
+      title: 'Ukesjekk verktøybil',
+      description: 'Sjekk batterier, målere og sikkerhetsutstyr.',
       status: 'IN_PROGRESS',
       dueDate: new Date('2026-03-04T11:00:00.000Z'),
     },
@@ -353,8 +447,8 @@ async function main() {
       id: ids.todo2,
       organizationId: organization.id,
       teamId: team.id,
-      title: 'Ukesjekk verkt�ybil',
-      description: 'Sjekk batterier, m�lere og sikkerhetsutstyr.',
+      title: 'Ukesjekk verktøybil',
+      description: 'Sjekk batterier, målere og sikkerhetsutstyr.',
       status: 'IN_PROGRESS',
       dueDate: new Date('2026-03-04T11:00:00.000Z'),
     },
@@ -407,4 +501,5 @@ async function main() {
 }
 
 main().finally(async () => prisma.$disconnect());
+
 

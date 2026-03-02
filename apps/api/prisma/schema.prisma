@@ -25,6 +25,8 @@ model Organization {
   todoItems   TodoItem[]
   dashboards  Dashboard[]
   auditLogs   AuditLog[]
+  workOrderConsumables WorkOrderConsumable[]
+  workOrderSchedules WorkOrderSchedule[]
 }
 
 model Department {
@@ -74,6 +76,8 @@ model User {
   teamMemberships TeamMembership[]
   assignments    Assignment[] @relation("AssignmentUser")
   workOrdersCreated WorkOrder[] @relation("WorkOrderCreator")
+  plannedWorkOrders WorkOrder[] @relation("WorkOrderPlanningOwner")
+  scheduleEntries WorkOrderSchedule[] @relation("ScheduleUser")
   timesheetEntries TimesheetEntry[]
   todoItems      TodoItem[]
   dashboards     Dashboard[]
@@ -110,6 +114,7 @@ model Team {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   memberships    TeamMembership[]
   assignments    Assignment[] @relation("AssignmentTeam")
+  scheduleEntries WorkOrderSchedule[] @relation("ScheduleTeam")
   todoItems      TodoItem[]
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -185,9 +190,13 @@ model WorkOrder {
   project        Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   createdByUserId String
   createdByUser   User @relation("WorkOrderCreator", fields: [createdByUserId], references: [id])
+  planningOwnerUserId String?
+  planningOwnerUser   User? @relation("WorkOrderPlanningOwner", fields: [planningOwnerUserId], references: [id], onDelete: SetNull)
   assignments    Assignment[]
+  schedules      WorkOrderSchedule[]
   tasks          WorkTask[]
   reservations   EquipmentReservation[]
+  consumables    WorkOrderConsumable[]
   timesheetEntries TimesheetEntry[]
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -219,8 +228,54 @@ model EquipmentItem {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   name           String
   serialNumber   String?
+  barcode        String?
+  type           EquipmentItemType @default(EQUIPMENT)
   active         Boolean @default(true)
   reservations   EquipmentReservation[]
+  consumptions   WorkOrderConsumable[]
+  @@unique([organizationId, barcode])
+}
+
+enum EquipmentItemType {
+  EQUIPMENT
+  CONSUMABLE
+}
+
+model WorkOrderConsumable {
+  id              String @id @default(uuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  workOrderId     String
+  workOrder       WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  equipmentItemId String
+  equipmentItem   EquipmentItem @relation(fields: [equipmentItemId], references: [id], onDelete: Cascade)
+  quantity        Int @default(1)
+  note            String?
+  createdAt       DateTime @default(now())
+
+  @@index([workOrderId, createdAt])
+  @@index([equipmentItemId])
+}
+
+model WorkOrderSchedule {
+  id             String @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  workOrderId    String
+  workOrder      WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  assigneeUserId String?
+  assigneeUser   User? @relation("ScheduleUser", fields: [assigneeUserId], references: [id], onDelete: SetNull)
+  assigneeTeamId String?
+  assigneeTeam   Team? @relation("ScheduleTeam", fields: [assigneeTeamId], references: [id], onDelete: SetNull)
+  startAt        DateTime
+  endAt          DateTime
+  note           String?
+  status         String @default("PLANNED")
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId, assigneeUserId, startAt])
+  @@index([organizationId, assigneeTeamId, startAt])
+  @@index([organizationId, workOrderId, startAt])
 }
 
 model EquipmentReservation {
