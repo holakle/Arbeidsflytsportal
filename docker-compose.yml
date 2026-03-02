@@ -17,6 +17,31 @@
       timeout: 5s
       retries: 10
 
+  https:
+    image: caddy:2.10.0
+    container_name: workflow-https
+    restart: unless-stopped
+    profiles: ["https"]
+    env_file:
+      - .env
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: workflow-tunnel
+    restart: unless-stopped
+    profiles: ["tunnel"]
+    command: tunnel --no-autoupdate --url http://host.docker.internal:80
+    depends_on:
+      - https
+
 volumes:
   postgres_data:
-
+  caddy_data:
+  caddy_config:

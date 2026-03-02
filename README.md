@@ -30,6 +30,8 @@ Produksjonsrettet monorepo med `pnpm workspaces` + `turborepo` for montasjeplatt
 - `GET/POST/GET:id/PATCH:id/DELETE:id /workorders`
 - `POST /workorders/:id/assign`
 - `GET /equipment`
+- `GET /equipment/lookup?code=...`
+- `POST /equipment/:id/barcode`
 - `POST /equipment/reserve`
 - `GET/POST/PATCH/DELETE /timesheets`
 - `GET /timesheets/weekly-summary`
@@ -48,8 +50,11 @@ Produksjonsrettet monorepo med `pnpm workspaces` + `turborepo` for montasjeplatt
    - `pnpm --filter @apps/api prisma:generate`
    - `pnpm --filter @apps/api prisma:migrate:dev`
    - `pnpm --filter @apps/api prisma:seed`
+   - Hvis du har gammel lokal DB med inkonsistent migrasjonshistorikk: `pnpm --filter @apps/api exec prisma migrate reset --force`
 6. Kjør alt:
    - `pnpm dev`
+7. Scanner pilot:
+   - Åpne `http://localhost:3000/scan`
 
 ## Dev token (lokal auth)
 Generer et dev JWT med claims som matcher seed-data (`planner@demo.no`):
@@ -69,6 +74,15 @@ Opprett `apps/web/.env.local`:
 NEXT_PUBLIC_API_URL=http://localhost:3001
 NEXT_PUBLIC_DEV_TOKEN=<token>
 ```
+
+## Mobil scanning over HTTPS (dev)
+- LAN med Caddy (lokalt sertifikat):
+  - Sett `LAN_HOST` i `.env`, f.eks. `workflow.local`
+  - Start: `docker compose --profile https up -d https`
+  - Sett `NEXT_PUBLIC_API_URL=https://<LAN_HOST>/api` i `apps/web/.env.local`
+- Tunnel uten lokal CA:
+  - Sett `CLOUDFLARE_TUNNEL_TOKEN` i `.env`
+  - Start: `docker compose --profile https --profile tunnel up -d https tunnel`
 
 ## Kvalitet
 - `pnpm lint`
