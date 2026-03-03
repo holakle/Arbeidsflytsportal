@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import JsBarcode from 'jsbarcode';
 import { apiClient } from '@/lib/api-client';
 import { getDevToken } from '@/lib/auth';
@@ -71,53 +71,96 @@ function BarcodePreview({ code }: { code: string | null }) {
 }
 
 export default function EquipmentDetailPage() {
+  const router = useRouter();
   const token = getDevToken();
   const params = useParams<{ id: string }>();
   const equipmentId = params?.id ?? '';
   const [item, setItem] = useState<EquipmentItem | null>(null);
   const [reservations, setReservations] = useState<EquipmentReservation[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deletingEquipment, setDeletingEquipment] = useState(false);
+  const [deletingReservationId, setDeletingReservationId] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function load() {
-      if (!token) {
-        setError('Mangler NEXT_PUBLIC_DEV_TOKEN i apps/web/.env.local');
-        setLoading(false);
-        return;
-      }
-      try {
-        const [allItems, reservationRes] = await Promise.all([
-          apiClient(token).listEquipment(),
-          apiClient(token).listEquipmentReservations(
-            `page=1&limit=100&equipmentItemId=${equipmentId}`,
-          ),
-        ]);
-
-        const found =
-          (allItems as EquipmentItem[]).find((candidate) => candidate.id === equipmentId) ?? null;
-        setItem(found);
-        setReservations((reservationRes.items ?? []) as EquipmentReservation[]);
-        setError(found ? null : 'Fant ikke utstyr med denne ID-en i din organisasjon.');
-      } catch (err) {
-        setError(toErrorMessage(err, 'Kunne ikke hente utstyrsinformasjon.'));
-      } finally {
-        setLoading(false);
-      }
+  const loadData = useCallback(async () => {
+    if (!token) {
+      setError('Mangler NEXT_PUBLIC_DEV_TOKEN i apps/web/.env.local');
+      setLoading(false);
+      return;
     }
 
+    try {
+      const [allItems, reservationRes] = await Promise.all([
+        apiClient(token).listEquipment(),
+        apiClient(token).listEquipmentReservations(
+          `page=1&limit=100&equipmentItemId=${equipmentId}`,
+        ),
+      ]);
+
+      const found =
+        (allItems as EquipmentItem[]).find((candidate) => candidate.id === equipmentId) ?? null;
+      setItem(found);
+      setReservations((reservationRes.items ?? []) as EquipmentReservation[]);
+      setError(found ? null : 'Fant ikke utstyr med denne ID-en i din organisasjon.');
+    } catch (err) {
+      setError(toErrorMessage(err, 'Kunne ikke hente utstyrsinformasjon.'));
+    } finally {
+      setLoading(false);
+    }
+  }, [equipmentId, token]);
+
+  useEffect(() => {
     if (equipmentId) {
-      void load();
+      void loadData();
     } else {
       setError('Mangler equipment-id i URL.');
       setLoading(false);
     }
-  }, [equipmentId, token]);
+  }, [equipmentId, loadData]);
 
   const activeReservation = useMemo(() => {
     const now = new Date();
     return reservations.find((r) => new Date(r.startAt) <= now && now <= new Date(r.endAt)) ?? null;
   }, [reservations]);
+
+  async function removeEquipmentItem() {
+    if (!token || !item || deletingEquipment) return;
+    const ok = window.confirm('Er du sikker på at du vil slette/deaktivere dette utstyret?');
+    if (!ok) return;
+
+    setDeletingEquipment(true);
+    try {
+      const res = await apiClient(token).deleteEquipmentItem(item.id);
+      setSuccess(`Utstyr slettet. Avsluttede reservasjoner: ${res.canceledReservations}.`);
+      setError(null);
+      router.push('/equipment');
+    } catch (err) {
+      setSuccess(null);
+      setError(toErrorMessage(err, 'Kunne ikke slette utstyr.'));
+    } finally {
+      setDeletingEquipment(false);
+    }
+  }
+
+  async function removeReservation(reservationId: string) {
+    if (!token || deletingReservationId) return;
+    const ok = window.confirm('Slette denne reservasjonen?');
+    if (!ok) return;
+
+    setDeletingReservationId(reservationId);
+    try {
+      await apiClient(token).deleteEquipmentReservation(reservationId);
+      setSuccess('Reservasjon slettet.');
+      setError(null);
+      await loadData();
+    } catch (err) {
+      setSuccess(null);
+      setError(toErrorMessage(err, 'Kunne ikke slette reservasjon.'));
+    } finally {
+      setDeletingReservationId(null);
+    }
+  }
 
   return (
     <main className="space-y-4">
@@ -137,9 +180,24 @@ export default function EquipmentDetailPage() {
           {error}
         </div>
       ) : null}
+      {success ? (
+        <div className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          {success}
+        </div>
+      ) : null}
 
       {!loading && item ? (
         <>
+          <div className="flex justify-end">
+            <button
+              className="rounded border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+              onClick={() => void removeEquipmentItem()}
+              disabled={deletingEquipment}
+            >
+              {deletingEquipment ? 'Sletter...' : 'Slett utstyr'}
+            </button>
+          </div>
+
           <section className="grid gap-4 rounded border bg-white p-4 md:grid-cols-2">
             <div className="space-y-2">
               <h2 className="text-lg font-medium">{item.name}</h2>
@@ -199,6 +257,7 @@ export default function EquipmentDetailPage() {
                       <th className="py-2">Workorder</th>
                       <th className="py-2">Start</th>
                       <th className="py-2">Slutt</th>
+                      <th className="py-2">Handling</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -207,6 +266,15 @@ export default function EquipmentDetailPage() {
                         <td className="py-2">{reservation.workOrder?.title ?? '-'}</td>
                         <td className="py-2">{formatDate(reservation.startAt)}</td>
                         <td className="py-2">{formatDate(reservation.endAt)}</td>
+                        <td className="py-2">
+                          <button
+                            className="rounded border border-rose-300 bg-rose-50 px-2 py-1 text-xs text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+                            onClick={() => void removeReservation(reservation.id)}
+                            disabled={deletingReservationId === reservation.id}
+                          >
+                            {deletingReservationId === reservation.id ? 'Sletter...' : 'Slett'}
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { getDevToken } from '@/lib/auth';
@@ -39,6 +39,7 @@ function parseLines(raw: string) {
 }
 
 export default function EmployeeDetailPage() {
+  const router = useRouter();
   const token = getDevToken();
   const params = useParams<{ id: string }>();
   const employeeId = params?.id ?? '';
@@ -52,10 +53,19 @@ export default function EmployeeDetailPage() {
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [deletingEmployee, setDeletingEmployee] = useState(false);
 
   const canEdit = useMemo(() => {
     if (!me || !employeeId) return false;
     if (me.user.id === employeeId) return true;
+    return me.roles.some(
+      (role) => role === 'planner' || role === 'org_admin' || role === 'system_admin',
+    );
+  }, [employeeId, me]);
+
+  const canDelete = useMemo(() => {
+    if (!me || !employeeId) return false;
+    if (me.user.id === employeeId) return false;
     return me.roles.some(
       (role) => role === 'planner' || role === 'org_admin' || role === 'system_admin',
     );
@@ -118,6 +128,24 @@ export default function EmployeeDetailPage() {
     setError(null);
   }
 
+  async function removeEmployee() {
+    if (!token || !employeeId || deletingEmployee || !canDelete) return;
+    const ok = window.confirm('Er du sikker pa at du vil slette denne personen?');
+    if (!ok) return;
+
+    setDeletingEmployee(true);
+    try {
+      await apiClient(token).deleteDevUser(employeeId);
+      window.localStorage.removeItem(profileStorageKey(employeeId));
+      router.push('/mannskap');
+    } catch (err) {
+      setSuccess(null);
+      setError(err instanceof Error ? err.message : 'Kunne ikke slette person.');
+    } finally {
+      setDeletingEmployee(false);
+    }
+  }
+
   return (
     <main className="space-y-4">
       <div className="flex items-center justify-between">
@@ -142,7 +170,18 @@ export default function EmployeeDetailPage() {
       ) : null}
 
       <section className="rounded border bg-white p-4">
-        <h2 className="mb-2 text-lg">Ansatt</h2>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-lg">Ansatt</h2>
+          {canDelete ? (
+            <button
+              className="rounded border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+              onClick={() => void removeEmployee()}
+              disabled={deletingEmployee}
+            >
+              {deletingEmployee ? 'Sletter...' : 'Slett person'}
+            </button>
+          ) : null}
+        </div>
         {employee ? (
           <div className="space-y-1 text-sm">
             <p>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
 import { getDevToken } from '@/lib/auth';
@@ -113,6 +113,7 @@ const statuses = [
 
 export default function WorkOrderDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const id = params?.id;
   const token = getDevToken();
 
@@ -151,6 +152,7 @@ export default function WorkOrderDetailPage() {
   const [scheduleNote, setScheduleNote] = useState('');
   const [attachments, setAttachments] = useState<AttachmentEntry[]>([]);
   const [sessionStatus, setSessionStatus] = useState<string | null>(null);
+  const [deletingWorkOrder, setDeletingWorkOrder] = useState(false);
 
   const planningOwnerLabel = useMemo(
     () => users.find((u) => u.id === planningOwnerUserId)?.displayName ?? '-',
@@ -382,6 +384,23 @@ export default function WorkOrderDetailPage() {
     }
   }
 
+  async function removeWorkOrder() {
+    if (!token || !id || deletingWorkOrder) return;
+    const ok = window.confirm('Er du sikker på at du vil slette denne arbeidsordren?');
+    if (!ok) return;
+
+    setDeletingWorkOrder(true);
+    try {
+      await apiClient(token).deleteWorkOrder(id);
+      router.push('/workorders');
+    } catch (err) {
+      setSuccess(null);
+      setError(toErrorMessage(err, 'Kunne ikke slette arbeidsordre.'));
+    } finally {
+      setDeletingWorkOrder(false);
+    }
+  }
+
   return (
     <main className="space-y-4">
       <div className="flex items-center justify-between">
@@ -400,6 +419,13 @@ export default function WorkOrderDetailPage() {
         <Link className="rounded border px-3 py-2 text-sm hover:bg-slate-50" href="/planner">
           Tilbake til Planner
         </Link>
+        <button
+          className="rounded border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+          onClick={() => void removeWorkOrder()}
+          disabled={deletingWorkOrder || !workOrder}
+        >
+          {deletingWorkOrder ? 'Sletter...' : 'Slett arbeidsordre'}
+        </button>
       </div>
 
       {error ? (
