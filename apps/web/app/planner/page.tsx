@@ -7,7 +7,13 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import nbLocale from '@fullcalendar/core/locales/nb';
-import type { DatesSetArg, EventClickArg, EventContentArg, EventInput } from '@fullcalendar/core';
+import type {
+  CalendarOptions,
+  DatesSetArg,
+  EventClickArg,
+  EventContentArg,
+  EventInput,
+} from '@fullcalendar/core';
 import { apiClient } from '@/lib/api-client';
 import { getDevToken } from '@/lib/auth';
 import { ConnectionStatus } from '@/components/dev/connection-status';
@@ -64,6 +70,9 @@ type CalendarSelectArg = {
   start: Date;
   end: Date;
 };
+
+type CalendarEventDropArg = Parameters<NonNullable<CalendarOptions['eventDrop']>>[0];
+type CalendarEventResizeArg = Parameters<NonNullable<CalendarOptions['eventResize']>>[0];
 
 function toErrorMessage(error: unknown, fallback: string) {
   if (error instanceof Error) return error.message;
@@ -148,6 +157,7 @@ function PlannerPageInner() {
   const [conflictModalOpen, setConflictModalOpen] = useState(false);
   const [selectionConflicts, setSelectionConflicts] = useState<ScheduleEvent[]>([]);
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
+  const [movingEventId, setMovingEventId] = useState<string | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -563,6 +573,74 @@ function PlannerPageInner() {
     }
   }
 
+  async function moveCalendarEvent(
+    eventId: string,
+    eventType: ScheduleEvent['type'],
+    startAt: string,
+    endAt: string,
+    revert: () => void,
+  ) {
+    if (!token) {
+      revert();
+      return;
+    }
+    if (movingEventId) {
+      revert();
+      return;
+    }
+
+    setMovingEventId(eventId);
+    try {
+      if (eventType === 'workorder_schedule') {
+        await apiClient(token).patchSchedule(eventId, {
+          startAt,
+          endAt,
+        });
+      } else {
+        await apiClient(token).updateEquipmentReservation(eventId, {
+          startAt,
+          endAt,
+        });
+      }
+
+      setSuccess('Booking flyttet.');
+      setError(null);
+      await loadSchedule();
+    } catch (err) {
+      revert();
+      setSuccess(null);
+      setError(toErrorMessage(err, 'Kunne ikke flytte booking.'));
+    } finally {
+      setMovingEventId(null);
+    }
+  }
+
+  function onCalendarEventDrop(arg: CalendarEventDropArg) {
+    const ext = arg.event.extendedProps as CalendarEventExtended;
+    const startAt = arg.event.start?.toISOString();
+    const endAt = arg.event.end?.toISOString();
+    if (!startAt || !endAt) {
+      arg.revert();
+      setError('Ugyldig tidsrom etter flytting.');
+      return;
+    }
+
+    void moveCalendarEvent(arg.event.id, ext.type, startAt, endAt, arg.revert);
+  }
+
+  function onCalendarEventResize(arg: CalendarEventResizeArg) {
+    const ext = arg.event.extendedProps as CalendarEventExtended;
+    const startAt = arg.event.start?.toISOString();
+    const endAt = arg.event.end?.toISOString();
+    if (!startAt || !endAt) {
+      arg.revert();
+      setError('Ugyldig tidsrom etter endring.');
+      return;
+    }
+
+    void moveCalendarEvent(arg.event.id, ext.type, startAt, endAt, arg.revert);
+  }
+
   function calendarPrev() {
     const api = calendarRef.current?.getApi();
     if (!api) return;
@@ -799,6 +877,11 @@ function PlannerPageInner() {
                 selectable
                 selectMirror
                 select={onCalendarSelect}
+                editable
+                eventStartEditable
+                eventDurationEditable
+                eventDrop={onCalendarEventDrop}
+                eventResize={onCalendarEventResize}
                 height="auto"
                 firstDay={1}
                 nowIndicator

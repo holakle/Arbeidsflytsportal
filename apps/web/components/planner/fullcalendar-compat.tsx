@@ -28,6 +28,11 @@ export type FullCalendarCompatProps = {
   selectable?: CalendarOptions['selectable'];
   selectMirror?: CalendarOptions['selectMirror'];
   select?: CalendarOptions['select'];
+  editable?: CalendarOptions['editable'];
+  eventStartEditable?: CalendarOptions['eventStartEditable'];
+  eventDurationEditable?: CalendarOptions['eventDurationEditable'];
+  eventDrop?: CalendarOptions['eventDrop'];
+  eventResize?: CalendarOptions['eventResize'];
 };
 
 type FullCalendarLike = {
