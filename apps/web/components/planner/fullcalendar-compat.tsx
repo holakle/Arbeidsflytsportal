@@ -24,6 +24,10 @@ export type FullCalendarCompatProps = {
   slotMinTime?: CalendarOptions['slotMinTime'];
   slotMaxTime?: CalendarOptions['slotMaxTime'];
   dayMaxEventRows?: CalendarOptions['dayMaxEventRows'];
+  eventContent?: CalendarOptions['eventContent'];
+  selectable?: CalendarOptions['selectable'];
+  selectMirror?: CalendarOptions['selectMirror'];
+  select?: CalendarOptions['select'];
 };
 
 type FullCalendarLike = {

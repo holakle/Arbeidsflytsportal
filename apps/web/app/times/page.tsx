@@ -13,6 +13,8 @@ type TimesheetEntry = {
   note: string | null;
   workOrderId: string | null;
   projectId: string | null;
+  workOrder?: { id: string; title: string } | null;
+  project?: { id: string; name: string } | null;
 };
 
 type WeeklySummary = {
@@ -26,6 +28,7 @@ type WorkOrder = {
   title: string;
   status: string;
   projectId: string | null;
+  project?: { id: string; name: string } | null;
 };
 
 type DevUser = {
@@ -102,7 +105,7 @@ export default function TimesPage() {
     for (const wo of workOrders) {
       if (!wo.projectId) continue;
       if (!map.has(wo.projectId)) {
-        map.set(wo.projectId, `Project ${wo.projectId.slice(0, 8)}`);
+        map.set(wo.projectId, wo.project?.name ?? `Prosjekt ${wo.projectId.slice(0, 8)}`);
       }
     }
     return [...map.entries()].map(([id, label]) => ({ id, label }));
@@ -277,7 +280,7 @@ export default function TimesPage() {
           </select>
 
           <select className="rounded border px-3 py-2" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-            <option value="">Ingen project</option>
+            <option value="">Ingen prosjekt</option>
             {projectOptions.map((project) => (
               <option key={project.id} value={project.id}>
                 {project.label}

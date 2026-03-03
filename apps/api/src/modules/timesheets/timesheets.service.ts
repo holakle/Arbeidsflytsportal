@@ -35,6 +35,20 @@ export class TimesheetsService {
           : {}),
       },
       orderBy: { date: 'desc' },
+      include: {
+        workOrder: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+        project: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
     });
   }
 

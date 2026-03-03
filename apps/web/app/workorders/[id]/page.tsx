@@ -16,6 +16,10 @@ type WorkOrder = {
   locationId: string | null;
   projectId: string | null;
   planningOwnerUserId: string | null;
+  department?: { id: string; name: string } | null;
+  location?: { id: string; name: string } | null;
+  project?: { id: string; name: string } | null;
+  assignments?: Array<{ id: string; assigneeUserId: string | null; assigneeTeamId: string | null }>;
 };
 
 type DevUser = {
@@ -95,6 +99,7 @@ export default function WorkOrderDetailPage() {
   const [locationId, setLocationId] = useState('');
   const [projectId, setProjectId] = useState('');
   const [planningOwnerUserId, setPlanningOwnerUserId] = useState('');
+  const [assignmentUserId, setAssignmentUserId] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -138,6 +143,10 @@ export default function WorkOrderDetailPage() {
       setProjectId(wo.projectId ?? '');
       setPlanningOwnerUserId(wo.planningOwnerUserId ?? '');
       setUsers(devUsers);
+      if (!assignmentUserId && devUsers.length > 0) {
+        const firstUser = devUsers.at(0);
+        if (firstUser) setAssignmentUserId(firstUser.id);
+      }
 
       setConsumables(consumableRes as WorkOrderConsumable[]);
       const catalog = catalogRes as ConsumableItem[];
@@ -232,6 +241,19 @@ export default function WorkOrderDetailPage() {
     }
   }
 
+  async function addAssignment() {
+    if (!token || !id || !assignmentUserId) return;
+    try {
+      await apiClient(token).assignWorkOrder(id, { assigneeUserId: assignmentUserId });
+      setSuccess('Tildeling opprettet.');
+      setError(null);
+      await load();
+    } catch (err) {
+      setSuccess(null);
+      setError(toErrorMessage(err, 'Kunne ikke opprette tildeling.'));
+    }
+  }
+
   async function deleteScheduleEntry(scheduleId: string) {
     if (!token || !id) return;
     try {
@@ -270,6 +292,9 @@ export default function WorkOrderDetailPage() {
         <div>
           <h1 className="text-2xl font-semibold">Arbeidsordre</h1>
           <p className="text-sm text-slate-600">{id}</p>
+          <p className="text-xs text-slate-600">
+            Plassering: {workOrder?.department?.name ?? '-'} / {workOrder?.location?.name ?? '-'} / {workOrder?.project?.name ?? '-'}
+          </p>
         </div>
         <ConnectionStatus />
       </div>
@@ -301,12 +326,59 @@ export default function WorkOrderDetailPage() {
               </option>
             ))}
           </select>
-          <input className="rounded border px-3 py-2" value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} placeholder="Department ID (valgfri)" />
-          <input className="rounded border px-3 py-2" value={locationId} onChange={(e) => setLocationId(e.target.value)} placeholder="Location ID (valgfri)" />
-          <input className="rounded border px-3 py-2" value={projectId} onChange={(e) => setProjectId(e.target.value)} placeholder="Project ID (valgfri)" />
+          <input className="rounded border px-3 py-2" value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} placeholder="Avdeling ID (valgfri)" />
+          <input className="rounded border px-3 py-2" value={locationId} onChange={(e) => setLocationId(e.target.value)} placeholder="Lokasjon ID (valgfri)" />
+          <input className="rounded border px-3 py-2" value={projectId} onChange={(e) => setProjectId(e.target.value)} placeholder="Prosjekt ID (valgfri)" />
           <button className="rounded bg-accent px-3 py-2 text-white md:col-span-2" onClick={() => void save()} disabled={!workOrder}>
             Lagre
           </button>
+        </div>
+      </section>
+
+      <section className="rounded border bg-white p-4">
+        <h2 className="mb-2 text-lg">Tildelinger</h2>
+        <div className="mb-3 grid gap-2 md:grid-cols-3">
+          <select className="rounded border px-3 py-2 md:col-span-2" value={assignmentUserId} onChange={(e) => setAssignmentUserId(e.target.value)}>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.displayName}
+              </option>
+            ))}
+          </select>
+          <button className="rounded bg-accent px-3 py-2 text-white" onClick={() => void addAssignment()}>
+            Tildel bruker
+          </button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead>
+              <tr className="border-b text-slate-600">
+                <th className="py-2">Bruker</th>
+                <th className="py-2">Team</th>
+                <th className="py-2">XOR</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(workOrder?.assignments ?? []).map((assignment) => {
+                const assignedUser = users.find((user) => user.id === assignment.assigneeUserId);
+                const xorValid = Boolean(assignment.assigneeUserId) !== Boolean(assignment.assigneeTeamId);
+                return (
+                  <tr key={assignment.id} className="border-b">
+                    <td className="py-2">{assignedUser?.displayName ?? assignment.assigneeUserId ?? '-'}</td>
+                    <td className="py-2">{assignment.assigneeTeamId ?? '-'}</td>
+                    <td className="py-2">{xorValid ? 'OK' : 'INVALID'}</td>
+                  </tr>
+                );
+              })}
+              {(workOrder?.assignments ?? []).length === 0 ? (
+                <tr>
+                  <td className="py-2 text-slate-500" colSpan={3}>
+                    Ingen tildelinger enda.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
         </div>
       </section>
 

@@ -10,6 +10,20 @@ export const timesheetEntrySchema = z.object({
   activityType: z.enum(activityTypes),
   workOrderId: z.string().uuid().nullable(),
   projectId: z.string().uuid().nullable(),
+  workOrder: z
+    .object({
+      id: z.string().uuid(),
+      title: z.string().min(1),
+    })
+    .nullable()
+    .optional(),
+  project: z
+    .object({
+      id: z.string().uuid(),
+      name: z.string().min(1),
+    })
+    .nullable()
+    .optional(),
   note: z.string().nullable(),
 });
 

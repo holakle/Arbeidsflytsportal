@@ -119,7 +119,7 @@ function LoginPageContent() {
 
       <div className="flex gap-2">
         <Link className="rounded border px-3 py-2 text-sm" href="/overview">
-          Til Oversikt (MVP)
+          Til Oversikt
         </Link>
         <Link className="rounded border px-3 py-2 text-sm" href="/planner">
           Til Planner

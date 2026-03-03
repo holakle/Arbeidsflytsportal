@@ -29,7 +29,12 @@ export class WorkOrdersService {
         orderBy: { createdAt: 'desc' },
         skip: (query.page - 1) * query.limit,
         take: query.limit,
-        include: { assignments: true },
+        include: {
+          assignments: true,
+          department: { select: { id: true, name: true } },
+          location: { select: { id: true, name: true } },
+          project: { select: { id: true, name: true } },
+        },
       }),
       this.prisma.workOrder.count({ where }),
     ]);
@@ -53,7 +58,15 @@ export class WorkOrdersService {
   }
 
   async get(organizationId: string, id: string) {
-    const wo = await this.prisma.workOrder.findFirst({ where: { id, organizationId, deletedAt: null }, include: { assignments: true } });
+    const wo = await this.prisma.workOrder.findFirst({
+      where: { id, organizationId, deletedAt: null },
+      include: {
+        assignments: true,
+        department: { select: { id: true, name: true } },
+        location: { select: { id: true, name: true } },
+        project: { select: { id: true, name: true } },
+      },
+    });
     if (!wo) throw new NotFoundException('WorkOrder not found');
     return wo;
   }

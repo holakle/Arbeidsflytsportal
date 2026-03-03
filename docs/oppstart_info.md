@@ -25,6 +25,20 @@
 4. Start TryCloudflare ved behov: `pnpm tunnel:up`
 5. Hent tunnel-URL: `docker logs workflow-tunnel --tail 80`
 
+## Notat: Etter mistet internettilgang (Cloudflare)
+Quick tunnel mister ofte forbindelsen ved nettverksbrudd. Kjør dette:
+
+1. Restart tunnel:
+   - `pnpm tunnel:down`
+   - `pnpm tunnel:up`
+2. Hent ny URL:
+   - `docker logs workflow-tunnel --tail 80`
+3. Verifiser at appene fortsatt kjører lokalt:
+   - API: `http://localhost:3001/health`
+   - Web: `http://localhost:3000/login`
+
+Merk: TryCloudflare quick tunnel får ofte ny URL etter restart.
+
 ## Mobil HTTPS (valgfritt)
 - Caddy LAN:
   - `docker compose --profile https up -d https`

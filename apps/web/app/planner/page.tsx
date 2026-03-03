@@ -7,7 +7,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import nbLocale from '@fullcalendar/core/locales/nb';
-import type { DatesSetArg, EventClickArg, EventInput } from '@fullcalendar/core';
+import type { DatesSetArg, EventClickArg, EventContentArg, EventInput } from '@fullcalendar/core';
 import { apiClient } from '@/lib/api-client';
 import { getDevToken } from '@/lib/auth';
 import { ConnectionStatus } from '@/components/dev/connection-status';
@@ -57,6 +57,11 @@ type CalendarEventExtended = {
   workOrderRef?: ScheduleEvent['workOrderRef'];
 };
 
+type CalendarSelectArg = {
+  start: Date;
+  end: Date;
+};
+
 function toErrorMessage(error: unknown, fallback: string) {
   if (error instanceof Error) return error.message;
   return fallback;
@@ -66,6 +71,15 @@ function toIso(localDateTime: string) {
   const date = new Date(localDateTime);
   if (Number.isNaN(date.getTime())) return null;
   return date.toISOString();
+}
+
+function toLocalDateTimeValue(value: Date) {
+  const y = value.getFullYear();
+  const m = String(value.getMonth() + 1).padStart(2, '0');
+  const d = String(value.getDate()).padStart(2, '0');
+  const h = String(value.getHours()).padStart(2, '0');
+  const min = String(value.getMinutes()).padStart(2, '0');
+  return `${y}-${m}-${d}T${h}:${min}`;
 }
 
 function formatDate(value: string) {
@@ -122,6 +136,14 @@ function PlannerPageInner() {
   const [selectedEquipmentFilterId, setSelectedEquipmentFilterId] = useState('ALL');
   const [scheduleEvents, setScheduleEvents] = useState<ScheduleEvent[]>([]);
   const [selectedCalendarEvent, setSelectedCalendarEvent] = useState<ScheduleEvent | null>(null);
+  const [selectionModalOpen, setSelectionModalOpen] = useState(false);
+  const [selectionStart, setSelectionStart] = useState('');
+  const [selectionEnd, setSelectionEnd] = useState('');
+  const [selectionWorkOrderId, setSelectionWorkOrderId] = useState('');
+  const [selectionUserId, setSelectionUserId] = useState('');
+  const [selectionEquipmentId, setSelectionEquipmentId] = useState('');
+  const [conflictModalOpen, setConflictModalOpen] = useState(false);
+  const [selectionConflicts, setSelectionConflicts] = useState<ScheduleEvent[]>([]);
 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -379,6 +401,10 @@ function PlannerPageInner() {
 
   function onEventClick(arg: EventClickArg) {
     const ext = arg.event.extendedProps as CalendarEventExtended;
+    if (ext.workOrderRef?.id) {
+      setSelectedCalendarEvent(null);
+      return;
+    }
     setSelectedCalendarEvent({
       id: arg.event.id,
       title: arg.event.title,
@@ -390,6 +416,50 @@ function PlannerPageInner() {
       resourceRef: ext.resourceRef,
       workOrderRef: ext.workOrderRef,
     });
+  }
+
+  function onCalendarSelect(arg: CalendarSelectArg) {
+    if (arg.start >= arg.end) return;
+
+    const nextWorkOrderId = selectedWorkOrderId || workOrders.at(0)?.id || '';
+    const nextUserId =
+      selectedUserFilterId !== 'ALL'
+        ? selectedUserFilterId
+        : assigneeUserId || users.at(0)?.id || '';
+    const nextEquipmentId =
+      selectedEquipmentFilterId !== 'ALL'
+        ? selectedEquipmentFilterId
+        : equipmentItemId || equipmentItems.at(0)?.id || '';
+
+    setSelectionStart(toLocalDateTimeValue(arg.start));
+    setSelectionEnd(toLocalDateTimeValue(arg.end));
+    setSelectionWorkOrderId(nextWorkOrderId);
+    setSelectionUserId(nextUserId);
+    setSelectionEquipmentId(nextEquipmentId);
+    setSelectionModalOpen(true);
+  }
+
+  function renderEventContent(arg: EventContentArg) {
+    const ext = arg.event.extendedProps as CalendarEventExtended;
+    const label = arg.timeText ? `${arg.timeText} ${arg.event.title}` : arg.event.title;
+
+    if (ext.workOrderRef?.id) {
+      return (
+        <Link
+          href={`/workorders/${ext.workOrderRef.id}`}
+          className="block h-full w-full truncate px-1 text-white underline-offset-2 hover:underline"
+          title={label}
+        >
+          {label}
+        </Link>
+      );
+    }
+
+    return (
+      <div className="block h-full w-full truncate px-1 text-white" title={label}>
+        {label}
+      </div>
+    );
   }
 
   function calendarPrev() {
@@ -413,10 +483,94 @@ function PlannerPageInner() {
     api.today();
   }
 
+  async function confirmSelectionBooking() {
+    if (!token || !selectionWorkOrderId || !selectionStart || !selectionEnd) return;
+
+    const startAt = toIso(selectionStart);
+    const endAt = toIso(selectionEnd);
+    if (!startAt || !endAt) {
+      setError('Ugyldig tidsrom valgt.');
+      return;
+    }
+
+    const selectionStartDate = new Date(startAt);
+    const selectionEndDate = new Date(endAt);
+    const conflicts = scheduleEvents.filter((event) => {
+      const eventStart = new Date(event.start);
+      const eventEnd = new Date(event.end);
+      const overlaps = eventStart < selectionEndDate && selectionStartDate < eventEnd;
+      if (!overlaps) return false;
+
+      if (resourceMode === 'MANNSKAP') {
+        return event.type === 'workorder_schedule' && event.resourceRef?.kind === 'user' && event.resourceRef.id === selectionUserId;
+      }
+
+      return event.type === 'equipment_reservation' && event.resourceRef?.kind === 'equipment' && event.resourceRef.id === selectionEquipmentId;
+    });
+
+    if (conflicts.length > 0) {
+      setSelectionConflicts(conflicts);
+      setConflictModalOpen(true);
+      return;
+    }
+
+    await executeSelectionBooking(startAt, endAt);
+  }
+
+  async function executeSelectionBooking(startAt: string, endAt: string) {
+    if (!token || !selectionWorkOrderId) return;
+
+    try {
+      if (resourceMode === 'MANNSKAP') {
+        if (!selectionUserId) {
+          setError('Velg mannskap for booking.');
+          return;
+        }
+        await apiClient(token).createWorkOrderSchedule(selectionWorkOrderId, {
+          assigneeUserId: selectionUserId,
+          startAt,
+          endAt,
+        });
+        setSuccess('Mannskap ble booket fra kalenderen.');
+      } else {
+        if (!selectionEquipmentId) {
+          setError('Velg utstyr for booking.');
+          return;
+        }
+        await apiClient(token).reserveEquipment({
+          workOrderId: selectionWorkOrderId,
+          equipmentItemId: selectionEquipmentId,
+          startAt,
+          endAt,
+        });
+        setSuccess('Utstyr ble booket fra kalenderen.');
+      }
+
+      setSelectionModalOpen(false);
+      setConflictModalOpen(false);
+      setSelectionConflicts([]);
+      setError(null);
+      await load();
+    } catch (err) {
+      setSuccess(null);
+      setError(toErrorMessage(err, 'Kunne ikke booke valgt tidsrom.'));
+    }
+  }
+
+  async function confirmSelectionBookingWithOverlap() {
+    const startAt = toIso(selectionStart);
+    const endAt = toIso(selectionEnd);
+    if (!startAt || !endAt) {
+      setError('Ugyldig tidsrom valgt.');
+      return;
+    }
+    await executeSelectionBooking(startAt, endAt);
+  }
+
   return (
     <main className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Planner</h1>
+        <h1 className="text-2xl font-semibold">Kalender</h1>
         <ConnectionStatus />
       </div>
 
@@ -430,12 +584,6 @@ function PlannerPageInner() {
             onClick={() => setPlannerTab('CALENDAR')}
           >
             Kalender
-          </button>
-          <button
-            className={`rounded px-3 py-2 text-sm ${plannerTab === 'CREATE_WORKORDER' ? 'bg-accent text-white' : 'border hover:bg-slate-50'}`}
-            onClick={() => setPlannerTab('CREATE_WORKORDER')}
-          >
-            Opprett arbeidsordre
           </button>
         </div>
 
@@ -507,6 +655,10 @@ function PlannerPageInner() {
                 events={calendarEvents}
                 datesSet={onDatesSet}
                 eventClick={onEventClick}
+                eventContent={renderEventContent}
+                selectable
+                selectMirror
+                select={onCalendarSelect}
                 height="auto"
                 firstDay={1}
                 nowIndicator
@@ -643,6 +795,85 @@ function PlannerPageInner() {
             </ul>
           </div>
         </>
+      ) : null}
+
+      {selectionModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+          <div className="w-full max-w-xl rounded-xl bg-white p-4 shadow-xl">
+            <h2 className="mb-3 text-lg font-semibold">Book valgt tidsrom</h2>
+            <div className="grid gap-2 md:grid-cols-2">
+              <select className="rounded border px-3 py-2 md:col-span-2" value={selectionWorkOrderId} onChange={(e) => setSelectionWorkOrderId(e.target.value)}>
+                {workOrders.map((wo) => (
+                  <option key={wo.id} value={wo.id}>
+                    {wo.title} ({wo.status})
+                  </option>
+                ))}
+              </select>
+
+              {resourceMode === 'MANNSKAP' ? (
+                <select className="rounded border px-3 py-2 md:col-span-2" value={selectionUserId} onChange={(e) => setSelectionUserId(e.target.value)}>
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.displayName}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <select className="rounded border px-3 py-2 md:col-span-2" value={selectionEquipmentId} onChange={(e) => setSelectionEquipmentId(e.target.value)}>
+                  {equipmentItems.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name} ({item.serialNumber ?? item.id})
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              <input className="rounded border px-3 py-2" type="datetime-local" value={selectionStart} onChange={(e) => setSelectionStart(e.target.value)} />
+              <input className="rounded border px-3 py-2" type="datetime-local" value={selectionEnd} onChange={(e) => setSelectionEnd(e.target.value)} />
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button className="rounded border px-3 py-2 text-sm hover:bg-slate-50" onClick={() => setSelectionModalOpen(false)}>
+                Avbryt
+              </button>
+              <button className="rounded bg-accent px-3 py-2 text-sm text-white" onClick={() => void confirmSelectionBooking()}>
+                Book
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {conflictModalOpen ? (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 p-4">
+          <div className="w-full max-w-xl rounded-xl bg-white p-4 shadow-xl">
+            <h2 className="mb-2 text-lg font-semibold">Konflikt oppdaget</h2>
+            <p className="text-sm text-slate-700">
+              Valgt tidsrom overlapper med {selectionConflicts.length} eksisterende booking(er) for valgt ressurs.
+            </p>
+            <ul className="mt-3 max-h-40 space-y-1 overflow-auto rounded border bg-slate-50 p-2 text-sm">
+              {selectionConflicts.slice(0, 8).map((event) => (
+                <li key={event.id}>
+                  <strong>{event.title}</strong> ({formatDate(event.start)} - {formatDate(event.end)})
+                </li>
+              ))}
+            </ul>
+            {selectionConflicts.length > 8 ? <p className="mt-2 text-xs text-slate-500">Viser 8 av {selectionConflicts.length} konflikter.</p> : null}
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                className="rounded border px-3 py-2 text-sm hover:bg-slate-50"
+                onClick={() => {
+                  setConflictModalOpen(false);
+                  setSelectionConflicts([]);
+                }}
+              >
+                Avbryt
+              </button>
+              <button className="rounded bg-amber-600 px-3 py-2 text-sm text-white hover:bg-amber-700" onClick={() => void confirmSelectionBookingWithOverlap()}>
+                Book likevel
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </main>
   );

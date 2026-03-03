@@ -11,6 +11,27 @@ export const workOrderSchema = z.object({
   locationId: z.string().uuid().nullable(),
   projectId: z.string().uuid().nullable(),
   planningOwnerUserId: z.string().uuid().nullable(),
+  department: z
+    .object({
+      id: z.string().uuid(),
+      name: z.string().min(1),
+    })
+    .nullable()
+    .optional(),
+  location: z
+    .object({
+      id: z.string().uuid(),
+      name: z.string().min(1),
+    })
+    .nullable()
+    .optional(),
+  project: z
+    .object({
+      id: z.string().uuid(),
+      name: z.string().min(1),
+    })
+    .nullable()
+    .optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

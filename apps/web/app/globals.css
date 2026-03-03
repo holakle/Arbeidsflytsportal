@@ -5,6 +5,8 @@
 :root {
   --bg: #f4f7f6;
   --text: #0f172a;
+  --surface: #ffffff;
+  --border: #e2e8f0;
 }
 
 body {
@@ -12,6 +14,58 @@ body {
   background: radial-gradient(circle at top left, #dff4ef, #f4f7f6 45%);
   color: var(--text);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+html[data-theme='dark'] {
+  --bg: #0b1220;
+  --text: #e2e8f0;
+  --surface: #0f172a;
+  --border: #1e293b;
+}
+
+html[data-theme='dark'] body {
+  background: radial-gradient(circle at top left, #102a43, #0b1220 45%);
+  color: var(--text);
+}
+
+html[data-theme='dark'] header {
+  background: rgba(15, 23, 42, 0.85) !important;
+  border-color: var(--border) !important;
+}
+
+html[data-theme='dark'] .bg-white {
+  background-color: var(--surface) !important;
+}
+
+html[data-theme='dark'] .border,
+html[data-theme='dark'] .border-slate-200,
+html[data-theme='dark'] .border-slate-300 {
+  border-color: var(--border) !important;
+}
+
+html[data-theme='dark'] .text-slate-600,
+html[data-theme='dark'] .text-slate-700 {
+  color: #cbd5e1 !important;
+}
+
+html[data-theme='dark'] .bg-slate-50,
+html[data-theme='dark'] .hover\:bg-slate-50:hover,
+html[data-theme='dark'] .hover\:bg-slate-100:hover {
+  background-color: #1e293b !important;
+}
+
+html[data-theme='dark'] input,
+html[data-theme='dark'] select,
+html[data-theme='dark'] textarea {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+html[data-theme='dark'] input::placeholder,
+html[data-theme='dark'] textarea::placeholder {
+  color: #64748b !important;
+  opacity: 1;
 }
 
 main {
