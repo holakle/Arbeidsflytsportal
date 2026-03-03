@@ -42,7 +42,8 @@ mermaidLines.push("flowchart TD");
 mermaidLines.push("  A[Start] --> B[App]");
 routes.forEach((r, i) => {
   const id = `R${i}`;
-  mermaidLines.push(`  B --> ${id}[${r}]`);
+  const safeLabel = r.replaceAll('"', '\\"');
+  mermaidLines.push(`  B --> ${id}["${safeLabel}"];`);
 });
 mermaidLines.push("```");
 mermaidLines.push("\n> Denne fila er auto-generert. Ikke rediger manuelt.");
@@ -58,7 +59,10 @@ const autoSection = [
   "```mermaid",
   "flowchart TD",
   "  A[Start] --> B[App]",
-  ...routes.map((r, i) => `  B --> R${i}[${r}]`),
+  ...routes.map((r, i) => {
+    const safeLabel = r.replaceAll('"', '\\"');
+    return `  B --> R${i}["${safeLabel}"];`;
+  }),
   "```",
   "",
   "> Denne seksjonen er auto-generert av `docs/flows/scripts/gen-routes-mermaid.mjs`.",
