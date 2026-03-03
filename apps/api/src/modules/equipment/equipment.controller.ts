@@ -5,6 +5,7 @@ import {
   Get,
   Inject,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -36,6 +37,15 @@ const listEquipmentQuerySchema = z.object({
 const lookupEquipmentQuerySchema = z.object({
   code: z.string().min(1),
 });
+
+const updateReservationSchema = z
+  .object({
+    startAt: z.string().datetime(),
+    endAt: z.string().datetime(),
+  })
+  .refine((v) => new Date(v.startAt) < new Date(v.endAt), {
+    message: 'startAt must be before endAt',
+  });
 
 @Controller('equipment')
 @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
@@ -88,6 +98,17 @@ export class EquipmentController {
   @Roles('planner', 'org_admin')
   removeReservation(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.service.removeReservation(user.organizationId, user.id, id);
+  }
+
+  @Patch('reservations/:id')
+  @Roles('planner', 'org_admin')
+  updateReservation(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(updateReservationSchema))
+    body: { startAt: string; endAt: string },
+  ) {
+    return this.service.updateReservation(user.organizationId, user.id, id, body);
   }
 
   @Delete(':id')

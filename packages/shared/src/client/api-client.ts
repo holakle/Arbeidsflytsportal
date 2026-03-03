@@ -128,6 +128,13 @@ export class ApiClient {
     return this.http.request(`/equipment/reservations/${id}`, { method: 'DELETE' });
   }
 
+  updateEquipmentReservation(
+    id: string,
+    body: { startAt: string; endAt: string },
+  ): Promise<EquipmentReservation> {
+    return this.http.request(`/equipment/reservations/${id}`, { method: 'PATCH', body });
+  }
+
   deleteEquipmentItem(id: string): Promise<{ success: true; canceledReservations: number }> {
     return this.http.request(`/equipment/${id}`, { method: 'DELETE' });
   }
@@ -220,6 +227,22 @@ export class ApiClient {
     if (query.assigneeTeamId) params.set('assigneeTeamId', query.assigneeTeamId);
     if (query.equipmentItemId) params.set('equipmentItemId', query.equipmentItemId);
     return this.http.request(`/schedule?${params.toString()}`);
+  }
+
+  patchSchedule(
+    id: string,
+    body: {
+      workOrderId?: string;
+      assigneeUserId?: string;
+      assigneeTeamId?: string;
+      startAt?: string;
+      endAt?: string;
+      note?: string;
+      status?: string;
+      allowConflict?: boolean;
+    },
+  ): Promise<unknown> {
+    return this.http.request(`/schedule/${id}`, { method: 'PATCH', body });
   }
 
   startWorkOrder(id: string): Promise<WorkSessionActionResponse> {

@@ -224,6 +224,66 @@ export class EquipmentService {
     return reservation;
   }
 
+  async updateReservation(
+    organizationId: string,
+    actorUserId: string,
+    reservationId: string,
+    payload: { startAt: string; endAt: string },
+  ) {
+    const reservation = await this.prisma.equipmentReservation.findFirst({
+      where: {
+        id: reservationId,
+        equipmentItem: { is: { organizationId } },
+      },
+      select: {
+        id: true,
+        equipmentItemId: true,
+        workOrderId: true,
+        startAt: true,
+        endAt: true,
+      },
+    });
+    if (!reservation) {
+      throw new NotFoundException('Equipment reservation not found');
+    }
+
+    const startAt = new Date(payload.startAt);
+    const endAt = new Date(payload.endAt);
+    if (!(startAt < endAt)) {
+      throw new BadRequestException('startAt must be before endAt');
+    }
+
+    const conflict = await this.prisma.equipmentReservation.findFirst({
+      where: {
+        id: { not: reservationId },
+        equipmentItemId: reservation.equipmentItemId,
+        startAt: { lt: endAt },
+        endAt: { gt: startAt },
+      },
+      select: { id: true },
+    });
+    if (conflict) {
+      throw new ConflictException('Equipment already reserved in this period');
+    }
+
+    const updated = await this.prisma.equipmentReservation.update({
+      where: { id: reservationId },
+      data: { startAt, endAt },
+    });
+
+    await this.audit.log({
+      organizationId,
+      actorUserId,
+      action: 'equipment.reservation_updated',
+      entityType: 'EquipmentReservation',
+      entityId: reservationId,
+      before: reservation,
+      after: { startAt, endAt },
+    });
+
+    return updated;
+  }
+
   async removeReservation(organizationId: string, actorUserId: string, reservationId: string) {
     const reservation = await this.prisma.equipmentReservation.findFirst({
       where: {
