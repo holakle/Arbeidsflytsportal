@@ -63,6 +63,28 @@ Produksjonsrettet monorepo med `pnpm workspaces` + `turborepo` for montasjeplatt
 7. Scanner pilot:
    - Åpne `http://localhost:3000/scan`
 
+## Local dev with Docker
+
+1. Kopier miljofil:
+   - `Copy-Item .env.example .env` (PowerShell)
+2. Sett egne verdier i `.env`:
+   - `POSTGRES_USER`
+   - `POSTGRES_PASSWORD`
+   - `POSTGRES_DB`
+   - `DATABASE_URL`
+   - `JWT_SECRET`
+   - `RATE_LIMIT_TTL_MS` (millisekunder, f.eks. `60000`)
+3. Start compose (DB):
+   - `docker compose up -d postgres`
+4. Start API i compose (valgfritt, med healthcheck):
+   - `docker compose --profile core up -d api`
+5. Sjekk status:
+   - `docker compose ps postgres`
+   - `docker compose logs postgres --tail 40`
+6. Verifiser health:
+   - `http://localhost:3001/health`
+   - Forventet payload: `{ ok: true, uptime, timestamp, db }`
+
 ## Anbefalt daglig drift (web+api)
 
 1. Start database:

@@ -23,7 +23,8 @@ const enableDevAuth =
     ThrottlerModule.forRoot({
       throttlers: [
         {
-          ttl: Number(process.env.RATE_LIMIT_TTL ?? 60) * 1000,
+          // @nestjs/throttler expects ttl in milliseconds; keep env unit explicit to avoid ambiguity.
+          ttl: Number(process.env.RATE_LIMIT_TTL_MS ?? 60000),
           limit: Number(process.env.RATE_LIMIT_LIMIT ?? 120),
         },
       ],

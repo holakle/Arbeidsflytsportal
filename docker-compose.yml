@@ -3,19 +3,46 @@ services:
     image: postgres:16-alpine
     container_name: workflow-postgres
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: workflow
-      POSTGRES_PASSWORD: workflow
-      POSTGRES_DB: workflow_portal
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - '5432:5432'
+      - '127.0.0.1:5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U workflow -d workflow_portal']
+      test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB']
       interval: 5s
       timeout: 5s
       retries: 10
+
+  api:
+    image: node:22-alpine
+    container_name: workflow-api
+    restart: unless-stopped
+    profiles: ['core']
+    working_dir: /workspace
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: development
+    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm --filter @apps/api dev"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:3001:3001'
+    volumes:
+      - ./:/workspace
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:3001/health >/dev/null || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
 
   https:
     image: caddy:2.10.0
