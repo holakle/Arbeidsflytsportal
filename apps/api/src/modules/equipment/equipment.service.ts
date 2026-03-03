@@ -257,6 +257,41 @@ export class EquipmentService {
     return { success: true as const };
   }
 
+  async removeItem(organizationId: string, actorUserId: string, itemId: string) {
+    const item = await this.prisma.equipmentItem.findFirst({
+      where: { id: itemId, organizationId },
+      select: { id: true, name: true, active: true },
+    });
+    if (!item) {
+      throw new NotFoundException('Equipment item not found');
+    }
+
+    const now = new Date();
+    const canceledReservations = await this.prisma.equipmentReservation.deleteMany({
+      where: {
+        equipmentItemId: itemId,
+        endAt: { gte: now },
+      },
+    });
+
+    await this.prisma.equipmentItem.update({
+      where: { id: itemId },
+      data: { active: false },
+    });
+
+    await this.audit.log({
+      organizationId,
+      actorUserId,
+      action: 'equipment.deactivated',
+      entityType: 'EquipmentItem',
+      entityId: itemId,
+      before: item,
+      after: { active: false, canceledReservations: canceledReservations.count },
+    });
+
+    return { success: true as const, canceledReservations: canceledReservations.count };
+  }
+
   private normalizeBarcode(value: string) {
     const normalized = value.trim().toUpperCase();
     if (!normalized) {

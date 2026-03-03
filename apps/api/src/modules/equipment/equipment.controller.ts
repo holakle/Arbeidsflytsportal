@@ -89,4 +89,10 @@ export class EquipmentController {
   removeReservation(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.service.removeReservation(user.organizationId, user.id, id);
   }
+
+  @Delete(':id')
+  @Roles('planner', 'org_admin')
+  removeItem(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.service.removeItem(user.organizationId, user.id, id);
+  }
 }

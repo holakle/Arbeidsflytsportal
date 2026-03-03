@@ -43,12 +43,20 @@ export class ApiClient {
     return this.http.request('/dev-auth/token', { method: 'POST', body: { userId } });
   }
 
+  deleteDevUser(userId: string): Promise<{ success: true }> {
+    return this.http.request(`/dev-auth/users/${userId}`, { method: 'DELETE' });
+  }
+
   listWorkOrders(query = ''): Promise<Paged<WorkOrder>> {
     return this.http.request(`/workorders${query ? `?${query}` : ''}`);
   }
 
   createWorkOrder(body: Record<string, unknown>): Promise<WorkOrder> {
     return this.http.request('/workorders', { method: 'POST', body });
+  }
+
+  deleteWorkOrder(id: string): Promise<WorkOrder> {
+    return this.http.request(`/workorders/${id}`, { method: 'DELETE' });
   }
 
   getWorkOrder(id: string): Promise<WorkOrder> {
@@ -118,6 +126,10 @@ export class ApiClient {
 
   deleteEquipmentReservation(id: string): Promise<{ success: true }> {
     return this.http.request(`/equipment/reservations/${id}`, { method: 'DELETE' });
+  }
+
+  deleteEquipmentItem(id: string): Promise<{ success: true; canceledReservations: number }> {
+    return this.http.request(`/equipment/${id}`, { method: 'DELETE' });
   }
 
   lookupEquipmentByCode(code: string): Promise<EquipmentLookupResponse> {
