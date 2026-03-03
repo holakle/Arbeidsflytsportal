@@ -224,6 +224,39 @@ export class EquipmentService {
     return reservation;
   }
 
+  async removeReservation(organizationId: string, actorUserId: string, reservationId: string) {
+    const reservation = await this.prisma.equipmentReservation.findFirst({
+      where: {
+        id: reservationId,
+        equipmentItem: { is: { organizationId } },
+      },
+      select: {
+        id: true,
+        equipmentItemId: true,
+        workOrderId: true,
+        startAt: true,
+        endAt: true,
+      },
+    });
+
+    if (!reservation) {
+      throw new NotFoundException('Equipment reservation not found');
+    }
+
+    await this.prisma.equipmentReservation.delete({ where: { id: reservationId } });
+
+    await this.audit.log({
+      organizationId,
+      actorUserId,
+      action: 'equipment.reservation_deleted',
+      entityType: 'EquipmentReservation',
+      entityId: reservationId,
+      before: reservation,
+    });
+
+    return { success: true as const };
+  }
+
   private normalizeBarcode(value: string) {
     const normalized = value.trim().toUpperCase();
     if (!normalized) {

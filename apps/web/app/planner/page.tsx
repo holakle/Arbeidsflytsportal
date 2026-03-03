@@ -147,6 +147,7 @@ function PlannerPageInner() {
   const [selectionEquipmentId, setSelectionEquipmentId] = useState('');
   const [conflictModalOpen, setConflictModalOpen] = useState(false);
   const [selectionConflicts, setSelectionConflicts] = useState<ScheduleEvent[]>([]);
+  const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -451,24 +452,115 @@ function PlannerPageInner() {
   function renderEventContent(arg: EventContentArg) {
     const ext = arg.event.extendedProps as CalendarEventExtended;
     const label = arg.timeText ? `${arg.timeText} ${arg.event.title}` : arg.event.title;
+    const isDeleting = deletingEventId === arg.event.id;
 
     if (ext.workOrderRef?.id) {
       return (
-        <Link
-          href={`/workorders/${ext.workOrderRef.id}`}
-          className="block h-full w-full truncate px-1 text-white underline-offset-2 hover:underline"
-          title={label}
-        >
-          {label}
-        </Link>
+        <div className="group relative block h-full w-full">
+          <Link
+            href={`/workorders/${ext.workOrderRef.id}`}
+            className="block h-full w-full truncate px-1 pr-7 text-white underline-offset-2 hover:underline"
+            title={label}
+          >
+            {label}
+          </Link>
+          <button
+            type="button"
+            className="absolute right-0.5 top-0.5 hidden h-5 w-5 items-center justify-center rounded bg-rose-600 text-white shadow group-hover:flex"
+            title="Slett booking"
+            aria-label="Slett booking"
+            disabled={isDeleting}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              void deleteCalendarEvent(
+                arg.event.id,
+                ext.type,
+                ext.workOrderRef?.id,
+              );
+            }}
+          >
+            {isDeleting ? (
+              <span className="text-xs leading-none">...</span>
+            ) : (
+              <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 fill-current" aria-hidden>
+                <path d="M7.5 2.5A1.5 1.5 0 0 0 6 4v.5H3.5a.75.75 0 0 0 0 1.5h.54l.74 9.3A2 2 0 0 0 6.77 17h6.46a2 2 0 0 0 1.99-1.7l.74-9.3h.54a.75.75 0 0 0 0-1.5H14V4a1.5 1.5 0 0 0-1.5-1.5h-5ZM12.5 4v.5h-5V4h5Zm-4 3.25c.41 0 .75.34.75.75v5a.75.75 0 0 1-1.5 0V8c0-.41.34-.75.75-.75Zm3 0c.41 0 .75.34.75.75v5a.75.75 0 0 1-1.5 0V8c0-.41.34-.75.75-.75Z" />
+              </svg>
+            )}
+          </button>
+        </div>
       );
     }
 
     return (
-      <div className="block h-full w-full truncate px-1 text-white" title={label}>
-        {label}
+      <div className="group relative block h-full w-full">
+        <div className="block h-full w-full truncate px-1 pr-7 text-white" title={label}>
+          {label}
+        </div>
+        <button
+          type="button"
+          className="absolute right-0.5 top-0.5 hidden h-5 w-5 items-center justify-center rounded bg-rose-600 text-white shadow group-hover:flex"
+          title="Slett booking"
+          aria-label="Slett booking"
+          disabled={isDeleting}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            void deleteCalendarEvent(arg.event.id, ext.type);
+          }}
+        >
+          {isDeleting ? (
+            <span className="text-xs leading-none">...</span>
+          ) : (
+            <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 fill-current" aria-hidden>
+              <path d="M7.5 2.5A1.5 1.5 0 0 0 6 4v.5H3.5a.75.75 0 0 0 0 1.5h.54l.74 9.3A2 2 0 0 0 6.77 17h6.46a2 2 0 0 0 1.99-1.7l.74-9.3h.54a.75.75 0 0 0 0-1.5H14V4a1.5 1.5 0 0 0-1.5-1.5h-5ZM12.5 4v.5h-5V4h5Zm-4 3.25c.41 0 .75.34.75.75v5a.75.75 0 0 1-1.5 0V8c0-.41.34-.75.75-.75Zm3 0c.41 0 .75.34.75.75v5a.75.75 0 0 1-1.5 0V8c0-.41.34-.75.75-.75Z" />
+            </svg>
+          )}
+        </button>
       </div>
     );
+  }
+
+  async function deleteCalendarEvent(
+    eventId: string,
+    eventType: ScheduleEvent['type'],
+    workOrderId?: string,
+  ) {
+    if (!token || deletingEventId) return;
+
+    const ok = window.confirm('Slette denne bookingen fra kalenderen?');
+    if (!ok) return;
+
+    setDeletingEventId(eventId);
+    try {
+      if (eventType === 'workorder_schedule') {
+        if (!workOrderId) {
+          setError('Kunne ikke finne arbeidsordre for valgt booking.');
+          return;
+        }
+        await apiClient(token).deleteWorkOrderSchedule(workOrderId, eventId);
+      } else {
+        await apiClient(token).deleteEquipmentReservation(eventId);
+      }
+
+      setSuccess('Booking slettet.');
+      setError(null);
+      setSelectedCalendarEvent((prev) => (prev?.id === eventId ? null : prev));
+      await load();
+    } catch (err) {
+      setSuccess(null);
+      setError(toErrorMessage(err, 'Kunne ikke slette booking.'));
+    } finally {
+      setDeletingEventId(null);
+    }
   }
 
   function calendarPrev() {

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Inject,
   Param,
@@ -81,5 +82,11 @@ export class EquipmentController {
     @Body(new ZodValidationPipe(attachBarcodeRequestSchema)) body: { barcode: string },
   ) {
     return this.service.attachBarcode(user.organizationId, user.id, id, body.barcode);
+  }
+
+  @Delete('reservations/:id')
+  @Roles('planner', 'org_admin')
+  removeReservation(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.service.removeReservation(user.organizationId, user.id, id);
   }
 }

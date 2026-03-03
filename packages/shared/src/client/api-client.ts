@@ -116,6 +116,10 @@ export class ApiClient {
     return this.http.request('/equipment/reserve', { method: 'POST', body });
   }
 
+  deleteEquipmentReservation(id: string): Promise<{ success: true }> {
+    return this.http.request(`/equipment/reservations/${id}`, { method: 'DELETE' });
+  }
+
   lookupEquipmentByCode(code: string): Promise<EquipmentLookupResponse> {
     const query = new URLSearchParams({ code }).toString();
     return this.http.request(`/equipment/lookup?${query}`);
