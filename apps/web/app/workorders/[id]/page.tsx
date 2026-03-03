@@ -12,6 +12,14 @@ type WorkOrder = {
   title: string;
   description: string | null;
   status: string;
+  customerName?: string | null;
+  contactName?: string | null;
+  contactPhone?: string | null;
+  addressLine1?: string | null;
+  postalCode?: string | null;
+  city?: string | null;
+  accessNotes?: string | null;
+  hmsNotes?: string | null;
   departmentId: string | null;
   locationId: string | null;
   projectId: string | null;
@@ -57,6 +65,15 @@ type WorkOrderScheduleEntry = {
   assigneeTeam?: { id: string; name: string };
 };
 
+type AttachmentEntry = {
+  id: string;
+  kind: string;
+  mimeType: string;
+  size: number;
+  storageKey: string;
+  createdAt: string;
+};
+
 function toErrorMessage(error: unknown, fallback: string) {
   if (error instanceof Error) return error.message;
   return fallback;
@@ -84,7 +101,15 @@ function toIso(localDateTime: string) {
   return date.toISOString();
 }
 
-const statuses = ['OPEN', 'IN_PROGRESS', 'DONE', 'BLOCKED', 'CANCELLED'];
+const statuses = [
+  'DRAFT',
+  'READY_FOR_PLANNING',
+  'PLANNED',
+  'IN_PROGRESS',
+  'BLOCKED',
+  'DONE',
+  'CANCELLED',
+];
 
 export default function WorkOrderDetailPage() {
   const params = useParams<{ id: string }>();
@@ -94,10 +119,18 @@ export default function WorkOrderDetailPage() {
   const [workOrder, setWorkOrder] = useState<WorkOrder | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [status, setStatus] = useState('OPEN');
+  const [status, setStatus] = useState('READY_FOR_PLANNING');
   const [departmentId, setDepartmentId] = useState('');
   const [locationId, setLocationId] = useState('');
   const [projectId, setProjectId] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [contactName, setContactName] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [addressLine1, setAddressLine1] = useState('');
+  const [postalCode, setPostalCode] = useState('');
+  const [city, setCity] = useState('');
+  const [accessNotes, setAccessNotes] = useState('');
+  const [hmsNotes, setHmsNotes] = useState('');
   const [planningOwnerUserId, setPlanningOwnerUserId] = useState('');
   const [assignmentUserId, setAssignmentUserId] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -116,6 +149,8 @@ export default function WorkOrderDetailPage() {
   const [scheduleStart, setScheduleStart] = useState('');
   const [scheduleEnd, setScheduleEnd] = useState('');
   const [scheduleNote, setScheduleNote] = useState('');
+  const [attachments, setAttachments] = useState<AttachmentEntry[]>([]);
+  const [sessionStatus, setSessionStatus] = useState<string | null>(null);
 
   const planningOwnerLabel = useMemo(
     () => users.find((u) => u.id === planningOwnerUserId)?.displayName ?? '-',
@@ -125,12 +160,13 @@ export default function WorkOrderDetailPage() {
   async function load() {
     if (!token || !id) return;
     try {
-      const [woRes, consumableRes, catalogRes, userRes, scheduleRes] = await Promise.all([
+      const [woRes, consumableRes, catalogRes, userRes, scheduleRes, attachmentRes] = await Promise.all([
         apiClient(token).getWorkOrder(id),
         apiClient(token).listWorkOrderConsumables(id),
         apiClient(token).listEquipment('type=CONSUMABLE'),
         apiClient(token).listDevUsers(),
         apiClient(token).listWorkOrderSchedule(id),
+        apiClient(token).listWorkOrderAttachments(id),
       ]);
 
       const wo = woRes as WorkOrder;
@@ -140,10 +176,18 @@ export default function WorkOrderDetailPage() {
       setWorkOrder(wo);
       setTitle(wo.title ?? '');
       setDescription(wo.description ?? '');
-      setStatus(wo.status ?? 'OPEN');
+      setStatus(wo.status ?? 'READY_FOR_PLANNING');
       setDepartmentId(wo.departmentId ?? '');
       setLocationId(wo.locationId ?? '');
       setProjectId(wo.projectId ?? '');
+      setCustomerName(wo.customerName ?? '');
+      setContactName(wo.contactName ?? '');
+      setContactPhone(wo.contactPhone ?? '');
+      setAddressLine1(wo.addressLine1 ?? '');
+      setPostalCode(wo.postalCode ?? '');
+      setCity(wo.city ?? '');
+      setAccessNotes(wo.accessNotes ?? '');
+      setHmsNotes(wo.hmsNotes ?? '');
       setPlanningOwnerUserId(wo.planningOwnerUserId ?? '');
       setUsers(devUsers);
       if (!assignmentUserId && devUsers.length > 0) {
@@ -162,6 +206,7 @@ export default function WorkOrderDetailPage() {
       }
 
       setScheduleEntries(entries);
+      setAttachments(attachmentRes as AttachmentEntry[]);
       if (!scheduleAssigneeUserId && devUsers.length > 0) {
         const firstUser = devUsers.at(0);
         if (firstUser) {
@@ -192,6 +237,14 @@ export default function WorkOrderDetailPage() {
         title,
         description: description.trim() ? description : null,
         status,
+        customerName: customerName.trim() ? customerName : null,
+        contactName: contactName.trim() ? contactName : null,
+        contactPhone: contactPhone.trim() ? contactPhone : null,
+        addressLine1: addressLine1.trim() ? addressLine1 : null,
+        postalCode: postalCode.trim() ? postalCode : null,
+        city: city.trim() ? city : null,
+        accessNotes: accessNotes.trim() ? accessNotes : null,
+        hmsNotes: hmsNotes.trim() ? hmsNotes : null,
         departmentId: departmentId.trim() ? departmentId : null,
         locationId: locationId.trim() ? locationId : null,
         projectId: projectId.trim() ? projectId : null,
@@ -202,6 +255,46 @@ export default function WorkOrderDetailPage() {
     } catch (err) {
       setSuccess(null);
       setError(toErrorMessage(err, 'Kunne ikke oppdatere arbeidsordre.'));
+    }
+  }
+
+  async function startSession() {
+    if (!token || !id) return;
+    try {
+      await apiClient(token).startWorkOrder(id);
+      setSessionStatus('Arbeidsøkt startet');
+      await load();
+    } catch (err) {
+      setSessionStatus(null);
+      setError(toErrorMessage(err, 'Kunne ikke starte arbeidsøkt.'));
+    }
+  }
+
+  async function pauseSession() {
+    if (!token || !id) return;
+    try {
+      await apiClient(token).pauseWorkOrder(id);
+      setSessionStatus('Arbeidsøkt satt på pause');
+      await load();
+    } catch (err) {
+      setSessionStatus(null);
+      setError(toErrorMessage(err, 'Kunne ikke pause arbeidsøkt.'));
+    }
+  }
+
+  async function finishSession() {
+    if (!token || !id) return;
+    try {
+      const res = (await apiClient(token).finishWorkOrder(id)) as { timesheetDraftId?: string | null };
+      setSessionStatus(
+        res?.timesheetDraftId
+          ? `Arbeidsøkt avsluttet. Draft timer: ${res.timesheetDraftId}`
+          : 'Arbeidsøkt avsluttet',
+      );
+      await load();
+    } catch (err) {
+      setSessionStatus(null);
+      setError(toErrorMessage(err, 'Kunne ikke avslutte arbeidsøkt.'));
     }
   }
 
@@ -365,6 +458,54 @@ export default function WorkOrderDetailPage() {
             onChange={(e) => setProjectId(e.target.value)}
             placeholder="Prosjekt ID (valgfri)"
           />
+          <input
+            className="rounded border px-3 py-2"
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            placeholder="Kunde"
+          />
+          <input
+            className="rounded border px-3 py-2"
+            value={contactName}
+            onChange={(e) => setContactName(e.target.value)}
+            placeholder="Kontaktperson"
+          />
+          <input
+            className="rounded border px-3 py-2"
+            value={contactPhone}
+            onChange={(e) => setContactPhone(e.target.value)}
+            placeholder="Kontakttelefon"
+          />
+          <input
+            className="rounded border px-3 py-2"
+            value={addressLine1}
+            onChange={(e) => setAddressLine1(e.target.value)}
+            placeholder="Adresse"
+          />
+          <input
+            className="rounded border px-3 py-2"
+            value={postalCode}
+            onChange={(e) => setPostalCode(e.target.value)}
+            placeholder="Postnummer"
+          />
+          <input
+            className="rounded border px-3 py-2"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            placeholder="By"
+          />
+          <input
+            className="rounded border px-3 py-2 md:col-span-2"
+            value={accessNotes}
+            onChange={(e) => setAccessNotes(e.target.value)}
+            placeholder="Tilkomstnotat"
+          />
+          <input
+            className="rounded border px-3 py-2 md:col-span-2"
+            value={hmsNotes}
+            onChange={(e) => setHmsNotes(e.target.value)}
+            placeholder="HMS-notat"
+          />
           <button
             className="rounded bg-accent px-3 py-2 text-white md:col-span-2"
             onClick={() => void save()}
@@ -373,6 +514,50 @@ export default function WorkOrderDetailPage() {
             Lagre
           </button>
         </div>
+      </section>
+
+      <section className="rounded border bg-white p-4">
+        <h2 className="mb-2 text-lg">Vedlegg</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead>
+              <tr className="border-b text-slate-600">
+                <th className="py-2">Type</th>
+                <th className="py-2">Mime</th>
+                <th className="py-2">Størrelse</th>
+                <th className="py-2">Lagringsnøkkel</th>
+                <th className="py-2">Tid</th>
+              </tr>
+            </thead>
+            <tbody>
+              {attachments.map((entry) => (
+                <tr key={entry.id} className="border-b">
+                  <td className="py-2">{entry.kind}</td>
+                  <td className="py-2">{entry.mimeType}</td>
+                  <td className="py-2">{entry.size}</td>
+                  <td className="py-2">{entry.storageKey}</td>
+                  <td className="py-2">{formatDate(entry.createdAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="rounded border bg-white p-4">
+        <h2 className="mb-2 text-lg">Arbeidsøkt</h2>
+        <div className="flex gap-2">
+          <button className="rounded bg-accent px-3 py-2 text-white" onClick={() => void startSession()}>
+            Start
+          </button>
+          <button className="rounded bg-slate-700 px-3 py-2 text-white" onClick={() => void pauseSession()}>
+            Pause
+          </button>
+          <button className="rounded bg-emerald-700 px-3 py-2 text-white" onClick={() => void finishSession()}>
+            Ferdig
+          </button>
+        </div>
+        {sessionStatus ? <p className="mt-2 text-sm text-emerald-700">{sessionStatus}</p> : null}
       </section>
 
       <section className="rounded border bg-white p-4">

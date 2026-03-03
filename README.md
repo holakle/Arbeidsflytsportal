@@ -33,6 +33,9 @@ Produksjonsrettet monorepo med `pnpm workspaces` + `turborepo` for montasjeplatt
 - `GET /me`
 - `GET/POST/GET:id/PATCH:id/DELETE:id /workorders`
 - `POST /workorders/:id/assign`
+- `POST /workorders/:id/start|pause|finish`
+- `GET /workorders/:id/attachments`
+- `POST /workorders/:id/attachments`
 - `GET /equipment`
 - `GET /equipment/lookup?code=...`
 - `POST /equipment/:id/barcode`
@@ -41,6 +44,12 @@ Produksjonsrettet monorepo med `pnpm workspaces` + `turborepo` for montasjeplatt
 - `GET /timesheets/weekly-summary`
 - `GET/POST/PATCH/DELETE /todos`
 - `GET/PUT /dashboard`
+- `GET /schedule`
+- `POST /schedule`
+- `PATCH /schedule/:id`
+- `GET /notifications`
+- `POST /notifications/read`
+- `GET /me/sessions/active`
 
 ## Lokal oppstart
 

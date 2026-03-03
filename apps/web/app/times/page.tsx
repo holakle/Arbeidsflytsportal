@@ -15,6 +15,7 @@ type TimesheetEntry = {
   projectId: string | null;
   workOrder?: { id: string; title: string } | null;
   project?: { id: string; name: string } | null;
+  status?: string;
 };
 
 type WeeklySummary = {
@@ -236,6 +237,19 @@ export default function TimesPage() {
     }
   }
 
+  async function setEntryStatus(id: string, status: 'DRAFT' | 'SUBMITTED') {
+    if (!token || !me) return;
+    try {
+      await apiClient(token).updateTimesheet(id, { status });
+      setSuccess(`Timesheet satt til ${status}.`);
+      setError(null);
+      await loadEntriesAndSummary(targetUserId || me.user.id);
+    } catch (err) {
+      setSuccess(null);
+      setError(toErrorMessage(err, 'Kunne ikke oppdatere status.'));
+    }
+  }
+
   function onWorkOrderChange(nextWorkOrderId: string) {
     setWorkOrderId(nextWorkOrderId);
     const selected = workOrders.find((wo) => wo.id === nextWorkOrderId);
@@ -378,6 +392,7 @@ export default function TimesPage() {
                 <th className="py-2">Dato</th>
                 <th className="py-2">Timer</th>
                 <th className="py-2">Aktivitet</th>
+                <th className="py-2">Status</th>
                 <th className="py-2">Notat</th>
                 <th className="py-2">Handling</th>
               </tr>
@@ -388,8 +403,21 @@ export default function TimesPage() {
                   <td className="py-2">{formatDate(entry.date)}</td>
                   <td className="py-2">{entry.hours}</td>
                   <td className="py-2">{entry.activityType}</td>
+                  <td className="py-2">{entry.status ?? '-'}</td>
                   <td className="py-2">{entry.note ?? '-'}</td>
                   <td className="py-2">
+                    <button
+                      className="mr-2 rounded border px-2 py-1 text-xs hover:bg-slate-50"
+                      onClick={() => void setEntryStatus(entry.id, 'DRAFT')}
+                    >
+                      Sett draft
+                    </button>
+                    <button
+                      className="mr-2 rounded border px-2 py-1 text-xs hover:bg-slate-50"
+                      onClick={() => void setEntryStatus(entry.id, 'SUBMITTED')}
+                    >
+                      Sett submitted
+                    </button>
                     <button
                       className="rounded border px-2 py-1 text-xs hover:bg-slate-50"
                       onClick={() => void removeEntry(entry.id)}

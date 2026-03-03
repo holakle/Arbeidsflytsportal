@@ -50,6 +50,7 @@ type WidgetData = {
   weeklySummary: WeeklySummary | null;
   todos: Todo[];
   calendarEvents: CalendarEvent[];
+  notifications: Array<{ id: string; type: string; readAt: string | null }>;
 };
 
 function formatDate(value: string | null) {
@@ -193,6 +194,7 @@ export default function DashboardPage() {
     weeklySummary: null,
     todos: [],
     calendarEvents: [],
+    notifications: [],
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -222,7 +224,7 @@ export default function DashboardPage() {
       const rangeDays = Number.isFinite(rangeDaysRaw) && rangeDaysRaw > 0 ? rangeDaysRaw : 14;
       const dateRange = getDateRange(rangeDays);
 
-      const [myWorkOrders, bookings, weeklySummary, todos, calendarEvents] = await Promise.all([
+      const [myWorkOrders, bookings, weeklySummary, todos, calendarEvents, notifications] = await Promise.all([
         client
           .listWorkOrders('page=1&limit=20&assignedToMe=true')
           .then((res) => res.items as WorkOrder[]),
@@ -234,10 +236,11 @@ export default function DashboardPage() {
         client
           .listSchedule({ from: dateRange.from, to: dateRange.to, scope: 'mine' })
           .then((res) => res as CalendarEvent[]),
+        client.listNotifications().then((res) => res as Array<{ id: string; type: string; readAt: string | null }>),
       ]);
 
       setDashboard(dashboardRes);
-      setWidgetData({ myWorkOrders, bookings, weeklySummary, todos, calendarEvents });
+      setWidgetData({ myWorkOrders, bookings, weeklySummary, todos, calendarEvents, notifications });
       setError(null);
     } catch (err) {
       setError(toErrorMessage(err, 'Kunne ikke hente dashboard-data. Sjekk API/token.'));
@@ -273,6 +276,20 @@ export default function DashboardPage() {
           {error}
         </div>
       ) : null}
+
+      <section className="rounded border bg-white p-4">
+        <h2 className="mb-2 text-lg">Notifikasjoner</h2>
+        <div className="space-y-1 text-sm">
+          {widgetData.notifications.slice(0, 8).map((notification) => (
+            <div key={notification.id} className="rounded border p-2">
+              {notification.type} {notification.readAt ? '(lest)' : '(ulest)'}
+            </div>
+          ))}
+          {widgetData.notifications.length === 0 ? (
+            <div className="text-xs text-slate-500">Ingen notifikasjoner.</div>
+          ) : null}
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {(dashboard?.widgets ?? []).map((widget) => (

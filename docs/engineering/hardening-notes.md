@@ -22,6 +22,8 @@
 - Docker hardening: Postgres credentials flyttet til `.env`, `.env.example` bruker tydelige placeholders, og DB-port er bundet til localhost.
 - Rate limit TTL unit clarified: bruker `RATE_LIMIT_TTL_MS` (ms) for entydig throttler-konfig.
 - `/health + compose healthcheck`: API health-payload er utvidet, compose har healthcheck for API, og API-oppstart venter robust på DB.
+- Mobil-først fundament er lagt: dev-login i mobil, "mine jobber"/detalj, arbeidsøkter (start/pause/ferdig), draft timesheet, vedlegg metadata og notifikasjoner.
+- Multi-tenant kontrakter er utvidet i `packages/shared` og håndheves for nye endepunkt i API.
 
 ## Hvordan verifisere
 

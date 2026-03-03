@@ -11,6 +11,12 @@ type WorkOrder = {
   title: string;
   description: string | null;
   status: string;
+  customerName?: string | null;
+  contactName?: string | null;
+  contactPhone?: string | null;
+  addressLine1?: string | null;
+  postalCode?: string | null;
+  city?: string | null;
   departmentId: string | null;
   locationId: string | null;
   projectId: string | null;
@@ -37,6 +43,12 @@ export default function WorkOrdersPage() {
   const [items, setItems] = useState<WorkOrder[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [contactName, setContactName] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [addressLine1, setAddressLine1] = useState('');
+  const [postalCode, setPostalCode] = useState('');
+  const [city, setCity] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [page, setPage] = useState(1);
@@ -67,9 +79,21 @@ export default function WorkOrdersPage() {
       const created = (await apiClient(token).createWorkOrder({
         title: title.trim(),
         description: description.trim() ? description.trim() : undefined,
+        customerName: customerName.trim() || undefined,
+        contactName: contactName.trim() || undefined,
+        contactPhone: contactPhone.trim() || undefined,
+        addressLine1: addressLine1.trim() || undefined,
+        postalCode: postalCode.trim() || undefined,
+        city: city.trim() || undefined,
       })) as WorkOrder;
       setTitle('');
       setDescription('');
+      setCustomerName('');
+      setContactName('');
+      setContactPhone('');
+      setAddressLine1('');
+      setPostalCode('');
+      setCity('');
       setSuccess(`Opprettet: ${created.title}`);
       setError(null);
       await load();
@@ -136,6 +160,44 @@ export default function WorkOrdersPage() {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Beskrivelse (valgfri)"
           />
+          <input
+            className="rounded border px-3 py-2"
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            placeholder="Kunde"
+          />
+          <input
+            className="rounded border px-3 py-2"
+            value={contactName}
+            onChange={(e) => setContactName(e.target.value)}
+            placeholder="Kontaktperson"
+          />
+          <input
+            className="rounded border px-3 py-2"
+            value={contactPhone}
+            onChange={(e) => setContactPhone(e.target.value)}
+            placeholder="Telefon"
+          />
+          <input
+            className="rounded border px-3 py-2"
+            value={addressLine1}
+            onChange={(e) => setAddressLine1(e.target.value)}
+            placeholder="Adresse"
+          />
+          <div className="grid gap-2 md:grid-cols-2">
+            <input
+              className="rounded border px-3 py-2"
+              value={postalCode}
+              onChange={(e) => setPostalCode(e.target.value)}
+              placeholder="Postnummer"
+            />
+            <input
+              className="rounded border px-3 py-2"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="By"
+            />
+          </div>
           <button
             className="w-fit rounded bg-accent px-3 py-2 text-white disabled:opacity-50"
             disabled={!title.trim()}
@@ -153,7 +215,7 @@ export default function WorkOrdersPage() {
             Total: {items.length}
           </span>
           <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-            OPEN: {items.filter((w) => w.status === 'OPEN').length}
+            READY_FOR_PLANNING: {items.filter((w) => w.status === 'READY_FOR_PLANNING').length}
           </span>
           <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
             IN_PROGRESS: {items.filter((w) => w.status === 'IN_PROGRESS').length}
@@ -178,7 +240,9 @@ export default function WorkOrdersPage() {
             }}
           >
             <option value="ALL">Alle statuser</option>
-            <option value="OPEN">OPEN</option>
+            <option value="DRAFT">DRAFT</option>
+            <option value="READY_FOR_PLANNING">READY_FOR_PLANNING</option>
+            <option value="PLANNED">PLANNED</option>
             <option value="IN_PROGRESS">IN_PROGRESS</option>
             <option value="DONE">DONE</option>
             <option value="BLOCKED">BLOCKED</option>
@@ -194,6 +258,8 @@ export default function WorkOrdersPage() {
                 <th className="py-2">Avdeling</th>
                 <th className="py-2">Lokasjon</th>
                 <th className="py-2">Prosjekt</th>
+                <th className="py-2">Kunde</th>
+                <th className="py-2">Adresse</th>
                 <th className="py-2">Tildelt</th>
                 <th className="py-2">Detaljer</th>
               </tr>
@@ -221,6 +287,10 @@ export default function WorkOrdersPage() {
                     <td className="py-2">{item.department?.name ?? '-'}</td>
                     <td className="py-2">{item.location?.name ?? '-'}</td>
                     <td className="py-2">{item.project?.name ?? '-'}</td>
+                    <td className="py-2">{item.customerName ?? '-'}</td>
+                    <td className="py-2">
+                      {[item.addressLine1, item.postalCode, item.city].filter(Boolean).join(', ') || '-'}
+                    </td>
                     <td className="py-2">
                       {userCount || teamCount ? `Bruker: ${userCount}, Team: ${teamCount}` : '-'}
                     </td>

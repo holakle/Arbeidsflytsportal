@@ -513,7 +513,7 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
         }
         kpis={[
           `Total: ${workOrders.length}`,
-          `OPEN: ${workOrders.filter((w) => w.status === 'OPEN').length}`,
+          `READY_FOR_PLANNING: ${workOrders.filter((w) => w.status === 'READY_FOR_PLANNING').length}`,
           `IN_PROGRESS: ${workOrders.filter((w) => w.status === 'IN_PROGRESS').length}`,
         ]}
         error={sections.workOrders.status === 'error' ? sections.workOrders.message : undefined}
@@ -550,7 +550,9 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
             }}
           >
             <option value="ALL">Alle statuser</option>
-            <option value="OPEN">OPEN</option>
+            <option value="DRAFT">DRAFT</option>
+            <option value="READY_FOR_PLANNING">READY_FOR_PLANNING</option>
+            <option value="PLANNED">PLANNED</option>
             <option value="IN_PROGRESS">IN_PROGRESS</option>
             <option value="DONE">DONE</option>
             <option value="BLOCKED">BLOCKED</option>

@@ -9,3 +9,7 @@ export async function getToken() {
 export async function setToken(token: string) {
   return SecureStore.setItemAsync(KEY, token);
 }
+
+export async function clearToken() {
+  return SecureStore.deleteItemAsync(KEY);
+}

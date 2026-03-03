@@ -1,13 +1,25 @@
-import { Link } from 'expo-router';
-import { Text, View } from 'react-native';
+import { Redirect } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
+import { getToken } from '../src/auth/token-store';
 
 export default function HomeScreen() {
-  return (
-    <View style={{ padding: 24, gap: 12 }}>
-      <Text style={{ fontSize: 24, fontWeight: '700' }}>Arbeidsflytsportal</Text>
-      <Link href="/workorders">Mine arbeidsordre</Link>
-      <Link href="/timesheets">Timer</Link>
-      <Link href="/todos">Todo</Link>
-    </View>
-  );
+  const [ready, setReady] = useState(false);
+  const [token, setCurrentToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    getToken()
+      .then((value) => setCurrentToken(value))
+      .finally(() => setReady(true));
+  }, []);
+
+  if (!ready) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  return <Redirect href={token ? '/today' : '/login'} />;
 }

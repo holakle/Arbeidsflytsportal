@@ -16,6 +16,11 @@ Formatet folger prinsippene fra Keep a Changelog.
 - Ny `SECURITY.md` med policy for privat sårbarhetsrapportering og responstider.
 - Dependabot er konfigurert i `.github/dependabot.yml` for npm og GitHub Actions (ukentlig).
 - `/health`-endepunkt returnerer nå `{ ok: true, uptime, timestamp }` med enkel `db`-status.
+- Mobil login-flyt med dev-brukervalg (`/login`), Today-visning (`/today`) og WorkOrder-detalj for montørflyt.
+- Nye API-endepunkt for arbeidsøkter: `POST /workorders/:id/start|pause|finish` og `GET /me/sessions/active`.
+- Nye API-endepunkt for vedlegg (dev-storage) på arbeidsordre: `GET|POST /workorders/:id/attachments`.
+- Nye API-endepunkt for varslinger: `GET /notifications` og `POST /notifications/read`.
+- Nye ADR-notater i `docs/adr/` for status-enum, work session lifecycle og storage-provider.
 
 ### Changed
 
@@ -25,11 +30,16 @@ Formatet folger prinsippene fra Keep a Changelog.
 - `docker-compose.yml` bruker na miljovariabler fra `.env` for Postgres i stedet for hardkodede credentials.
 - Postgres-port er bundet til `127.0.0.1:5432` for a redusere utilsiktet LAN-eksponering.
 - `docker-compose.yml` har nå valgfri `api`-service med healthcheck og `depends_on` mot healthy Postgres.
+- `WorkOrder.status` er migrert fra fri tekst til enum (`DRAFT` ... `CANCELLED`) med datamapping fra legacy verdier.
+- `WorkOrder` er utvidet med felt for kunde/kontakt/adresse/HMS/tilkomst og geo-koordinater.
+- `Schedule`-API støtter nå `POST /schedule` og `PATCH /schedule/:id` med konfliktvarsling og metadata i respons.
+- Web- og mobilvisninger bruker oppdaterte arbeidsordre-felt og nye statusverdier.
 
 ### Fixed
 
 - Fjernet UTF-8 BOM fra tekstfiler for stabil parsing og renere diffs.
 - Rate limit TTL-enhet er gjort entydig: API bruker `RATE_LIMIT_TTL_MS` direkte i millisekunder.
+- Multi-tenant flyt er strammet inn for nye arbeidsøkt-, vedlegg- og notifikasjonsendepunkt ved konsekvent bruk av `organizationId`.
 
 ### Security
 
