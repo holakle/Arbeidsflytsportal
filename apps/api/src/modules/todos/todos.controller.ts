@@ -9,7 +9,6 @@ import {
   Post,
   Query,
   UseGuards,
-  UsePipes,
 } from '@nestjs/common';
 import { createTodoSchema, updateTodoSchema } from '@portal/shared';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator.js';
@@ -38,15 +37,17 @@ export class TodosController {
 
   @Post()
   @Roles('planner', 'technician', 'member', 'org_admin')
-  @UsePipes(new ZodValidationPipe(createTodoSchema))
-  create(@CurrentUser() user: AuthUser, @Body() body: any) {
+  create(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(createTodoSchema)) body: any) {
     return this.service.create(user.organizationId, body);
   }
 
   @Patch(':id')
   @Roles('planner', 'technician', 'member', 'org_admin')
-  @UsePipes(new ZodValidationPipe(updateTodoSchema))
-  update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() body: any) {
+  update(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(updateTodoSchema)) body: any,
+  ) {
     return this.service.update(user.organizationId, id, body);
   }
 

@@ -9,7 +9,6 @@ import {
   Post,
   Query,
   UseGuards,
-  UsePipes,
 } from '@nestjs/common';
 import { createTimesheetSchema, updateTimesheetSchema } from '@portal/shared';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator.js';
@@ -39,18 +38,16 @@ export class TimesheetsController {
 
   @Post()
   @Roles('planner', 'technician', 'member', 'org_admin', 'system_admin')
-  @UsePipes(new ZodValidationPipe(createTimesheetSchema))
-  create(@CurrentUser() user: AuthUser, @Body() body: any) {
+  create(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(createTimesheetSchema)) body: any) {
     return this.service.create(user.organizationId, user.id, user.roles, body);
   }
 
   @Patch(':id')
   @Roles('planner', 'technician', 'member', 'org_admin', 'system_admin')
-  @UsePipes(new ZodValidationPipe(updateTimesheetSchema))
   update(
     @CurrentUser() user: AuthUser,
     @Param('id') id: string,
-    @Body() body: Record<string, unknown>,
+    @Body(new ZodValidationPipe(updateTimesheetSchema)) body: Record<string, unknown>,
   ) {
     return this.service.update(user.organizationId, user.id, id, body);
   }

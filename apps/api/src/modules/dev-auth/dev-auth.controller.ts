@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Post, UsePipes } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Post } from '@nestjs/common';
 import { issueDevTokenSchema } from '@portal/shared';
 import { ZodValidationPipe } from '../../common/validation/zod-validation.pipe.js';
 import { DevAuthService } from './dev-auth.service.js';
@@ -13,8 +13,7 @@ export class DevAuthController {
   }
 
   @Post('token')
-  @UsePipes(new ZodValidationPipe(issueDevTokenSchema))
-  issueToken(@Body() body: { userId: string }) {
+  issueToken(@Body(new ZodValidationPipe(issueDevTokenSchema)) body: { userId: string }) {
     return this.service.issueToken(body.userId);
   }
 }

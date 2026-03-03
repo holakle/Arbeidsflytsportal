@@ -42,3 +42,14 @@ Dette dokumentet beskriver standard arbeidsflyt for Codex i dette repoet.
 - Avslutt alltid med en "Endringsrapport" som inkluderer:
   - liste over filer som er endret
   - kort begrunnelse per fil eller endringsgruppe
+- Ved større endringer som krever restart av API/WEB skal du når commit er utført og plan fullført sjekke om web+api er oppe+ kjøre opp cloudflare+ sende cloudflare link
+
+## Avhengighetsfeil (node_modules) - policy
+
+- Ikke slett hele `node_modules` som first response ved feil i en enkelt pakke.
+- Foretrukket recovery-rekkefolge:
+  - 1) stopp prosesser som kan låse filer (`node`, `pnpm`, dev-servere)
+  - 2) kjor `pnpm install --filter <pakke> --force` for berørt workspace
+  - 3) kjør malrettet reinstall (`pnpm --filter <pakke> add ...`) eller `pnpm rebuild` for berorte pakker
+  - 4) kjor full `pnpm install --force` kun hvis stegene over feiler
+- Full sletting av `node_modules` skal kun brukes som siste utvei, og alltid dokumenteres i statusrapport med arsaken.

@@ -13,6 +13,13 @@ export class HttpClient {
   ) {}
 
   async request<T>(path: string, options: HttpRequestOptions = {}): Promise<T> {
+    const serializedBody =
+      options.body === undefined || options.body === null
+        ? undefined
+        : typeof options.body === 'string'
+          ? options.body
+          : JSON.stringify(options.body);
+
     const res = await fetch(`${this.baseUrl}${path}`, {
       method: options.method ?? 'GET',
       headers: {
@@ -20,7 +27,7 @@ export class HttpClient {
         ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
         ...options.headers,
       },
-      body: options.body ? JSON.stringify(options.body) : undefined,
+      body: serializedBody,
     });
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}: ${await res.text()}`);

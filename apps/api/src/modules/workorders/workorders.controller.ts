@@ -10,7 +10,6 @@ import {
   Post,
   Query,
   UseGuards,
-  UsePipes,
 } from '@nestjs/common';
 import {
   addWorkOrderConsumableSchema,
@@ -45,8 +44,10 @@ export class WorkOrdersController {
 
   @Post()
   @Roles('planner', 'org_admin')
-  @UsePipes(new ZodValidationPipe(createWorkOrderSchema))
-  create(@CurrentUser() user: AuthUser, @Body() body: Record<string, unknown>) {
+  create(
+    @CurrentUser() user: AuthUser,
+    @Body(new ZodValidationPipe(createWorkOrderSchema)) body: Record<string, unknown>,
+  ) {
     return this.service.create(user.organizationId, user.id, body);
   }
 
@@ -58,11 +59,10 @@ export class WorkOrdersController {
 
   @Patch(':id')
   @Roles('planner', 'technician', 'org_admin')
-  @UsePipes(new ZodValidationPipe(updateWorkOrderSchema))
   update(
     @CurrentUser() user: AuthUser,
     @Param('id') id: string,
-    @Body() body: Record<string, unknown>,
+    @Body(new ZodValidationPipe(updateWorkOrderSchema)) body: Record<string, unknown>,
   ) {
     return this.service.update(user.organizationId, user.id, id, body);
   }
@@ -75,11 +75,11 @@ export class WorkOrdersController {
 
   @Post(':id/assign')
   @Roles('planner', 'org_admin')
-  @UsePipes(new ZodValidationPipe(assignWorkOrderSchema))
   assign(
     @CurrentUser() user: AuthUser,
     @Param('id') id: string,
-    @Body() body: { assigneeUserId?: string; assigneeTeamId?: string },
+    @Body(new ZodValidationPipe(assignWorkOrderSchema))
+    body: { assigneeUserId?: string; assigneeTeamId?: string },
   ) {
     return this.service.assign(user.organizationId, user.id, id, body);
   }
@@ -92,11 +92,11 @@ export class WorkOrdersController {
 
   @Post(':id/consumables')
   @Roles('planner', 'technician', 'org_admin')
-  @UsePipes(new ZodValidationPipe(addWorkOrderConsumableSchema))
   addConsumable(
     @CurrentUser() user: AuthUser,
     @Param('id') id: string,
-    @Body() body: { equipmentItemId: string; quantity?: number; note?: string },
+    @Body(new ZodValidationPipe(addWorkOrderConsumableSchema))
+    body: { equipmentItemId: string; quantity?: number; note?: string },
   ) {
     return this.service.addConsumable(user.organizationId, user.id, id, body);
   }
@@ -109,11 +109,11 @@ export class WorkOrdersController {
 
   @Post(':id/planning-owner')
   @Roles('planner', 'org_admin')
-  @UsePipes(new ZodValidationPipe(setPlanningOwnerSchema))
   setPlanningOwner(
     @CurrentUser() user: AuthUser,
     @Param('id') id: string,
-    @Body() body: { planningOwnerUserId: string | null },
+    @Body(new ZodValidationPipe(setPlanningOwnerSchema))
+    body: { planningOwnerUserId: string | null },
   ) {
     return this.service.setPlanningOwner(
       user.organizationId,
@@ -125,11 +125,10 @@ export class WorkOrdersController {
 
   @Post(':id/schedule')
   @Roles('planner', 'org_admin')
-  @UsePipes(new ZodValidationPipe(createWorkOrderScheduleSchema))
   createSchedule(
     @CurrentUser() user: AuthUser,
     @Param('id') id: string,
-    @Body()
+    @Body(new ZodValidationPipe(createWorkOrderScheduleSchema))
     body: {
       assigneeUserId?: string;
       assigneeTeamId?: string;

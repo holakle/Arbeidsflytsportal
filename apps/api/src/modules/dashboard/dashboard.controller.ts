@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Put, UseGuards, UsePipes } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Put, UseGuards } from '@nestjs/common';
 import { updateDashboardSchema } from '@portal/shared';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator.js';
 import { Roles } from '../../common/auth/decorators/roles.decorator.js';
@@ -22,8 +22,7 @@ export class DashboardController {
 
   @Put()
   @Roles('planner', 'technician', 'member', 'org_admin')
-  @UsePipes(new ZodValidationPipe(updateDashboardSchema))
-  update(@CurrentUser() user: AuthUser, @Body() body: any) {
+  update(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(updateDashboardSchema)) body: any) {
     return this.service.update(user.organizationId, user.id, body);
   }
 }

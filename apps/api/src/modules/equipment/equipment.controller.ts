@@ -7,7 +7,6 @@ import {
   Post,
   Query,
   UseGuards,
-  UsePipes,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { attachBarcodeRequestSchema, reserveEquipmentSchema } from '@portal/shared';
@@ -58,10 +57,10 @@ export class EquipmentController {
 
   @Post('reserve')
   @Roles('planner', 'org_admin')
-  @UsePipes(new ZodValidationPipe(reserveEquipmentSchema))
   reserve(
     @CurrentUser() user: AuthUser,
-    @Body() body: { equipmentItemId: string; workOrderId: string; startAt: string; endAt: string },
+    @Body(new ZodValidationPipe(reserveEquipmentSchema))
+    body: { equipmentItemId: string; workOrderId: string; startAt: string; endAt: string },
   ) {
     return this.service.reserve(user.organizationId, user.id, body);
   }
@@ -76,11 +75,10 @@ export class EquipmentController {
 
   @Post(':id/barcode')
   @Roles('planner', 'org_admin')
-  @UsePipes(new ZodValidationPipe(attachBarcodeRequestSchema))
   attachBarcode(
     @CurrentUser() user: AuthUser,
     @Param('id') id: string,
-    @Body() body: { barcode: string },
+    @Body(new ZodValidationPipe(attachBarcodeRequestSchema)) body: { barcode: string },
   ) {
     return this.service.attachBarcode(user.organizationId, user.id, id, body.barcode);
   }

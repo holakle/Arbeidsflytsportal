@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Post, UseGuards, UsePipes } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Post, UseGuards } from '@nestjs/common';
 import { markNotificationsReadSchema } from '@portal/shared';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator.js';
 import { JwtAuthGuard } from '../../common/auth/guards/jwt-auth.guard.js';
@@ -19,8 +19,10 @@ export class NotificationsController {
   }
 
   @Post('read')
-  @UsePipes(new ZodValidationPipe(markNotificationsReadSchema))
-  markRead(@CurrentUser() user: AuthUser, @Body() body: { ids: string[] }) {
+  markRead(
+    @CurrentUser() user: AuthUser,
+    @Body(new ZodValidationPipe(markNotificationsReadSchema)) body: { ids: string[] },
+  ) {
     return this.service.markRead(user.organizationId, user.id, body.ids);
   }
 }
