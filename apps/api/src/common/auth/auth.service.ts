@@ -13,4 +13,3 @@ export class AuthService {
     return this.oidcAdapter.verify(token);
   }
 }
-

@@ -1,4 +1,4 @@
-﻿import { z } from 'zod';
+import { z } from 'zod';
 import { todoStatuses } from '../enums';
 
 export const todoSchema = z.object({
@@ -22,4 +22,3 @@ export const createTodoSchema = z.object({
 });
 
 export const updateTodoSchema = createTodoSchema.partial();
-

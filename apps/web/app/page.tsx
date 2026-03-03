@@ -1,4 +1,4 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
 import { ConnectionStatus } from '@/components/dev/connection-status';
 
 export default function HomePage() {

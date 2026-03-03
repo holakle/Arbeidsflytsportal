@@ -19,8 +19,20 @@ export class TimesheetsService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  async list(organizationId: string, userId: string, roles: string[], from?: string, to?: string, requestedUserId?: string) {
-    const targetUserId = await this.resolveTargetUserId(organizationId, userId, roles, requestedUserId);
+  async list(
+    organizationId: string,
+    userId: string,
+    roles: string[],
+    from?: string,
+    to?: string,
+    requestedUserId?: string,
+  ) {
+    const targetUserId = await this.resolveTargetUserId(
+      organizationId,
+      userId,
+      roles,
+      requestedUserId,
+    );
     return this.prisma.timesheetEntry.findMany({
       where: {
         organizationId,
@@ -66,7 +78,12 @@ export class TimesheetsService {
       note?: string;
     },
   ) {
-    const targetUserId = await this.resolveTargetUserId(organizationId, userId, roles, payload.userId ?? undefined);
+    const targetUserId = await this.resolveTargetUserId(
+      organizationId,
+      userId,
+      roles,
+      payload.userId ?? undefined,
+    );
     const entry = await this.prisma.timesheetEntry.create({
       data: {
         organizationId,
@@ -92,8 +109,15 @@ export class TimesheetsService {
     return entry;
   }
 
-  async update(organizationId: string, userId: string, id: string, payload: Record<string, unknown>) {
-    const existing = await this.prisma.timesheetEntry.findFirst({ where: { id, organizationId, userId } });
+  async update(
+    organizationId: string,
+    userId: string,
+    id: string,
+    payload: Record<string, unknown>,
+  ) {
+    const existing = await this.prisma.timesheetEntry.findFirst({
+      where: { id, organizationId, userId },
+    });
     if (!existing) throw new NotFoundException('Timesheet not found');
 
     return this.prisma.timesheetEntry.update({
@@ -102,21 +126,36 @@ export class TimesheetsService {
         date: payload.date ? new Date(String(payload.date)) : undefined,
         hours: payload.hours ? new Prisma.Decimal(Number(payload.hours)) : undefined,
         activityType: payload.activityType ? String(payload.activityType) : undefined,
-        workOrderId: payload.workOrderId !== undefined ? (payload.workOrderId as string | null) : undefined,
-        projectId: payload.projectId !== undefined ? (payload.projectId as string | null) : undefined,
+        workOrderId:
+          payload.workOrderId !== undefined ? (payload.workOrderId as string | null) : undefined,
+        projectId:
+          payload.projectId !== undefined ? (payload.projectId as string | null) : undefined,
         note: payload.note !== undefined ? (payload.note as string | null) : undefined,
       },
     });
   }
 
   async remove(organizationId: string, userId: string, id: string) {
-    const existing = await this.prisma.timesheetEntry.findFirst({ where: { id, organizationId, userId } });
+    const existing = await this.prisma.timesheetEntry.findFirst({
+      where: { id, organizationId, userId },
+    });
     if (!existing) throw new NotFoundException('Timesheet not found');
     return this.prisma.timesheetEntry.delete({ where: { id } });
   }
 
-  async weeklySummary(organizationId: string, userId: string, roles: string[], weekStartRaw?: string, requestedUserId?: string) {
-    const targetUserId = await this.resolveTargetUserId(organizationId, userId, roles, requestedUserId);
+  async weeklySummary(
+    organizationId: string,
+    userId: string,
+    roles: string[],
+    weekStartRaw?: string,
+    requestedUserId?: string,
+  ) {
+    const targetUserId = await this.resolveTargetUserId(
+      organizationId,
+      userId,
+      roles,
+      requestedUserId,
+    );
     const weekStart = weekStartRaw ? new Date(weekStartRaw) : toWeekStart(new Date());
     const weekEnd = new Date(weekStart);
     weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
@@ -142,10 +181,17 @@ export class TimesheetsService {
   }
 
   private canManageOtherUsers(roles: string[]) {
-    return roles.includes('planner') || roles.includes('org_admin') || roles.includes('system_admin');
+    return (
+      roles.includes('planner') || roles.includes('org_admin') || roles.includes('system_admin')
+    );
   }
 
-  private async resolveTargetUserId(organizationId: string, actorUserId: string, roles: string[], requestedUserId?: string) {
+  private async resolveTargetUserId(
+    organizationId: string,
+    actorUserId: string,
+    roles: string[],
+    requestedUserId?: string,
+  ) {
     if (!requestedUserId || requestedUserId === actorUserId) {
       return actorUserId;
     }
@@ -164,4 +210,3 @@ export class TimesheetsService {
     return targetUser.id;
   }
 }
-

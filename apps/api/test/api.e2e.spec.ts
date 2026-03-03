@@ -1,4 +1,4 @@
-﻿import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
@@ -249,8 +249,12 @@ maybeDescribe('API e2e', () => {
       .set('Authorization', `Bearer ${plannerToken}`);
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body.some((event: { type?: string }) => event.type === 'workorder_schedule')).toBe(true);
-    expect(res.body.some((event: { type?: string }) => event.type === 'equipment_reservation')).toBe(true);
+    expect(res.body.some((event: { type?: string }) => event.type === 'workorder_schedule')).toBe(
+      true,
+    );
+    expect(
+      res.body.some((event: { type?: string }) => event.type === 'equipment_reservation'),
+    ).toBe(true);
   });
 
   it('GET /schedule scope=mine returns own/team events for technician', async () => {

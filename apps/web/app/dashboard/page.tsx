@@ -29,7 +29,11 @@ type Reservation = {
   workOrder?: { title: string | null };
 };
 type Todo = { id: string; title: string; status: string; dueDate: string | null };
-type WeeklySummary = { weekStart: string; totalHours: number; byActivityType: Record<string, number> };
+type WeeklySummary = {
+  weekStart: string;
+  totalHours: number;
+  byActivityType: Record<string, number>;
+};
 type CalendarEvent = {
   id: string;
   type: 'workorder_schedule' | 'equipment_reservation';
@@ -81,7 +85,9 @@ function WidgetRenderer({ widget, data }: { widget: DashboardWidget; data: Widge
               <div className="text-xs text-slate-600">{wo.status}</div>
             </div>
           ))}
-          {data.myWorkOrders.length === 0 ? <div className="text-xs text-slate-500">Ingen arbeidsordre funnet.</div> : null}
+          {data.myWorkOrders.length === 0 ? (
+            <div className="text-xs text-slate-500">Ingen arbeidsordre funnet.</div>
+          ) : null}
         </div>
       );
 
@@ -91,13 +97,17 @@ function WidgetRenderer({ widget, data }: { widget: DashboardWidget; data: Widge
           {data.bookings.slice(0, 6).map((booking) => (
             <div key={booking.id} className="rounded border p-2">
               <div className="font-medium">{booking.equipmentItem?.name ?? 'Ukjent utstyr'}</div>
-              <div className="text-xs text-slate-600">{booking.workOrder?.title ?? 'Ukjent workorder'}</div>
+              <div className="text-xs text-slate-600">
+                {booking.workOrder?.title ?? 'Ukjent workorder'}
+              </div>
               <div className="text-xs text-slate-600">
                 {formatDate(booking.startAt)} - {formatDate(booking.endAt)}
               </div>
             </div>
           ))}
-          {data.bookings.length === 0 ? <div className="text-xs text-slate-500">Ingen bookinger funnet.</div> : null}
+          {data.bookings.length === 0 ? (
+            <div className="text-xs text-slate-500">Ingen bookinger funnet.</div>
+          ) : null}
         </div>
       );
 
@@ -105,8 +115,12 @@ function WidgetRenderer({ widget, data }: { widget: DashboardWidget; data: Widge
       return (
         <div className="space-y-1 text-sm">
           <div className="rounded border p-2">
-            <div className="font-medium">Timer denne uken: {data.weeklySummary?.totalHours ?? 0}</div>
-            <div className="text-xs text-slate-600">Uke start: {data.weeklySummary?.weekStart ?? '-'}</div>
+            <div className="font-medium">
+              Timer denne uken: {data.weeklySummary?.totalHours ?? 0}
+            </div>
+            <div className="text-xs text-slate-600">
+              Uke start: {data.weeklySummary?.weekStart ?? '-'}
+            </div>
           </div>
           <div className="space-y-1">
             {Object.entries(data.weeklySummary?.byActivityType ?? {}).map(([activity, hours]) => (
@@ -131,7 +145,9 @@ function WidgetRenderer({ widget, data }: { widget: DashboardWidget; data: Widge
               <div className="text-xs text-slate-600">Forfall: {formatDate(todo.dueDate)}</div>
             </div>
           ))}
-          {data.todos.length === 0 ? <div className="text-xs text-slate-500">Ingen todo funnet.</div> : null}
+          {data.todos.length === 0 ? (
+            <div className="text-xs text-slate-500">Ingen todo funnet.</div>
+          ) : null}
           <Link className="inline-block text-xs underline" href="/todos">
             Gå til todos
           </Link>
@@ -148,11 +164,19 @@ function WidgetRenderer({ widget, data }: { widget: DashboardWidget; data: Widge
               <div className="text-xs text-slate-600">
                 {formatDate(event.start)} - {formatDate(event.end)}
               </div>
-              {event.resourceRef?.label ? <div className="text-xs text-slate-600">Ressurs: {event.resourceRef.label}</div> : null}
-              {event.workOrderRef ? <div className="text-xs text-slate-600">WO: {event.workOrderRef.title} ({event.workOrderRef.status})</div> : null}
+              {event.resourceRef?.label ? (
+                <div className="text-xs text-slate-600">Ressurs: {event.resourceRef.label}</div>
+              ) : null}
+              {event.workOrderRef ? (
+                <div className="text-xs text-slate-600">
+                  WO: {event.workOrderRef.title} ({event.workOrderRef.status})
+                </div>
+              ) : null}
             </div>
           ))}
-          {data.calendarEvents.length === 0 ? <div className="text-xs text-slate-500">Ingen kalenderhendelser funnet.</div> : null}
+          {data.calendarEvents.length === 0 ? (
+            <div className="text-xs text-slate-500">Ingen kalenderhendelser funnet.</div>
+          ) : null}
         </div>
       );
 
@@ -199,11 +223,17 @@ export default function DashboardPage() {
       const dateRange = getDateRange(rangeDays);
 
       const [myWorkOrders, bookings, weeklySummary, todos, calendarEvents] = await Promise.all([
-        client.listWorkOrders('page=1&limit=20&assignedToMe=true').then((res) => res.items as WorkOrder[]),
-        client.listEquipmentReservations('page=1&limit=20').then((res) => res.items as Reservation[]),
+        client
+          .listWorkOrders('page=1&limit=20&assignedToMe=true')
+          .then((res) => res.items as WorkOrder[]),
+        client
+          .listEquipmentReservations('page=1&limit=20')
+          .then((res) => res.items as Reservation[]),
         client.weeklySummary().then((res) => res as WeeklySummary),
         client.listTodos('mineOnly=true').then((res) => res as Todo[]),
-        client.listSchedule({ from: dateRange.from, to: dateRange.to, scope: 'mine' }).then((res) => res as CalendarEvent[]),
+        client
+          .listSchedule({ from: dateRange.from, to: dateRange.to, scope: 'mine' })
+          .then((res) => res as CalendarEvent[]),
       ]);
 
       setDashboard(dashboardRes);
@@ -228,13 +258,21 @@ export default function DashboardPage() {
       </div>
 
       <div className="flex items-center gap-2">
-        <button className="rounded border px-3 py-1 text-sm hover:bg-slate-50 disabled:opacity-40" onClick={() => void load()} disabled={loading}>
+        <button
+          className="rounded border px-3 py-1 text-sm hover:bg-slate-50 disabled:opacity-40"
+          onClick={() => void load()}
+          disabled={loading}
+        >
           {loading ? 'Laster...' : 'Refresh'}
         </button>
         <span className="text-xs text-slate-600">Widgets: {dashboard?.widgets.length ?? 0}</span>
       </div>
 
-      {error ? <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</div> : null}
+      {error ? (
+        <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+          {error}
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {(dashboard?.widgets ?? []).map((widget) => (

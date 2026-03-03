@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
@@ -91,7 +91,9 @@ export default function TimesPage() {
 
   const canManageOtherUsers = useMemo(() => {
     if (!me) return false;
-    return me.roles.some((role) => role === 'planner' || role === 'org_admin' || role === 'system_admin');
+    return me.roles.some(
+      (role) => role === 'planner' || role === 'org_admin' || role === 'system_admin',
+    );
   }, [me]);
 
   const targetUserId = useMemo(() => {
@@ -111,16 +113,26 @@ export default function TimesPage() {
     return [...map.entries()].map(([id, label]) => ({ id, label }));
   }, [workOrders]);
 
-  const totalListedHours = useMemo(() => entries.reduce((sum, entry) => sum + Number(entry.hours), 0), [entries]);
+  const totalListedHours = useMemo(
+    () => entries.reduce((sum, entry) => sum + Number(entry.hours), 0),
+    [entries],
+  );
 
   async function loadEntriesAndSummary(nextTargetUserId: string) {
     if (!token) return;
 
-    const queryUserId = canManageOtherUsers && nextTargetUserId && me?.user.id !== nextTargetUserId ? nextTargetUserId : undefined;
+    const queryUserId =
+      canManageOtherUsers && nextTargetUserId && me?.user.id !== nextTargetUserId
+        ? nextTargetUserId
+        : undefined;
 
     const [entriesRes, summaryRes] = await Promise.all([
-      apiClient(token).listTimesheets(queryUserId ? { userId: queryUserId } : undefined).then((res) => res as TimesheetEntry[]),
-      apiClient(token).weeklySummary(undefined, queryUserId).then((res) => res as WeeklySummary),
+      apiClient(token)
+        .listTimesheets(queryUserId ? { userId: queryUserId } : undefined)
+        .then((res) => res as TimesheetEntry[]),
+      apiClient(token)
+        .weeklySummary(undefined, queryUserId)
+        .then((res) => res as WeeklySummary),
     ]);
 
     setEntries(entriesRes);
@@ -135,9 +147,15 @@ export default function TimesPage() {
 
     try {
       const [meRes, workOrderRes, usersRes] = await Promise.all([
-        apiClient(token).me().then((res) => res as MeResponse),
-        apiClient(token).listWorkOrders('page=1&limit=200').then((res) => res.items as WorkOrder[]),
-        apiClient(token).listDevUsers().then((res) => res as DevUser[]),
+        apiClient(token)
+          .me()
+          .then((res) => res as MeResponse),
+        apiClient(token)
+          .listWorkOrders('page=1&limit=200')
+          .then((res) => res.items as WorkOrder[]),
+        apiClient(token)
+          .listDevUsers()
+          .then((res) => res as DevUser[]),
       ]);
 
       setMe(meRes);
@@ -158,7 +176,9 @@ export default function TimesPage() {
 
   useEffect(() => {
     if (!targetUserId || !me) return;
-    void loadEntriesAndSummary(targetUserId).catch((err) => setError(toErrorMessage(err, 'Kunne ikke hente timer.')));
+    void loadEntriesAndSummary(targetUserId).catch((err) =>
+      setError(toErrorMessage(err, 'Kunne ikke hente timer.')),
+    );
   }, [targetUserId]);
 
   async function createEntry() {
@@ -231,8 +251,16 @@ export default function TimesPage() {
         <ConnectionStatus />
       </div>
 
-      {error ? <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</div> : null}
-      {success ? <div className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{success}</div> : null}
+      {error ? (
+        <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+          {error}
+        </div>
+      ) : null}
+      {success ? (
+        <div className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          {success}
+        </div>
+      ) : null}
 
       <section className="rounded border bg-white p-4">
         <h2 className="mb-2 text-lg">Ukesummering</h2>
@@ -250,9 +278,23 @@ export default function TimesPage() {
       <section className="rounded border bg-white p-4">
         <h2 className="mb-2 text-lg">Ny timeforing</h2>
         <div className="grid gap-2 md:grid-cols-3">
-          <input className="rounded border px-3 py-2" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          <input className="rounded border px-3 py-2" value={hours} onChange={(e) => setHours(e.target.value)} placeholder="Timer" />
-          <select className="rounded border px-3 py-2" value={activityType} onChange={(e) => setActivityType(e.target.value)}>
+          <input
+            className="rounded border px-3 py-2"
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
+          <input
+            className="rounded border px-3 py-2"
+            value={hours}
+            onChange={(e) => setHours(e.target.value)}
+            placeholder="Timer"
+          />
+          <select
+            className="rounded border px-3 py-2"
+            value={activityType}
+            onChange={(e) => setActivityType(e.target.value)}
+          >
             {activityTypes.map((type) => (
               <option key={type} value={type}>
                 {type}
@@ -261,7 +303,11 @@ export default function TimesPage() {
           </select>
 
           {canManageOtherUsers ? (
-            <select className="rounded border px-3 py-2 md:col-span-3" value={targetUserId} onChange={(e) => setSelectedWorkerId(e.target.value)}>
+            <select
+              className="rounded border px-3 py-2 md:col-span-3"
+              value={targetUserId}
+              onChange={(e) => setSelectedWorkerId(e.target.value)}
+            >
               {users.map((user) => (
                 <option key={user.id} value={user.id}>
                   {user.displayName} ({user.roles.join(', ') || 'no-role'})
@@ -270,7 +316,11 @@ export default function TimesPage() {
             </select>
           ) : null}
 
-          <select className="rounded border px-3 py-2" value={workOrderId} onChange={(e) => onWorkOrderChange(e.target.value)}>
+          <select
+            className="rounded border px-3 py-2"
+            value={workOrderId}
+            onChange={(e) => onWorkOrderChange(e.target.value)}
+          >
             <option value="">Ingen arbeidsordre</option>
             {workOrders.map((wo) => (
               <option key={wo.id} value={wo.id}>
@@ -279,7 +329,11 @@ export default function TimesPage() {
             ))}
           </select>
 
-          <select className="rounded border px-3 py-2" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+          <select
+            className="rounded border px-3 py-2"
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+          >
             <option value="">Ingen prosjekt</option>
             {projectOptions.map((project) => (
               <option key={project.id} value={project.id}>
@@ -288,23 +342,35 @@ export default function TimesPage() {
             ))}
           </select>
 
-          <button className="rounded bg-accent px-3 py-2 text-white" onClick={() => void createEntry()}>
+          <button
+            className="rounded bg-accent px-3 py-2 text-white"
+            onClick={() => void createEntry()}
+          >
             Opprett
           </button>
 
-          <textarea className="rounded border px-3 py-2 md:col-span-3" rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Notat (valgfri)" />
+          <textarea
+            className="rounded border px-3 py-2 md:col-span-3"
+            rows={3}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Notat (valgfri)"
+          />
         </div>
 
         {me ? (
           <p className="mt-2 text-xs text-slate-600">
-            Forer timer som: {users.find((u) => u.id === targetUserId)?.displayName ?? me.user.displayName}
+            Forer timer som:{' '}
+            {users.find((u) => u.id === targetUserId)?.displayName ?? me.user.displayName}
           </p>
         ) : null}
       </section>
 
       <section className="rounded border bg-white p-4">
         <h2 className="mb-2 text-lg">Foringer</h2>
-        <p className="mb-2 text-xs text-slate-600">Sum i listen: {totalListedHours.toFixed(2)} timer</p>
+        <p className="mb-2 text-xs text-slate-600">
+          Sum i listen: {totalListedHours.toFixed(2)} timer
+        </p>
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead>
@@ -324,7 +390,10 @@ export default function TimesPage() {
                   <td className="py-2">{entry.activityType}</td>
                   <td className="py-2">{entry.note ?? '-'}</td>
                   <td className="py-2">
-                    <button className="rounded border px-2 py-1 text-xs hover:bg-slate-50" onClick={() => void removeEntry(entry.id)}>
+                    <button
+                      className="rounded border px-2 py-1 text-xs hover:bg-slate-50"
+                      onClick={() => void removeEntry(entry.id)}
+                    >
                       Slett
                     </button>
                   </td>

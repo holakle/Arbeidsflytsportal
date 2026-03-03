@@ -56,7 +56,9 @@ export default function EmployeeDetailPage() {
   const canEdit = useMemo(() => {
     if (!me || !employeeId) return false;
     if (me.user.id === employeeId) return true;
-    return me.roles.some((role) => role === 'planner' || role === 'org_admin' || role === 'system_admin');
+    return me.roles.some(
+      (role) => role === 'planner' || role === 'org_admin' || role === 'system_admin',
+    );
   }, [employeeId, me]);
 
   useEffect(() => {
@@ -67,8 +69,12 @@ export default function EmployeeDetailPage() {
       }
       try {
         const [meRes, userRes] = await Promise.all([
-          apiClient(token).me().then((res) => res as MeResponse),
-          apiClient(token).listDevUsers().then((res) => res as DevAuthUser[]),
+          apiClient(token)
+            .me()
+            .then((res) => res as MeResponse),
+          apiClient(token)
+            .listDevUsers()
+            .then((res) => res as DevAuthUser[]),
         ]);
         setMe(meRes);
         setUsers(userRes);
@@ -124,8 +130,16 @@ export default function EmployeeDetailPage() {
         <ConnectionStatus />
       </div>
 
-      {error ? <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</div> : null}
-      {success ? <div className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{success}</div> : null}
+      {error ? (
+        <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+          {error}
+        </div>
+      ) : null}
+      {success ? (
+        <div className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          {success}
+        </div>
+      ) : null}
 
       <section className="rounded border bg-white p-4">
         <h2 className="mb-2 text-lg">Ansatt</h2>
@@ -151,7 +165,8 @@ export default function EmployeeDetailPage() {
       <section className="rounded border bg-white p-4">
         <h2 className="mb-2 text-lg">Ferdigheter og kompetanse/kurs</h2>
         <p className="mb-3 text-xs text-slate-600">
-          Redigering er tillatt for egen profil og for admin/planner. Data lagres lokalt i nettleseren (pilotmodus).
+          Redigering er tillatt for egen profil og for admin/planner. Data lagres lokalt i
+          nettleseren (pilotmodus).
         </p>
         <div className="grid gap-3 md:grid-cols-2">
           <div className="space-y-2">
@@ -186,11 +201,23 @@ export default function EmployeeDetailPage() {
           />
         </div>
         <div className="mt-3 flex items-center gap-3">
-          <button className="rounded bg-accent px-3 py-2 text-sm text-white disabled:opacity-40" onClick={saveProfile} disabled={!canEdit}>
+          <button
+            className="rounded bg-accent px-3 py-2 text-sm text-white disabled:opacity-40"
+            onClick={saveProfile}
+            disabled={!canEdit}
+          >
             Lagre profil
           </button>
-          {updatedAt ? <span className="text-xs text-slate-600">Sist oppdatert: {new Date(updatedAt).toLocaleString('no-NO')}</span> : null}
-          {!canEdit ? <span className="text-xs text-amber-700">Du har ikke redigeringstilgang for denne profilen.</span> : null}
+          {updatedAt ? (
+            <span className="text-xs text-slate-600">
+              Sist oppdatert: {new Date(updatedAt).toLocaleString('no-NO')}
+            </span>
+          ) : null}
+          {!canEdit ? (
+            <span className="text-xs text-amber-700">
+              Du har ikke redigeringstilgang for denne profilen.
+            </span>
+          ) : null}
         </div>
       </section>
 

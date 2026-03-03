@@ -1,4 +1,4 @@
-﻿import { Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { WorkOrdersController } from './workorders.controller.js';
 import { WorkOrdersService } from './workorders.service.js';
 
@@ -7,4 +7,3 @@ import { WorkOrdersService } from './workorders.service.js';
   providers: [WorkOrdersService],
 })
 export class WorkOrdersModule {}
-

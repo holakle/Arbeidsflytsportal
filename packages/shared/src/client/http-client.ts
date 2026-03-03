@@ -1,4 +1,4 @@
-﻿export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
+export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
 
 export type HttpRequestOptions = {
   method?: HttpMethod;
@@ -7,7 +7,10 @@ export type HttpRequestOptions = {
 };
 
 export class HttpClient {
-  constructor(private readonly baseUrl: string, private readonly token?: string) {}
+  constructor(
+    private readonly baseUrl: string,
+    private readonly token?: string,
+  ) {}
 
   async request<T>(path: string, options: HttpRequestOptions = {}): Promise<T> {
     const res = await fetch(`${this.baseUrl}${path}`, {
@@ -25,4 +28,3 @@ export class HttpClient {
     return (await res.json()) as T;
   }
 }
-

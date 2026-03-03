@@ -1,4 +1,4 @@
-﻿export * from './enums';
+export * from './enums';
 export * from './schemas/auth.schema';
 export * from './schemas/dev-auth.schema';
 export * from './schemas/workorder.schema';
@@ -8,4 +8,3 @@ export * from './schemas/todo.schema';
 export * from './schemas/dashboard.schema';
 export * from './schemas/schedule.schema';
 export * from './client/api-client';
-

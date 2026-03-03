@@ -1,4 +1,4 @@
-﻿import { z } from 'zod';
+import { z } from 'zod';
 
 export function parseQuery<T>(schema: z.ZodType<T>, input: unknown): T {
   const parsed = schema.safeParse(input);
@@ -7,4 +7,3 @@ export function parseQuery<T>(schema: z.ZodType<T>, input: unknown): T {
   }
   return parsed.data;
 }
-

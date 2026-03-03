@@ -60,7 +60,9 @@ export function SettingsMenu() {
       {open ? (
         <div className="absolute right-0 z-50 mt-2 w-56 rounded-lg border border-slate-200 bg-white p-3 shadow-lg">
           <div className="mb-3">
-            <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">{labels.language}</div>
+            <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {labels.language}
+            </div>
             <div className="flex gap-2">
               <button
                 className={`rounded border px-2 py-1 text-xs ${language === 'no' ? 'border-accent text-accent' : 'border-slate-300'}`}
@@ -78,7 +80,9 @@ export function SettingsMenu() {
           </div>
 
           <div>
-            <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">{labels.theme}</div>
+            <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {labels.theme}
+            </div>
             <div className="flex gap-2">
               <button
                 className={`rounded border px-2 py-1 text-xs ${theme === 'light' ? 'border-accent text-accent' : 'border-slate-300'}`}

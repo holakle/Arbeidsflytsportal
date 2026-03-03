@@ -1,4 +1,4 @@
-﻿import { z } from 'zod';
+import { z } from 'zod';
 import { roleCodes } from '../enums';
 
 export const userSchema = z.object({
@@ -15,4 +15,3 @@ export const meResponseSchema = z.object({
 });
 
 export type MeResponse = z.infer<typeof meResponseSchema>;
-

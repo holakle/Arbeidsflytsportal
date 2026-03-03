@@ -1,4 +1,4 @@
-﻿import { Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerGuard } from '@nestjs/throttler';
@@ -15,7 +15,8 @@ import { DashboardModule } from './modules/dashboard/dashboard.module.js';
 import { DevAuthModule } from './modules/dev-auth/dev-auth.module.js';
 import { ScheduleModule } from './modules/schedule/schedule.module.js';
 
-const enableDevAuth = process.env.ENABLE_DEV_AUTH === 'true' || process.env.NODE_ENV !== 'production';
+const enableDevAuth =
+  process.env.ENABLE_DEV_AUTH === 'true' || process.env.NODE_ENV !== 'production';
 
 @Module({
   imports: [
@@ -48,4 +49,3 @@ const enableDevAuth = process.env.ENABLE_DEV_AUTH === 'true' || process.env.NODE
   ],
 })
 export class AppModule {}
-

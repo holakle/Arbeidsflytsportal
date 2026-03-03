@@ -80,7 +80,14 @@ export class ApiClient {
 
   createWorkOrderSchedule(
     id: string,
-    body: { assigneeUserId?: string; assigneeTeamId?: string; startAt: string; endAt: string; note?: string; status?: string },
+    body: {
+      assigneeUserId?: string;
+      assigneeTeamId?: string;
+      startAt: string;
+      endAt: string;
+      note?: string;
+      status?: string;
+    },
   ): Promise<unknown> {
     return this.http.request(`/workorders/${id}/schedule`, { method: 'POST', body });
   }
@@ -110,7 +117,9 @@ export class ApiClient {
     return this.http.request(`/equipment/${id}/barcode`, { method: 'POST', body: { barcode } });
   }
 
-  listTimesheets(query?: string | { from?: string; to?: string; userId?: string }): Promise<unknown[]> {
+  listTimesheets(
+    query?: string | { from?: string; to?: string; userId?: string },
+  ): Promise<unknown[]> {
     if (typeof query === 'string') {
       return this.http.request(`/timesheets${query ? `?${query}` : ''}`);
     }

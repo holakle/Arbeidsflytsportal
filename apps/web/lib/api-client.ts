@@ -1,4 +1,4 @@
-﻿import { ApiClient } from '@portal/shared';
+import { ApiClient } from '@portal/shared';
 import { clearDevSession } from './auth';
 
 const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
@@ -15,7 +15,11 @@ export function apiClient(token?: string) {
         try {
           return await value.apply(target, args);
         } catch (error) {
-          if (error instanceof Error && error.message.startsWith('HTTP 401:') && typeof window !== 'undefined') {
+          if (
+            error instanceof Error &&
+            error.message.startsWith('HTTP 401:') &&
+            typeof window !== 'undefined'
+          ) {
             clearDevSession();
             window.location.href = '/login?reason=invalid-token';
           }

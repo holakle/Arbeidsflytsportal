@@ -1,4 +1,4 @@
-﻿import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 
 @Injectable()
 export class TenantGuard implements CanActivate {
@@ -11,4 +11,3 @@ export class TenantGuard implements CanActivate {
     return true;
   }
 }
-

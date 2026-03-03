@@ -23,9 +23,9 @@ Gjøre /dashboard til en reell “Min side” med widget-rendering (MVP: Mine ar
 
 Legge inn “Legg til på Min side” fra /overview (pin widget) – uten å bryte eksisterende GET/PUT /dashboard.
 
-Hardening: liten e2e-test som beviser at /dev-auth/* ikke finnes i prod-konfig.
+Hardening: liten e2e-test som beviser at /dev-auth/\* ikke finnes i prod-konfig.
 
-0) Låste rammer (ikke diskuter, bare følg)
+0. Låste rammer (ikke diskuter, bare følg)
 
 Dev-auth er kun for utvikling og skal være “route-fravær” når deaktivert (conditional module import).
 
@@ -33,7 +33,7 @@ Dev-auth er kun for utvikling og skal være “route-fravær” når deaktivert 
 
 Ikke introduser OIDC nå.
 
-1) Planner UX v1 (mest verdi per time)
+1. Planner UX v1 (mest verdi per time)
 
 Problem i dag: Planner krever at bruker taster inn WorkOrder ID, Assignee User ID, Equipment ID manuelt.
 
@@ -70,7 +70,7 @@ Ved feil: tydelig tekst med status/årsaksinfo (fra exception).
 Commit-forslag:
 feat(web): make planner usable with dropdowns and date inputs
 
-2) Dashboard widgets v1 (gjør “Min side” ekte)
+2. Dashboard widgets v1 (gjør “Min side” ekte)
 
 Status i dag: /dashboard viser bare widget-titler og type, ikke data.
 
@@ -107,7 +107,7 @@ Reload fungerer uten manuell setup (så lenge dev-login er gjort).
 Commit-forslag:
 feat(web): render real dashboard widgets using existing api
 
-3) “Legg til på Min side” fra /overview (pin widget)
+3. “Legg til på Min side” fra /overview (pin widget)
 
 Mål: Fra hver seksjon i /overview skal man kunne legge til en relevant widget på dashboardet.
 
@@ -142,7 +142,7 @@ Klikk “Legg til…” -> widget dukker opp på /dashboard etter refresh, uten 
 Commit-forslag:
 feat(web): allow pinning overview sections to my dashboard
 
-4) Prod-sikkerhet: e2e-test for route-fravær av dev-auth
+4. Prod-sikkerhet: e2e-test for route-fravær av dev-auth
 
 Bakgrunn: DevAuthModule importeres conditionally. Vi vil bevise med test at routes ikke finnes i prod-konfig.
 
@@ -163,7 +163,7 @@ Testen kjører i CI lokalt og beviser at dev-auth routes ikke registreres.
 Commit-forslag:
 test(api): assert dev-auth routes absent in production config
 
-5) Docs (mini, men viktig)
+5. Docs (mini, men viktig)
 
 Oppdater root INFO.md (eller README) med:
 
@@ -188,10 +188,10 @@ test(api): assert dev-auth routes absent in production config
 
 docs: update INFO with dev login and overview/dashboard workflow
 
-
 Videre arbeid:
 V4 — Domene og API for planlegging (foundation)
-1) Datamodell: separer planansvar og “schedule assignment”
+
+1. Datamodell: separer planansvar og “schedule assignment”
 
 Endring i DB/Prisma:
 
@@ -211,7 +211,7 @@ indeks på (organizationId, assigneeUserId, startAt) osv.
 
 Viktig: dette er ikke “assignment” i betydningen “ansvar/eiere” – det er kalenderplassering.
 
-2) API-endepunkter (MVP)
+2. API-endepunkter (MVP)
 
 Legg inn et dedikert “schedule”-API (enkelt å bruke fra kalender-widget og planner):
 
@@ -245,7 +245,7 @@ vanlig bruker: kun lese egne schedule events
 
 planner/admin: lese alle, skrive schedule for alle
 
-3) Shared kontrakter
+3. Shared kontrakter
 
 I packages/shared:
 
@@ -267,8 +267,7 @@ Planner kan hente schedule for en uke og få både workorder-schedule og utstyrs
 
 Vanlig bruker får kun egne events (RBAC/tenant).
 
-V5 — Planner: Kalender-visning + ressurs-oversikt
-4) Planner UI: “List view” + “Calendar view”
+V5 — Planner: Kalender-visning + ressurs-oversikt 4) Planner UI: “List view” + “Calendar view”
 
 I apps/web/app/planner:
 
@@ -292,7 +291,7 @@ Bruk (MIT) for uke/dag-view i MVP.
 
 Ikke implementer resource timeline i V5 (for å unngå premium scheduler).
 
-5) Planleggerflyt: tildel planansvar + tildel arbeider i tid
+5. Planleggerflyt: tildel planansvar + tildel arbeider i tid
 
 På WorkOrder detaljer i planner:
 
@@ -320,8 +319,7 @@ se eventene dukke opp i kalenderen
 
 Planner kan bytte mellom “mannskap” og “utstyr” og se bookings.
 
-V6 — “Min side” kalender-widget + egne sider for Timer og To-dos
-6) Dashboard: Ny widget “Kalender (mine bookinger)”
+V6 — “Min side” kalender-widget + egne sider for Timer og To-dos 6) Dashboard: Ny widget “Kalender (mine bookinger)”
 
 Widget type: MY_CALENDAR
 
@@ -333,7 +331,7 @@ Aksept
 
 Alle brukere ser en kalender-widget med fremtidige bookinger (workorder-schedule) og evt utstyrsreservasjoner knyttet til dem.
 
-7) Egen side for Timer: /times
+7. Egen side for Timer: /times
 
 Toppnivå i meny, på nivå med planner/overview/dashboard
 
@@ -347,7 +345,7 @@ ukesummering synlig
 
 Bruk eksisterende endpoints (timesheets + weekly summary)
 
-8) Egen side for To-dos: /todos
+8. Egen side for To-dos: /todos
 
 Liste + opprett + fullfør + slett
 
@@ -361,8 +359,7 @@ Aksept V6
 
 Dashboard fortsatt gir “quick view” via widgets.
 
-Testing og sikkerhet (må med)
-9) Minimum tester
+Testing og sikkerhet (må med) 9) Minimum tester
 
 API e2e:
 
@@ -401,27 +398,33 @@ I UI, bruk konsekvente labels:
 “Tildelt arbeid (tidspunkt)” = schedule entries
 
 Dette gjør modellen lett å forstå for alle.
+
 ## Statusoppdatering 2026-03-02 (V4/V5-betraktninger)
 
 1. FULLFORT: Splitt av utstyrstyper i domene:
+
 - EQUIPMENT (bookbar)
 - CONSUMABLE (forbruksmateriell, ikke bookbar)
 
 2. FULLFORT: Manuell forbruksforing pa arbeidsordre:
+
 - API: GET/POST /workorders/:id/consumables
 - Web: registrering og liste pa /workorders/[id]
 
 3. FULLFORT: Scannerflyt oppdatert:
+
 - funnet CONSUMABLE kan registreres direkte mot valgt arbeidsordre
 - funnet EQUIPMENT beholder reserveringsflyt
 
 ## Statusoppdatering 2026-03-02 (V4 arbeid i gang)
 
 1. FULLFORT: Datamodell utvidet med planlegging:
+
 - WorkOrder.planningOwnerUserId
 - WorkOrderSchedule (med assignee user/team, tidsrom, note, status)
 
 2. FULLFORT: Nye API-endepunkter:
+
 - GET /schedule?from=...&to=...&scope=mine|all
 - POST /workorders/:id/planning-owner
 - GET /workorders/:id/schedule
@@ -429,10 +432,12 @@ Dette gjør modellen lett å forstå for alle.
 - DELETE /workorders/:id/schedule/:scheduleId
 
 3. FULLFORT: RBAC i schedule:
+
 - scope=all kun planner/admin/system_admin
 - mine-scope filtrerer pa user/team-tilgang
 
 4. FULLFORT: Shared kontrakter/klient:
+
 - schedule.schema.ts
 - ApiClient: listSchedule, setPlanningOwner, create/delete/list workorder schedule
 
@@ -443,19 +448,23 @@ Dette gjør modellen lett å forstå for alle.
 1. FULLFORT: Planner har Liste/Kalender-toggle med schedule-data fra /schedule.
 2. FULLFORT: Kalenderfilter for ressurstype (Mannskap/Utstyr) og spesifikk ressurs.
 3. FULLFORT: Workorder-detalj har:
+
 - Planansvarlig (planlegger)
 - Tildelt arbeid (tidspunkt) opprett/slett
 - visning av eksisterende schedule entries
+
 4. FULLFORT: API e2e utvidet for schedule RBAC/tenant + consumables-regler.
 
 ## Kontekst (laast for pilot)
 
 Rollestruktur:
+
 - Planlegger: planlegger arbeidsoppdrag og har bred tilgang, men skal ikke kunne bookes pa jobber.
 - Ressursstyrer: delegerer ressurser og booker, har bred tilgang.
 - Montor: utforer arbeid og skal kunne bookes pa oppdrag.
 
 Dummybrukere for pilot (realistiske navn + brukernavn):
+
 - Ingrid Nilsen (brukernavn: ingrid.nilsen, rolle: planner)
 - Martin Hagen (brukernavn: martin.hagen, rolle: org_admin / ressursstyrer)
 - Ole Andersen (brukernavn: ole.andersen, rolle: technician)
@@ -465,24 +474,29 @@ Dummybrukere for pilot (realistiske navn + brukernavn):
 - Kristian Dahl (brukernavn: kristian.dahl, rolle: member)
 
 Merknad:
+
 - User-modellen har ikke eget username-felt. I pilot brukes e-post local-part som brukernavn (f.eks. ingrid.nilsen@demo.no -> ingrid.nilsen).
 
 ## Statusoppdatering 2026-03-02 (V7 timer/login/assign)
 
 1. FULLFORT: Login/token-stabilitet forbedret i web:
+
 - server-side API-base leses fra `INTERNAL_API_URL`/`SERVER_API_URL` (fallback localhost API)
 - klientkall handterer `401` med auto logout + redirect til `/login?reason=invalid-token`
 
 2. FULLFORT: `/times` UX oppdatert:
+
 - WorkOrder og Project er dropdowns (project utledet fra workorders)
 - Worker er auto for montor/member, dropdown for planner/admin/system_admin
 - oppretting sender `userId` kun nar admin/planner forer pa vegne av andre
 
 3. FULLFORT: API/shared for timesheets utvidet:
+
 - `POST /timesheets`, `GET /timesheets`, `GET /timesheets/weekly-summary` stotter optional `userId`
 - RBAC: kun planner/org_admin/system_admin kan foresporre/fore pa vegne av andre
 
 4. FULLFORT: Planner assign/schedule 400-blokkering fjernet:
+
 - rollebasert \"ikke bookbar\"-sjekk er fjernet i workorders service
 
 5. NOTAT: Seed-IDer i repoet er ikke RFC-UUID. Input-validering er derfor gjort tolerant (`string().min(1)`) i relevante request-skjemaer for at flytene skal fungere med dagens data.

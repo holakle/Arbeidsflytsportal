@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Inject, Param, Post, Query, UseGuards, UsePipes } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Inject,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+  UsePipes,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { attachBarcodeRequestSchema, reserveEquipmentSchema } from '@portal/shared';
 import { z } from 'zod';
@@ -67,7 +77,11 @@ export class EquipmentController {
   @Post(':id/barcode')
   @Roles('planner', 'org_admin')
   @UsePipes(new ZodValidationPipe(attachBarcodeRequestSchema))
-  attachBarcode(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() body: { barcode: string }) {
+  attachBarcode(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() body: { barcode: string },
+  ) {
     return this.service.attachBarcode(user.organizationId, user.id, id, body.barcode);
   }
 }

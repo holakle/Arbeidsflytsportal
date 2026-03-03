@@ -5,10 +5,19 @@ import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
 import { getActiveUser, getDevToken } from '@/lib/auth';
 
-type ScanState = 'idle' | 'starting' | 'scanning' | 'processing' | 'error' | 'permission_denied' | 'insecure_context';
+type ScanState =
+  | 'idle'
+  | 'starting'
+  | 'scanning'
+  | 'processing'
+  | 'error'
+  | 'permission_denied'
+  | 'insecure_context';
 type LookupResult = Awaited<ReturnType<ReturnType<typeof apiClient>['lookupEquipmentByCode']>>;
 type EquipmentItem = Awaited<ReturnType<ReturnType<typeof apiClient>['listEquipment']>>[number];
-type WorkOrder = Awaited<ReturnType<ReturnType<typeof apiClient>['listWorkOrders']>>['items'][number];
+type WorkOrder = Awaited<
+  ReturnType<ReturnType<typeof apiClient>['listWorkOrders']>
+>['items'][number];
 
 const SCAN_COOLDOWN_MS = 1800;
 
@@ -16,11 +25,17 @@ export default function ScanPage() {
   const token = getDevToken();
   const activeUser = getActiveUser();
   const canAttach = useMemo(
-    () => (activeUser?.roles ?? []).some((role) => ['planner', 'org_admin', 'system_admin'].includes(role)),
+    () =>
+      (activeUser?.roles ?? []).some((role) =>
+        ['planner', 'org_admin', 'system_admin'].includes(role),
+      ),
     [activeUser?.roles],
   );
   const canRegisterUsage = useMemo(
-    () => (activeUser?.roles ?? []).some((role) => ['planner', 'technician', 'org_admin', 'system_admin'].includes(role)),
+    () =>
+      (activeUser?.roles ?? []).some((role) =>
+        ['planner', 'technician', 'org_admin', 'system_admin'].includes(role),
+      ),
     [activeUser?.roles],
   );
 
@@ -83,7 +98,8 @@ export default function ScanPage() {
       if (!normalized) return;
       const now = Date.now();
       if (lookupInFlightRef.current) return;
-      if (normalized === lastCodeRef.current && now - lastScanAtRef.current < SCAN_COOLDOWN_MS) return;
+      if (normalized === lastCodeRef.current && now - lastScanAtRef.current < SCAN_COOLDOWN_MS)
+        return;
 
       lookupInFlightRef.current = true;
       lastCodeRef.current = normalized;
@@ -150,7 +166,9 @@ export default function ScanPage() {
     if (!videoRef.current) return;
     videoRef.current.srcObject = stream;
     await videoRef.current.play();
-    const detector = new detectorCtor({ formats: ['qr_code', 'code_128', 'code_39', 'ean_13', 'ean_8'] });
+    const detector = new detectorCtor({
+      formats: ['qr_code', 'code_128', 'code_39', 'ean_13', 'ean_8'],
+    });
     detectorIntervalRef.current = setInterval(async () => {
       if (!videoRef.current || lookupInFlightRef.current) return;
       try {
@@ -190,14 +208,18 @@ export default function ScanPage() {
       const { BrowserMultiFormatReader } = await import('@zxing/browser');
       const reader = new BrowserMultiFormatReader();
       zxingReaderRef.current = reader;
-      await reader.decodeFromVideoDevice(undefined, videoRef.current!, (scanResult: any, _error: unknown, controls: any) => {
-        if (controls) {
-          zxingControlsRef.current = controls;
-        }
-        if (scanResult?.getText) {
-          void runLookup(scanResult.getText());
-        }
-      });
+      await reader.decodeFromVideoDevice(
+        undefined,
+        videoRef.current!,
+        (scanResult: any, _error: unknown, controls: any) => {
+          if (controls) {
+            zxingControlsRef.current = controls;
+          }
+          if (scanResult?.getText) {
+            void runLookup(scanResult.getText());
+          }
+        },
+      );
       setState('scanning');
     } catch {
       try {
@@ -237,7 +259,8 @@ export default function ScanPage() {
   }
 
   async function registerConsumableUsage() {
-    if (!token || !result?.found || result.item?.type !== 'CONSUMABLE' || !selectedWorkOrderId) return;
+    if (!token || !result?.found || result.item?.type !== 'CONSUMABLE' || !selectedWorkOrderId)
+      return;
     setIsRegisteringUsage(true);
     try {
       await apiClient(token).addWorkOrderConsumable(selectedWorkOrderId, {
@@ -265,11 +288,23 @@ export default function ScanPage() {
       </div>
 
       <p className="text-sm text-slate-600">Status: {state}</p>
-      {message ? <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm">{message}</div> : null}
+      {message ? (
+        <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+          {message}
+        </div>
+      ) : null}
 
       <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <video ref={videoRef} muted playsInline autoPlay className="aspect-video w-full rounded border bg-black object-cover" />
-        <p className="mt-2 text-xs text-slate-500">Hvis kamera ikke virker: bruk manuell input under.</p>
+        <video
+          ref={videoRef}
+          muted
+          playsInline
+          autoPlay
+          className="aspect-video w-full rounded border bg-black object-cover"
+        />
+        <p className="mt-2 text-xs text-slate-500">
+          Hvis kamera ikke virker: bruk manuell input under.
+        </p>
       </section>
 
       <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -281,7 +316,10 @@ export default function ScanPage() {
             value={manualCode}
             onChange={(e) => setManualCode(e.target.value)}
           />
-          <button className="rounded bg-accent px-3 py-2 text-white" onClick={() => void runLookup(manualCode)}>
+          <button
+            className="rounded bg-accent px-3 py-2 text-white"
+            onClick={() => void runLookup(manualCode)}
+          >
             Sok
           </button>
         </div>
@@ -300,17 +338,27 @@ export default function ScanPage() {
               <p>Barcode: {result.item.barcode ?? '-'}</p>
               {result.item.type === 'EQUIPMENT' ? (
                 <div className="mt-3 flex gap-2">
-                  <Link className="rounded border px-3 py-2 text-sm" href={`/overview?equipmentId=${result.item.id}`}>
+                  <Link
+                    className="rounded border px-3 py-2 text-sm"
+                    href={`/overview?equipmentId=${result.item.id}`}
+                  >
                     Apne
                   </Link>
-                  <Link className="rounded bg-accent px-3 py-2 text-sm text-white" href={`/planner?equipmentItemId=${result.item.id}`}>
+                  <Link
+                    className="rounded bg-accent px-3 py-2 text-sm text-white"
+                    href={`/planner?equipmentItemId=${result.item.id}`}
+                  >
                     Reserver
                   </Link>
                 </div>
               ) : null}
               {result.item.type === 'CONSUMABLE' && canRegisterUsage ? (
                 <div className="mt-3 grid gap-2 md:grid-cols-4">
-                  <select className="rounded border px-3 py-2 md:col-span-2" value={selectedWorkOrderId} onChange={(e) => setSelectedWorkOrderId(e.target.value)}>
+                  <select
+                    className="rounded border px-3 py-2 md:col-span-2"
+                    value={selectedWorkOrderId}
+                    onChange={(e) => setSelectedWorkOrderId(e.target.value)}
+                  >
                     {workOrders.map((wo) => (
                       <option key={wo.id} value={wo.id}>
                         {wo.title} ({wo.status})
@@ -346,14 +394,22 @@ export default function ScanPage() {
             <div className="mt-4 space-y-2">
               <h3 className="text-sm font-medium">Knytt til utstyr</h3>
               <div className="flex gap-2">
-                <select className="flex-1 rounded border px-3 py-2" value={attachItemId} onChange={(e) => setAttachItemId(e.target.value)}>
+                <select
+                  className="flex-1 rounded border px-3 py-2"
+                  value={attachItemId}
+                  onChange={(e) => setAttachItemId(e.target.value)}
+                >
                   {equipmentItems.map((item) => (
                     <option key={item.id} value={item.id}>
                       {item.name} ({item.serialNumber ?? item.id})
                     </option>
                   ))}
                 </select>
-                <button className="rounded bg-accent px-3 py-2 text-white disabled:opacity-50" onClick={() => void handleAttach()} disabled={!attachItemId || isAttaching}>
+                <button
+                  className="rounded bg-accent px-3 py-2 text-white disabled:opacity-50"
+                  onClick={() => void handleAttach()}
+                  disabled={!attachItemId || isAttaching}
+                >
                   {isAttaching ? 'Knytter...' : 'Knytt'}
                 </button>
               </div>

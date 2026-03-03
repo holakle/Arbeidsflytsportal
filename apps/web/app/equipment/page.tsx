@@ -97,7 +97,11 @@ export default function EquipmentPage() {
 
   const reservedNow = useMemo(() => {
     const now = new Date();
-    return new Set(reservations.filter((r) => new Date(r.startAt) <= now && now <= new Date(r.endAt)).map((r) => r.equipmentItemId));
+    return new Set(
+      reservations
+        .filter((r) => new Date(r.startAt) <= now && now <= new Date(r.endAt))
+        .map((r) => r.equipmentItemId),
+    );
   }, [reservations]);
 
   const filteredItems = useMemo(() => {
@@ -106,7 +110,10 @@ export default function EquipmentPage() {
       const matchesType = typeFilter === 'ALL' ? true : item.type === typeFilter;
       if (!matchesType) return false;
       if (!q) return true;
-      return [item.id, item.name, item.serialNumber ?? '', item.barcode ?? '', item.type].join(' ').toLowerCase().includes(q);
+      return [item.id, item.name, item.serialNumber ?? '', item.barcode ?? '', item.type]
+        .join(' ')
+        .toLowerCase()
+        .includes(q);
     });
   }, [items, query, typeFilter]);
 
@@ -121,12 +128,19 @@ export default function EquipmentPage() {
         <Link className="rounded border px-3 py-2 text-sm hover:bg-slate-50" href="/equipment/scan">
           Apne scanner
         </Link>
-        <button className="rounded border px-3 py-2 text-sm hover:bg-slate-50" onClick={() => void load()}>
+        <button
+          className="rounded border px-3 py-2 text-sm hover:bg-slate-50"
+          onClick={() => void load()}
+        >
           Refresh
         </button>
       </div>
 
-      {error ? <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</div> : null}
+      {error ? (
+        <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+          {error}
+        </div>
+      ) : null}
 
       <section className="rounded border bg-white p-4">
         <h2 className="mb-2 text-lg">Equipment items</h2>
@@ -167,8 +181,16 @@ export default function EquipmentPage() {
                     </Link>
                   </td>
                   <td className="py-2">{item.serialNumber ?? '-'}</td>
-                  <td className="py-2">{item.type === 'CONSUMABLE' ? 'Forbruksmateriell' : 'Utstyr'}</td>
-                  <td className="py-2">{item.type === 'CONSUMABLE' ? 'Legges manuelt pa WO' : reservedNow.has(item.id) ? 'Booket na' : 'Ledig na'}</td>
+                  <td className="py-2">
+                    {item.type === 'CONSUMABLE' ? 'Forbruksmateriell' : 'Utstyr'}
+                  </td>
+                  <td className="py-2">
+                    {item.type === 'CONSUMABLE'
+                      ? 'Legges manuelt pa WO'
+                      : reservedNow.has(item.id)
+                        ? 'Booket na'
+                        : 'Ledig na'}
+                  </td>
                   <td className="py-2">
                     <BarcodePreview code={item.barcode} />
                   </td>
@@ -194,7 +216,9 @@ export default function EquipmentPage() {
             <tbody>
               {reservations.map((reservation) => (
                 <tr key={reservation.id} className="border-b">
-                  <td className="py-2">{reservation.equipmentItem?.name ?? reservation.equipmentItemId}</td>
+                  <td className="py-2">
+                    {reservation.equipmentItem?.name ?? reservation.equipmentItemId}
+                  </td>
                   <td className="py-2">{reservation.workOrder?.title ?? '-'}</td>
                   <td className="py-2">{formatDate(reservation.startAt)}</td>
                   <td className="py-2">{formatDate(reservation.endAt)}</td>

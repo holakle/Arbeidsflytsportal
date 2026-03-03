@@ -17,6 +17,7 @@
 8. Apne: `http://localhost:3000/scan`
 
 ## Anbefalt daglig flyt (core uten mobile)
+
 1. Start DB: `pnpm infra:up`
 2. Start API+web: `pnpm dev:core`
 3. Verifiser:
@@ -26,13 +27,14 @@
 5. Hent tunnel-URL: `docker logs workflow-tunnel --tail 80`
 
 ## Notat: Etter mistet internettilgang (Cloudflare)
+
 Quick tunnel mister ofte forbindelsen ved nettverksbrudd. Kjør dette:
 
 1. Restart tunnel:
-pnpm tunnel:down
-pnpm tunnel:up
+   pnpm tunnel:down
+   pnpm tunnel:up
 2. Hent ny URL:
-docker logs workflow-tunnel --tail 80
+   docker logs workflow-tunnel --tail 80
 3. Verifiser at appene fortsatt kjører lokalt:
    - API: `http://localhost:3001/health`
    - Web: `http://localhost:3000/login`
@@ -40,6 +42,7 @@ docker logs workflow-tunnel --tail 80
 Merk: TryCloudflare quick tunnel får ofte ny URL etter restart.
 
 ## Mobil HTTPS (valgfritt)
+
 - Caddy LAN:
   - `docker compose --profile https up -d https`
   - sett `NEXT_PUBLIC_API_URL=https://<LAN_HOST>/api`
@@ -47,6 +50,7 @@ Merk: TryCloudflare quick tunnel får ofte ny URL etter restart.
   - `pnpm tunnel:up`
 
 ## Manuell oppstart uten scripts
+
 ```powershell
 docker compose up -d postgres
 pnpm --filter @apps/api dev

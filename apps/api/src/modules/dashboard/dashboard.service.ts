@@ -6,7 +6,11 @@ const defaultWidgets = [
   { type: 'BOOKINGS', title: 'Bookinger', config: {} },
   { type: 'HOURS_THIS_WEEK', title: 'Timer denne uken', config: {} },
   { type: 'TODO', title: 'Todo', config: {} },
-  { type: 'MY_CALENDAR', title: 'Kalender (mine bookinger)', config: { rangeDays: 14, showEquipment: true } },
+  {
+    type: 'MY_CALENDAR',
+    title: 'Kalender (mine bookinger)',
+    config: { rangeDays: 14, showEquipment: true },
+  },
 ];
 
 @Injectable()
@@ -28,7 +32,13 @@ export class DashboardService {
           layout: {
             create: {
               columns: 4,
-              layout: defaultWidgets.map((_, i) => ({ widgetIndex: i, x: (i % 2) * 2, y: Math.floor(i / 2) * 2, w: 2, h: 2 })),
+              layout: defaultWidgets.map((_, i) => ({
+                widgetIndex: i,
+                x: (i % 2) * 2,
+                y: Math.floor(i / 2) * 2,
+                w: 2,
+                h: 2,
+              })),
             },
           },
         },
@@ -44,9 +54,17 @@ export class DashboardService {
         },
       });
 
-      const layoutItems = Array.isArray(dashboard.layout?.layout) ? (dashboard.layout?.layout as any[]) : [];
-      const maxY = layoutItems.reduce((max, item) => Math.max(max, Number(item?.y ?? 0) + Number(item?.h ?? 0)), 0);
-      const nextLayout = [...layoutItems, { widgetInstanceId: createdWidget.id, x: 0, y: maxY + 1, w: 2, h: 2 }];
+      const layoutItems = Array.isArray(dashboard.layout?.layout)
+        ? (dashboard.layout?.layout as any[])
+        : [];
+      const maxY = layoutItems.reduce(
+        (max, item) => Math.max(max, Number(item?.y ?? 0) + Number(item?.h ?? 0)),
+        0,
+      );
+      const nextLayout = [
+        ...layoutItems,
+        { widgetInstanceId: createdWidget.id, x: 0, y: maxY + 1, w: 2, h: 2 },
+      ];
 
       if (dashboard.layout) {
         await this.prisma.dashboardLayout.update({
@@ -95,11 +113,14 @@ export class DashboardService {
       this.prisma.dashboardLayout.upsert({
         where: { dashboardId: dashboard.id },
         update: { columns: payload.layout.columns, layout: payload.layout.layout },
-        create: { dashboardId: dashboard.id, columns: payload.layout.columns, layout: payload.layout.layout },
+        create: {
+          dashboardId: dashboard.id,
+          columns: payload.layout.columns,
+          layout: payload.layout.layout,
+        },
       }),
     ]);
 
     return this.getOrCreate(organizationId, userId);
   }
 }
-

@@ -27,4 +27,3 @@ export class DashboardController {
     return this.service.update(user.organizationId, user.id, body);
   }
 }
-

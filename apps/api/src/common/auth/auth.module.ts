@@ -1,4 +1,4 @@
-﻿import { Global, Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { AuthService } from './auth.service.js';
 import { DevJwtAdapter } from './oidc/dev-jwt.adapter.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';

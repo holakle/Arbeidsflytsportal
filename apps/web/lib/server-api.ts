@@ -7,7 +7,8 @@ type SectionOk<T> = { status: 'ok'; data: T };
 type SectionError = { status: 'error'; message: string };
 export type SectionResult<T> = SectionOk<T> | SectionError;
 
-const apiBaseUrl = process.env.INTERNAL_API_URL ?? process.env.SERVER_API_URL ?? 'http://localhost:3001';
+const apiBaseUrl =
+  process.env.INTERNAL_API_URL ?? process.env.SERVER_API_URL ?? 'http://localhost:3001';
 
 export async function getServerToken(): Promise<string | null> {
   const cookieStore = await cookies();

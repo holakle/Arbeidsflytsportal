@@ -115,16 +115,44 @@ export default function TodosPage() {
         <ConnectionStatus />
       </div>
 
-      {error ? <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</div> : null}
-      {success ? <div className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{success}</div> : null}
+      {error ? (
+        <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+          {error}
+        </div>
+      ) : null}
+      {success ? (
+        <div className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          {success}
+        </div>
+      ) : null}
 
       <section className="rounded border bg-white p-4">
         <h2 className="mb-2 text-lg">Ny todo</h2>
         <div className="grid gap-2 md:grid-cols-3">
-          <input className="rounded border px-3 py-2 md:col-span-2" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Tittel" />
-          <input className="rounded border px-3 py-2" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-          <textarea className="rounded border px-3 py-2 md:col-span-3" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Beskrivelse (valgfri)" />
-          <button className="rounded bg-accent px-3 py-2 text-white md:col-span-3" onClick={() => void createTodo()} disabled={!title.trim()}>
+          <input
+            className="rounded border px-3 py-2 md:col-span-2"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Tittel"
+          />
+          <input
+            className="rounded border px-3 py-2"
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+          />
+          <textarea
+            className="rounded border px-3 py-2 md:col-span-3"
+            rows={3}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Beskrivelse (valgfri)"
+          />
+          <button
+            className="rounded bg-accent px-3 py-2 text-white md:col-span-3"
+            onClick={() => void createTodo()}
+            disabled={!title.trim()}
+          >
             Opprett
           </button>
         </div>
@@ -134,7 +162,11 @@ export default function TodosPage() {
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-lg">Todo-liste</h2>
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={mineOnly} onChange={(e) => setMineOnly(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={mineOnly}
+              onChange={(e) => setMineOnly(e.target.checked)}
+            />
             Kun mine/team
           </label>
         </div>
@@ -145,14 +177,21 @@ export default function TodosPage() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <strong>{todo.title}</strong>
                 <div className="flex gap-2">
-                  <select className="rounded border px-2 py-1 text-xs" value={todo.status} onChange={(e) => void updateStatus(todo, e.target.value as TodoItem['status'])}>
+                  <select
+                    className="rounded border px-2 py-1 text-xs"
+                    value={todo.status}
+                    onChange={(e) => void updateStatus(todo, e.target.value as TodoItem['status'])}
+                  >
                     {statuses.map((status) => (
                       <option key={status} value={status}>
                         {status}
                       </option>
                     ))}
                   </select>
-                  <button className="rounded border px-2 py-1 text-xs hover:bg-slate-50" onClick={() => void removeTodo(todo.id)}>
+                  <button
+                    className="rounded border px-2 py-1 text-xs hover:bg-slate-50"
+                    onClick={() => void removeTodo(todo.id)}
+                  >
                     Slett
                   </button>
                 </div>
@@ -161,7 +200,9 @@ export default function TodosPage() {
               <p className="mt-1 text-xs text-slate-700">{todo.description ?? '-'}</p>
             </article>
           ))}
-          {todos.length === 0 ? <div className="text-sm text-slate-500">Ingen todo funnet.</div> : null}
+          {todos.length === 0 ? (
+            <div className="text-sm text-slate-500">Ingen todo funnet.</div>
+          ) : null}
         </div>
       </section>
     </main>

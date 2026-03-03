@@ -1,4 +1,4 @@
-﻿services:
+services:
   postgres:
     image: postgres:16-alpine
     container_name: workflow-postgres
@@ -8,11 +8,11 @@
       POSTGRES_PASSWORD: workflow
       POSTGRES_DB: workflow_portal
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U workflow -d workflow_portal"]
+      test: ['CMD-SHELL', 'pg_isready -U workflow -d workflow_portal']
       interval: 5s
       timeout: 5s
       retries: 10
@@ -21,12 +21,12 @@
     image: caddy:2.10.0
     container_name: workflow-https
     restart: unless-stopped
-    profiles: ["https"]
+    profiles: ['https']
     env_file:
       - .env
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
     volumes:
       - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -36,7 +36,7 @@
     image: cloudflare/cloudflared:latest
     container_name: workflow-tunnel
     restart: unless-stopped
-    profiles: ["tunnel"]
+    profiles: ['tunnel']
     command: tunnel --no-autoupdate --url http://host.docker.internal:80
     depends_on:
       - https

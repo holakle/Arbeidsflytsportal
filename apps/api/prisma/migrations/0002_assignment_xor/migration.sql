@@ -1,4 +1,4 @@
-﻿ALTER TABLE "Assignment"
+ALTER TABLE "Assignment"
 ADD CONSTRAINT "assignment_assignee_xor"
 CHECK (
   ("assigneeUserId" IS NOT NULL AND "assigneeTeamId" IS NULL)

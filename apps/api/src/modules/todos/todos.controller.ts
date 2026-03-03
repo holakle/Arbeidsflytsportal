@@ -1,4 +1,16 @@
-import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Query, UseGuards, UsePipes } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Inject,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+  UsePipes,
+} from '@nestjs/common';
 import { createTodoSchema, updateTodoSchema } from '@portal/shared';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator.js';
 import { Roles } from '../../common/auth/decorators/roles.decorator.js';
@@ -16,7 +28,11 @@ export class TodosController {
 
   @Get()
   @Roles('planner', 'technician', 'member', 'org_admin')
-  list(@CurrentUser() user: AuthUser, @Query('status') status?: string, @Query('mineOnly') mineOnly?: string) {
+  list(
+    @CurrentUser() user: AuthUser,
+    @Query('status') status?: string,
+    @Query('mineOnly') mineOnly?: string,
+  ) {
     return this.service.list(user.organizationId, user.id, status, mineOnly === 'true');
   }
 
@@ -40,4 +56,3 @@ export class TodosController {
     return this.service.remove(user.organizationId, id);
   }
 }
-

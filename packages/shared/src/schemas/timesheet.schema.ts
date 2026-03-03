@@ -1,4 +1,4 @@
-﻿import { z } from 'zod';
+import { z } from 'zod';
 import { activityTypes } from '../enums';
 
 export const timesheetEntrySchema = z.object({
@@ -44,4 +44,3 @@ export const weeklySummarySchema = z.object({
   totalHours: z.number(),
   byActivityType: z.record(z.number()),
 });
-

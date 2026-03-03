@@ -40,7 +40,12 @@ export class TodosService {
         teamId: payload.teamId !== undefined ? payload.teamId : undefined,
         title: payload.title,
         status: payload.status,
-        dueDate: payload.dueDate !== undefined ? (payload.dueDate ? new Date(payload.dueDate) : null) : undefined,
+        dueDate:
+          payload.dueDate !== undefined
+            ? payload.dueDate
+              ? new Date(payload.dueDate)
+              : null
+            : undefined,
         description: payload.description !== undefined ? payload.description : undefined,
       },
     });
@@ -52,4 +57,3 @@ export class TodosService {
     return this.prisma.todoItem.delete({ where: { id } });
   }
 }
-

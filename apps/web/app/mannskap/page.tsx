@@ -78,7 +78,10 @@ export default function MannskapPage() {
       })
       .filter((row) => {
         if (!lowered) return true;
-        return [row.displayName, row.email, row.location, row.city, row.phone, row.roles.join(' ')].join(' ').toLowerCase().includes(lowered);
+        return [row.displayName, row.email, row.location, row.city, row.phone, row.roles.join(' ')]
+          .join(' ')
+          .toLowerCase()
+          .includes(lowered);
       });
   }, [query, users]);
 
@@ -87,12 +90,18 @@ export default function MannskapPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Mannskap</h1>
-          <p className="text-sm text-slate-600">Klikk pa navn for ansattside med ferdigheter og kurs.</p>
+          <p className="text-sm text-slate-600">
+            Klikk pa navn for ansattside med ferdigheter og kurs.
+          </p>
         </div>
         <ConnectionStatus />
       </div>
 
-      {error ? <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</div> : null}
+      {error ? (
+        <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+          {error}
+        </div>
+      ) : null}
 
       <section className="rounded border bg-white p-4">
         <div className="mb-3">

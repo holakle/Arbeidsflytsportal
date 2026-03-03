@@ -60,7 +60,11 @@ function BarcodePreview({ code }: { code: string | null }) {
 
   return (
     <div className="space-y-2">
-      <svg ref={svgRef} className="h-14 w-[260px] max-w-full rounded border bg-white p-1" aria-label={`Strekkode ${code}`} />
+      <svg
+        ref={svgRef}
+        className="h-14 w-[260px] max-w-full rounded border bg-white p-1"
+        aria-label={`Strekkode ${code}`}
+      />
       <p className="text-xs tracking-wide text-slate-600">{code}</p>
     </div>
   );
@@ -85,10 +89,13 @@ export default function EquipmentDetailPage() {
       try {
         const [allItems, reservationRes] = await Promise.all([
           apiClient(token).listEquipment(),
-          apiClient(token).listEquipmentReservations(`page=1&limit=100&equipmentItemId=${equipmentId}`),
+          apiClient(token).listEquipmentReservations(
+            `page=1&limit=100&equipmentItemId=${equipmentId}`,
+          ),
         ]);
 
-        const found = (allItems as EquipmentItem[]).find((candidate) => candidate.id === equipmentId) ?? null;
+        const found =
+          (allItems as EquipmentItem[]).find((candidate) => candidate.id === equipmentId) ?? null;
         setItem(found);
         setReservations((reservationRes.items ?? []) as EquipmentReservation[]);
         setError(found ? null : 'Fant ikke utstyr med denne ID-en i din organisasjon.');
@@ -125,7 +132,11 @@ export default function EquipmentDetailPage() {
       </div>
 
       {loading ? <div className="rounded border bg-white px-3 py-2 text-sm">Laster...</div> : null}
-      {error ? <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</div> : null}
+      {error ? (
+        <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+          {error}
+        </div>
+      ) : null}
 
       {!loading && item ? (
         <>
@@ -143,7 +154,9 @@ export default function EquipmentDetailPage() {
                 </div>
                 <div>
                   <dt className="inline text-slate-500">Type: </dt>
-                  <dd className="inline">{item.type === 'CONSUMABLE' ? 'Forbruksmateriell' : 'Utstyr'}</dd>
+                  <dd className="inline">
+                    {item.type === 'CONSUMABLE' ? 'Forbruksmateriell' : 'Utstyr'}
+                  </dd>
                 </div>
                 <div>
                   <dt className="inline text-slate-500">Aktiv: </dt>
@@ -152,7 +165,11 @@ export default function EquipmentDetailPage() {
                 <div>
                   <dt className="inline text-slate-500">Status nå: </dt>
                   <dd className="inline">
-                    {item.type === 'CONSUMABLE' ? 'Legges manuelt pa WO' : activeReservation ? 'Booket na' : 'Ledig na'}
+                    {item.type === 'CONSUMABLE'
+                      ? 'Legges manuelt pa WO'
+                      : activeReservation
+                        ? 'Booket na'
+                        : 'Ledig na'}
                   </dd>
                 </div>
                 {activeReservation?.workOrder ? (

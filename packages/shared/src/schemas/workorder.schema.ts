@@ -1,4 +1,4 @@
-﻿import { z } from 'zod';
+import { z } from 'zod';
 import { workOrderStatuses } from '../enums';
 
 export const workOrderSchema = z.object({
@@ -91,4 +91,3 @@ export const workOrderConsumableSchema = z.object({
 });
 
 export type WorkOrder = z.infer<typeof workOrderSchema>;
-

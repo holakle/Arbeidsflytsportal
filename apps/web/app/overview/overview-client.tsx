@@ -33,7 +33,13 @@ type Assignment = {
   assigneeTeamId: string | null;
 };
 
-type EquipmentItem = { id: string; name: string; serialNumber: string | null; barcode: string | null; active: boolean };
+type EquipmentItem = {
+  id: string;
+  name: string;
+  serialNumber: string | null;
+  barcode: string | null;
+  active: boolean;
+};
 type EquipmentReservation = {
   id: string;
   equipmentItemId: string;
@@ -55,7 +61,11 @@ type Timesheet = {
   project?: { id: string; name: string } | null;
   note: string | null;
 };
-type WeeklySummary = { weekStart: string; totalHours: number; byActivityType: Record<string, number> };
+type WeeklySummary = {
+  weekStart: string;
+  totalHours: number;
+  byActivityType: Record<string, number>;
+};
 type Todo = {
   id: string;
   userId: string | null;
@@ -67,16 +77,31 @@ type Todo = {
 };
 type DashboardData = {
   widgets: Array<{ id: string; type: string; title: string; config: Record<string, unknown> }>;
-  layout: { id: string; columns: number; layout: Array<{ widgetInstanceId: string; x: number; y: number; w: number; h: number } | { widgetIndex: number; x: number; y: number; w: number; h: number }> } | null;
+  layout: {
+    id: string;
+    columns: number;
+    layout: Array<
+      | { widgetInstanceId: string; x: number; y: number; w: number; h: number }
+      | { widgetIndex: number; x: number; y: number; w: number; h: number }
+    >;
+  } | null;
 };
-type Me = { user: { id: string; email: string; displayName: string; organizationId: string }; roles: string[] };
+type Me = {
+  user: { id: string; email: string; displayName: string; organizationId: string };
+  roles: string[];
+};
 type DevAuthUser = { id: string; email: string; displayName: string; roles: string[] };
 type DetailState = { title: string; payload: unknown } | null;
 
 export type OverviewSections = {
   workOrders: SectionResult<{ items: WorkOrder[]; page: number; limit: number; total: number }>;
   equipmentItems: SectionResult<EquipmentItem[]>;
-  reservations: SectionResult<{ items: EquipmentReservation[]; page: number; limit: number; total: number }>;
+  reservations: SectionResult<{
+    items: EquipmentReservation[];
+    page: number;
+    limit: number;
+    total: number;
+  }>;
   timesheets: SectionResult<Timesheet[]>;
   weeklySummary: SectionResult<WeeklySummary>;
   todos: SectionResult<Todo[]>;
@@ -133,14 +158,24 @@ function SectionShell({
           <h2 className="text-lg font-semibold">{title}</h2>
           <p className="text-sm text-slate-600">{subtitle}</p>
         </div>
-        <button className="rounded border border-slate-300 px-3 py-1 text-sm hover:bg-slate-50" onClick={onRefresh}>
+        <button
+          className="rounded border border-slate-300 px-3 py-1 text-sm hover:bg-slate-50"
+          onClick={onRefresh}
+        >
           {language === 'no' ? 'Oppdater' : 'Refresh'}
         </button>
       </div>
-      {error ? <div className="mb-3 rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</div> : null}
+      {error ? (
+        <div className="mb-3 rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+          {error}
+        </div>
+      ) : null}
       <div className="mb-3 flex flex-wrap gap-2">
         {kpis.map((kpi) => (
-          <span key={kpi} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+          <span
+            key={kpi}
+            className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700"
+          >
             {kpi}
           </span>
         ))}
@@ -150,16 +185,32 @@ function SectionShell({
   );
 }
 
-function TablePager({ page, totalPages, onPage }: { page: number; totalPages: number; onPage: (next: number) => void }) {
+function TablePager({
+  page,
+  totalPages,
+  onPage,
+}: {
+  page: number;
+  totalPages: number;
+  onPage: (next: number) => void;
+}) {
   return (
     <div className="mt-3 flex items-center gap-2 text-sm">
-      <button className="rounded border border-slate-300 px-2 py-1 disabled:opacity-40" disabled={page <= 1} onClick={() => onPage(page - 1)}>
+      <button
+        className="rounded border border-slate-300 px-2 py-1 disabled:opacity-40"
+        disabled={page <= 1}
+        onClick={() => onPage(page - 1)}
+      >
         Forrige
       </button>
       <span>
         Side {page} av {totalPages}
       </span>
-      <button className="rounded border border-slate-300 px-2 py-1 disabled:opacity-40" disabled={page >= totalPages} onClick={() => onPage(page + 1)}>
+      <button
+        className="rounded border border-slate-300 px-2 py-1 disabled:opacity-40"
+        disabled={page >= totalPages}
+        onClick={() => onPage(page + 1)}
+      >
         Neste
       </button>
     </div>
@@ -203,11 +254,25 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
   const [detail, setDetail] = useState<DetailState>(null);
   const [pinMessage, setPinMessage] = useState<string | null>(null);
 
-  const workOrders = getData(sections.workOrders, { items: [], page: 1, limit: 100, total: 0 }).items;
+  const workOrders = getData(sections.workOrders, {
+    items: [],
+    page: 1,
+    limit: 100,
+    total: 0,
+  }).items;
   const equipmentItems = getData(sections.equipmentItems, []);
-  const reservations = getData(sections.reservations, { items: [], page: 1, limit: 200, total: 0 }).items;
+  const reservations = getData(sections.reservations, {
+    items: [],
+    page: 1,
+    limit: 200,
+    total: 0,
+  }).items;
   const timesheets = getData(sections.timesheets, []);
-  const weekly = getData(sections.weeklySummary, { weekStart: '-', totalHours: 0, byActivityType: {} });
+  const weekly = getData(sections.weeklySummary, {
+    weekStart: '-',
+    totalHours: 0,
+    byActivityType: {},
+  });
   const todos = getData(sections.todos, []);
   const dashboard = getData(sections.dashboard, { widgets: [], layout: null });
   const token = getDevToken();
@@ -248,7 +313,11 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
 
   const equipmentReservedNow = useMemo(() => {
     const now = new Date();
-    return new Set(reservations.filter((r) => new Date(r.startAt) <= now && now <= new Date(r.endAt)).map((r) => r.equipmentItemId));
+    return new Set(
+      reservations
+        .filter((r) => new Date(r.startAt) <= now && now <= new Date(r.endAt))
+        .map((r) => r.equipmentItemId),
+    );
   }, [reservations]);
 
   const usersAndTeams = useMemo(() => {
@@ -264,7 +333,14 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
         const q = woSearch.trim().toLowerCase();
         const searchMatch =
           q.length === 0 ||
-          [wo.title, wo.description ?? '', wo.id, wo.department?.name ?? '', wo.location?.name ?? '', wo.project?.name ?? '']
+          [
+            wo.title,
+            wo.description ?? '',
+            wo.id,
+            wo.department?.name ?? '',
+            wo.location?.name ?? '',
+            wo.project?.name ?? '',
+          ]
             .join(' ')
             .toLowerCase()
             .includes(q);
@@ -275,14 +351,25 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
   const filteredEquipmentItems = useMemo(() => {
     const q = itemSearch.trim().toLowerCase();
     if (!q) return equipmentItems;
-    return equipmentItems.filter((item) => [item.id, item.name, item.serialNumber ?? '', item.barcode ?? ''].join(' ').toLowerCase().includes(q));
+    return equipmentItems.filter((item) =>
+      [item.id, item.name, item.serialNumber ?? '', item.barcode ?? '']
+        .join(' ')
+        .toLowerCase()
+        .includes(q),
+    );
   }, [equipmentItems, itemSearch]);
   const filteredReservations = useMemo(
     () =>
       reservations.filter((row) => {
-        const equipmentMatch = reservationEquipment === 'ALL' || row.equipmentItemId === reservationEquipment;
+        const equipmentMatch =
+          reservationEquipment === 'ALL' || row.equipmentItemId === reservationEquipment;
         const q = reservationSearch.trim().toLowerCase();
-        const searchMatch = q.length === 0 || [row.id, row.equipmentItem?.name ?? '', row.workOrder?.title ?? '', row.equipmentItemId].join(' ').toLowerCase().includes(q);
+        const searchMatch =
+          q.length === 0 ||
+          [row.id, row.equipmentItem?.name ?? '', row.workOrder?.title ?? '', row.equipmentItemId]
+            .join(' ')
+            .toLowerCase()
+            .includes(q);
         return equipmentMatch && searchMatch;
       }),
     [reservationEquipment, reservationSearch, reservations],
@@ -291,7 +378,15 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
     const q = timesheetSearch.trim().toLowerCase();
     if (!q) return timesheets;
     return timesheets.filter((row) =>
-      [row.id, row.activityType, row.workOrder?.title ?? '', row.workOrderId ?? '', row.project?.name ?? '', row.projectId ?? '', row.note ?? '']
+      [
+        row.id,
+        row.activityType,
+        row.workOrder?.title ?? '',
+        row.workOrderId ?? '',
+        row.project?.name ?? '',
+        row.projectId ?? '',
+        row.note ?? '',
+      ]
         .join(' ')
         .toLowerCase()
         .includes(q),
@@ -302,14 +397,20 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
       todos.filter((todo) => {
         const statusMatch = todoStatus === 'ALL' || todo.status === todoStatus;
         const q = todoSearch.trim().toLowerCase();
-        const searchMatch = q.length === 0 || [todo.id, todo.title, todo.description ?? ''].join(' ').toLowerCase().includes(q);
+        const searchMatch =
+          q.length === 0 ||
+          [todo.id, todo.title, todo.description ?? ''].join(' ').toLowerCase().includes(q);
         return statusMatch && searchMatch;
       }),
     [todoSearch, todoStatus, todos],
   );
   const widgetRows = useMemo(() => {
     const mine = dashboard.widgets ?? [];
-    const rows = widgetTypes.map((type) => ({ type, mineCount: mine.filter((widget) => widget.type === type).length, instances: mine.filter((widget) => widget.type === type) }));
+    const rows = widgetTypes.map((type) => ({
+      type,
+      mineCount: mine.filter((widget) => widget.type === type).length,
+      instances: mine.filter((widget) => widget.type === type),
+    }));
     const q = widgetSearch.trim().toLowerCase();
     if (!q) return rows;
     return rows.filter((row) => row.type.toLowerCase().includes(q));
@@ -333,7 +434,8 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
       const current = (await client.getDashboard()) as DashboardData;
 
       const duplicate = current.widgets.some(
-        (widget) => widget.type === type && JSON.stringify(widget.config ?? {}) === JSON.stringify(config),
+        (widget) =>
+          widget.type === type && JSON.stringify(widget.config ?? {}) === JSON.stringify(config),
       );
       if (duplicate) {
         setPinMessage('Widget finnes allerede pa Min side.');
@@ -356,20 +458,30 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
           }
           return null;
         })
-        .filter((entry): entry is { widgetInstanceId: string; x: number; y: number; w: number; h: number } => Boolean(entry));
+        .filter(
+          (
+            entry,
+          ): entry is { widgetInstanceId: string; x: number; y: number; w: number; h: number } =>
+            Boolean(entry),
+        );
 
       const maxY = existingLayout.reduce((max, entry) => Math.max(max, entry.y + entry.h), 0);
       const layout = {
         id: current.layout?.id ?? crypto.randomUUID(),
         columns: current.layout?.columns ?? 4,
-        layout: [...existingLayout, { widgetInstanceId: newWidgetId, x: 0, y: maxY + 2, w: 2, h: 2 }],
+        layout: [
+          ...existingLayout,
+          { widgetInstanceId: newWidgetId, x: 0, y: maxY + 2, w: 2, h: 2 },
+        ],
       };
 
       await client.updateDashboard({ widgets, layout });
       setPinMessage('Lagt til pa Min side. Apne /dashboard for a se widgeten.');
       router.refresh();
     } catch (error) {
-      setPinMessage(`Kunne ikke pinne widget: ${error instanceof Error ? error.message : 'ukjent feil'}`);
+      setPinMessage(
+        `Kunne ikke pinne widget: ${error instanceof Error ? error.message : 'ukjent feil'}`,
+      );
     }
   }
 
@@ -379,19 +491,70 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
         <div>
           <h1 className="text-2xl font-semibold">{language === 'no' ? 'Oversikt' : 'Overview'}</h1>
           <p className="text-sm text-slate-600">
-            {language === 'no' ? 'Datavisning for testing av domene og widget-hypoteser.' : 'Data explorer for domain and widget testing.'}
+            {language === 'no'
+              ? 'Datavisning for testing av domene og widget-hypoteser.'
+              : 'Data explorer for domain and widget testing.'}
           </p>
         </div>
         <ConnectionStatus />
       </div>
-      {pinMessage ? <div className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{pinMessage}</div> : null}
+      {pinMessage ? (
+        <div className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          {pinMessage}
+        </div>
+      ) : null}
 
-      <SectionShell title={language === 'no' ? 'Arbeidsordre' : 'Work orders'} subtitle={language === 'no' ? 'Status, plassering og tildeling per ordre' : 'Status, placement and assignment per work order'} kpis={[`Total: ${workOrders.length}`, `OPEN: ${workOrders.filter((w) => w.status === 'OPEN').length}`, `IN_PROGRESS: ${workOrders.filter((w) => w.status === 'IN_PROGRESS').length}`]} error={sections.workOrders.status === 'error' ? sections.workOrders.message : undefined} onRefresh={() => router.refresh()}>
-        <div className="mb-2"><button className="rounded border px-3 py-1 text-xs" onClick={() => void pinWidget('MY_WORKORDERS', 'Mine arbeidsordre', { source: 'overview.workorders' })}>Legg til pa Min side</button></div>
+      <SectionShell
+        title={language === 'no' ? 'Arbeidsordre' : 'Work orders'}
+        subtitle={
+          language === 'no'
+            ? 'Status, plassering og tildeling per ordre'
+            : 'Status, placement and assignment per work order'
+        }
+        kpis={[
+          `Total: ${workOrders.length}`,
+          `OPEN: ${workOrders.filter((w) => w.status === 'OPEN').length}`,
+          `IN_PROGRESS: ${workOrders.filter((w) => w.status === 'IN_PROGRESS').length}`,
+        ]}
+        error={sections.workOrders.status === 'error' ? sections.workOrders.message : undefined}
+        onRefresh={() => router.refresh()}
+      >
+        <div className="mb-2">
+          <button
+            className="rounded border px-3 py-1 text-xs"
+            onClick={() =>
+              void pinWidget('MY_WORKORDERS', 'Mine arbeidsordre', {
+                source: 'overview.workorders',
+              })
+            }
+          >
+            Legg til pa Min side
+          </button>
+        </div>
         <div className="mb-2 grid gap-2 md:grid-cols-3">
-          <input className="rounded border px-3 py-2 text-sm" placeholder="Sok pa tittel/id" value={woSearch} onChange={(e) => { setWoSearch(e.target.value); setWoPage(1); }} />
-          <select className="rounded border px-3 py-2 text-sm" value={woStatus} onChange={(e) => { setWoStatus(e.target.value); setWoPage(1); }}>
-            <option value="ALL">Alle statuser</option><option value="OPEN">OPEN</option><option value="IN_PROGRESS">IN_PROGRESS</option><option value="DONE">DONE</option><option value="BLOCKED">BLOCKED</option><option value="CANCELLED">CANCELLED</option>
+          <input
+            className="rounded border px-3 py-2 text-sm"
+            placeholder="Sok pa tittel/id"
+            value={woSearch}
+            onChange={(e) => {
+              setWoSearch(e.target.value);
+              setWoPage(1);
+            }}
+          />
+          <select
+            className="rounded border px-3 py-2 text-sm"
+            value={woStatus}
+            onChange={(e) => {
+              setWoStatus(e.target.value);
+              setWoPage(1);
+            }}
+          >
+            <option value="ALL">Alle statuser</option>
+            <option value="OPEN">OPEN</option>
+            <option value="IN_PROGRESS">IN_PROGRESS</option>
+            <option value="DONE">DONE</option>
+            <option value="BLOCKED">BLOCKED</option>
+            <option value="CANCELLED">CANCELLED</option>
           </select>
         </div>
         <div className="overflow-x-auto">
@@ -409,8 +572,12 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
             </thead>
             <tbody>
               {woPaging.pageItems.map((row) => {
-                const userCount = (row.assignments ?? []).filter((a) => Boolean(a.assigneeUserId)).length;
-                const teamCount = (row.assignments ?? []).filter((a) => Boolean(a.assigneeTeamId)).length;
+                const userCount = (row.assignments ?? []).filter((a) =>
+                  Boolean(a.assigneeUserId),
+                ).length;
+                const teamCount = (row.assignments ?? []).filter((a) =>
+                  Boolean(a.assigneeTeamId),
+                ).length;
                 return (
                   <tr key={row.id} className="border-b">
                     <td className="py-2">
@@ -419,12 +586,21 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
                       </Link>
                     </td>
                     <td className="py-2">{row.status}</td>
-                    <td className="py-2 text-xs">{row.department?.name ?? shortId(row.departmentId)}</td>
-                    <td className="py-2 text-xs">{row.location?.name ?? shortId(row.locationId)}</td>
+                    <td className="py-2 text-xs">
+                      {row.department?.name ?? shortId(row.departmentId)}
+                    </td>
+                    <td className="py-2 text-xs">
+                      {row.location?.name ?? shortId(row.locationId)}
+                    </td>
                     <td className="py-2 text-xs">{row.project?.name ?? shortId(row.projectId)}</td>
-                    <td className="py-2 text-xs">{userCount + teamCount > 0 ? `Bruker: ${userCount}, Team: ${teamCount}` : '-'}</td>
+                    <td className="py-2 text-xs">
+                      {userCount + teamCount > 0 ? `Bruker: ${userCount}, Team: ${teamCount}` : '-'}
+                    </td>
                     <td className="py-2">
-                      <button className="rounded border px-2 py-1 text-xs" onClick={() => setDetail({ title: 'WorkOrder', payload: row })}>
+                      <button
+                        className="rounded border px-2 py-1 text-xs"
+                        onClick={() => setDetail({ title: 'WorkOrder', payload: row })}
+                      >
                         Inspect
                       </button>
                     </td>
@@ -437,40 +613,295 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
         <TablePager page={woPaging.page} totalPages={woPaging.totalPages} onPage={setWoPage} />
       </SectionShell>
 
-      <SectionShell title="EquipmentReservations" subtitle="Tidspunkt + overlap/context per utstyr" kpis={[`Total: ${reservations.length}`, `Neste 7 dager: ${reservations.filter((r) => new Date(r.startAt) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)).length}`, `Utstyr med bookinger: ${new Set(reservations.map((r) => r.equipmentItemId)).size}`]} error={sections.reservations.status === 'error' ? sections.reservations.message : undefined} onRefresh={() => router.refresh()}>
-        <div className="mb-2"><button className="rounded border px-3 py-1 text-xs" onClick={() => void pinWidget('BOOKINGS', 'Bookinger', { source: 'overview.reservations' })}>Legg til pa Min side</button></div>
+      <SectionShell
+        title="EquipmentReservations"
+        subtitle="Tidspunkt + overlap/context per utstyr"
+        kpis={[
+          `Total: ${reservations.length}`,
+          `Neste 7 dager: ${reservations.filter((r) => new Date(r.startAt) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)).length}`,
+          `Utstyr med bookinger: ${new Set(reservations.map((r) => r.equipmentItemId)).size}`,
+        ]}
+        error={sections.reservations.status === 'error' ? sections.reservations.message : undefined}
+        onRefresh={() => router.refresh()}
+      >
+        <div className="mb-2">
+          <button
+            className="rounded border px-3 py-1 text-xs"
+            onClick={() =>
+              void pinWidget('BOOKINGS', 'Bookinger', { source: 'overview.reservations' })
+            }
+          >
+            Legg til pa Min side
+          </button>
+        </div>
         <div className="mb-2 grid gap-2 md:grid-cols-3">
-          <input className="rounded border px-3 py-2 text-sm" placeholder="Sok pa utstyr/workorder" value={reservationSearch} onChange={(e) => { setReservationSearch(e.target.value); setReservationPage(1); }} />
-          <select className="rounded border px-3 py-2 text-sm" value={reservationEquipment} onChange={(e) => { setReservationEquipment(e.target.value); setReservationPage(1); }}>
-            <option value="ALL">Alt utstyr</option>{equipmentItems.map((item) => (<option key={item.id} value={item.id}>{item.name}</option>))}
+          <input
+            className="rounded border px-3 py-2 text-sm"
+            placeholder="Sok pa utstyr/workorder"
+            value={reservationSearch}
+            onChange={(e) => {
+              setReservationSearch(e.target.value);
+              setReservationPage(1);
+            }}
+          />
+          <select
+            className="rounded border px-3 py-2 text-sm"
+            value={reservationEquipment}
+            onChange={(e) => {
+              setReservationEquipment(e.target.value);
+              setReservationPage(1);
+            }}
+          >
+            <option value="ALL">Alt utstyr</option>
+            {equipmentItems.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
           </select>
         </div>
-        <div className="overflow-x-auto"><table className="min-w-full text-left text-sm"><thead><tr className="border-b text-slate-600"><th className="py-2">Utstyr</th><th className="py-2">WorkOrder</th><th className="py-2">Start</th><th className="py-2">Slutt</th><th className="py-2">Detaljer</th></tr></thead><tbody>{reservationPaging.pageItems.map((row) => (<tr key={row.id} className="border-b"><td className="py-2">{row.equipmentItem?.id ? <Link className="text-sky-700 hover:underline" href={`/equipment/${row.equipmentItem.id}`}>{row.equipmentItem.name}</Link> : row.equipmentItem?.name ?? row.equipmentItemId}</td><td className="py-2">{row.workOrder?.title ?? row.workOrderId}</td><td className="py-2 text-xs">{formatDate(row.startAt)}</td><td className="py-2 text-xs">{formatDate(row.endAt)}</td><td className="py-2"><button className="rounded border px-2 py-1 text-xs" onClick={() => setDetail({ title: 'EquipmentReservation', payload: row })}>Inspect</button></td></tr>))}</tbody></table></div>
-        <TablePager page={reservationPaging.page} totalPages={reservationPaging.totalPages} onPage={setReservationPage} />
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead>
+              <tr className="border-b text-slate-600">
+                <th className="py-2">Utstyr</th>
+                <th className="py-2">WorkOrder</th>
+                <th className="py-2">Start</th>
+                <th className="py-2">Slutt</th>
+                <th className="py-2">Detaljer</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reservationPaging.pageItems.map((row) => (
+                <tr key={row.id} className="border-b">
+                  <td className="py-2">
+                    {row.equipmentItem?.id ? (
+                      <Link
+                        className="text-sky-700 hover:underline"
+                        href={`/equipment/${row.equipmentItem.id}`}
+                      >
+                        {row.equipmentItem.name}
+                      </Link>
+                    ) : (
+                      (row.equipmentItem?.name ?? row.equipmentItemId)
+                    )}
+                  </td>
+                  <td className="py-2">{row.workOrder?.title ?? row.workOrderId}</td>
+                  <td className="py-2 text-xs">{formatDate(row.startAt)}</td>
+                  <td className="py-2 text-xs">{formatDate(row.endAt)}</td>
+                  <td className="py-2">
+                    <button
+                      className="rounded border px-2 py-1 text-xs"
+                      onClick={() => setDetail({ title: 'EquipmentReservation', payload: row })}
+                    >
+                      Inspect
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <TablePager
+          page={reservationPaging.page}
+          totalPages={reservationPaging.totalPages}
+          onPage={setReservationPage}
+        />
       </SectionShell>
 
-      <SectionShell title="EquipmentItems" subtitle="Tilgjengelighet basert pa aktive reservasjoner" kpis={[`Total: ${equipmentItems.length}`, `Tilgjengelig na: ${equipmentItems.filter((item) => !equipmentReservedNow.has(item.id)).length}`, `Booket na: ${equipmentItems.filter((item) => equipmentReservedNow.has(item.id)).length}`]} error={sections.equipmentItems.status === 'error' ? sections.equipmentItems.message : undefined} onRefresh={() => router.refresh()}>
-        <input className="mb-2 w-full rounded border px-3 py-2 text-sm" placeholder="Sok pa utstyr" value={itemSearch} onChange={(e) => { setItemSearch(e.target.value); setItemPage(1); }} />
-        <div className="overflow-x-auto"><table className="min-w-full text-left text-sm"><thead><tr className="border-b text-slate-600"><th className="py-2">Navn</th><th className="py-2">Serial</th><th className="py-2">Strekkode</th><th className="py-2">Status</th><th className="py-2">Detaljer</th></tr></thead><tbody>{itemPaging.pageItems.map((row) => (<tr key={row.id} className={`border-b ${requestedEquipmentId === row.id ? 'bg-amber-50' : ''}`}><td className="py-2"><Link className="text-sky-700 hover:underline" href={`/equipment/${row.id}`}>{row.name}</Link></td><td className="py-2">{row.serialNumber ?? '-'}</td><td className="py-2 text-xs"><BarcodePreview code={row.barcode} /></td><td className="py-2">{equipmentReservedNow.has(row.id) ? 'Booket' : 'Ledig'}</td><td className="py-2"><button className="rounded border px-2 py-1 text-xs" onClick={() => setDetail({ title: 'EquipmentItem', payload: row })}>Inspect</button></td></tr>))}</tbody></table></div>
-        <TablePager page={itemPaging.page} totalPages={itemPaging.totalPages} onPage={setItemPage} />
+      <SectionShell
+        title="EquipmentItems"
+        subtitle="Tilgjengelighet basert pa aktive reservasjoner"
+        kpis={[
+          `Total: ${equipmentItems.length}`,
+          `Tilgjengelig na: ${equipmentItems.filter((item) => !equipmentReservedNow.has(item.id)).length}`,
+          `Booket na: ${equipmentItems.filter((item) => equipmentReservedNow.has(item.id)).length}`,
+        ]}
+        error={
+          sections.equipmentItems.status === 'error' ? sections.equipmentItems.message : undefined
+        }
+        onRefresh={() => router.refresh()}
+      >
+        <input
+          className="mb-2 w-full rounded border px-3 py-2 text-sm"
+          placeholder="Sok pa utstyr"
+          value={itemSearch}
+          onChange={(e) => {
+            setItemSearch(e.target.value);
+            setItemPage(1);
+          }}
+        />
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead>
+              <tr className="border-b text-slate-600">
+                <th className="py-2">Navn</th>
+                <th className="py-2">Serial</th>
+                <th className="py-2">Strekkode</th>
+                <th className="py-2">Status</th>
+                <th className="py-2">Detaljer</th>
+              </tr>
+            </thead>
+            <tbody>
+              {itemPaging.pageItems.map((row) => (
+                <tr
+                  key={row.id}
+                  className={`border-b ${requestedEquipmentId === row.id ? 'bg-amber-50' : ''}`}
+                >
+                  <td className="py-2">
+                    <Link className="text-sky-700 hover:underline" href={`/equipment/${row.id}`}>
+                      {row.name}
+                    </Link>
+                  </td>
+                  <td className="py-2">{row.serialNumber ?? '-'}</td>
+                  <td className="py-2 text-xs">
+                    <BarcodePreview code={row.barcode} />
+                  </td>
+                  <td className="py-2">{equipmentReservedNow.has(row.id) ? 'Booket' : 'Ledig'}</td>
+                  <td className="py-2">
+                    <button
+                      className="rounded border px-2 py-1 text-xs"
+                      onClick={() => setDetail({ title: 'EquipmentItem', payload: row })}
+                    >
+                      Inspect
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <TablePager
+          page={itemPaging.page}
+          totalPages={itemPaging.totalPages}
+          onPage={setItemPage}
+        />
       </SectionShell>
 
-      <SectionShell title="Users/Teams" subtitle="Roller fra /me + team IDs observert i data + klikkbar mannskapsliste" kpis={[`Bruker: ${me.user.displayName}`, `Roller: ${usersAndTeams.roles.length}`, `Team IDs: ${usersAndTeams.teamIds.length}`, `Mannskap: ${crewUsers.length}`]} onRefresh={() => router.refresh()}>
+      <SectionShell
+        title="Users/Teams"
+        subtitle="Roller fra /me + team IDs observert i data + klikkbar mannskapsliste"
+        kpis={[
+          `Bruker: ${me.user.displayName}`,
+          `Roller: ${usersAndTeams.roles.length}`,
+          `Team IDs: ${usersAndTeams.teamIds.length}`,
+          `Mannskap: ${crewUsers.length}`,
+        ]}
+        onRefresh={() => router.refresh()}
+      >
         <div className="mb-2">
-          <Link className="rounded border px-3 py-1 text-xs text-sky-700 hover:bg-slate-50" href="/mannskap">
+          <Link
+            className="rounded border px-3 py-1 text-xs text-sky-700 hover:bg-slate-50"
+            href="/mannskap"
+          >
             Apne mannskapsside
           </Link>
         </div>
         <div className="grid gap-3 md:grid-cols-2">
-          <article className="rounded border border-slate-200 p-3 text-sm"><h3 className="mb-2 font-medium">Current User</h3><p>{me.user.displayName}</p><p className="text-xs text-slate-600">{me.user.email}</p><div className="mt-2 flex flex-wrap gap-1">{usersAndTeams.roles.map((role) => (<span key={role} className="rounded bg-slate-100 px-2 py-1 text-xs">{role}</span>))}</div><Link className="mt-3 inline-block rounded border px-2 py-1 text-xs text-sky-700 hover:bg-slate-50" href={`/employees/${me.user.id}`}>Apne ansattside</Link></article>
-          <article className="rounded border border-slate-200 p-3 text-sm"><h3 className="mb-2 font-medium">Team Membership</h3><ul className="space-y-1 text-xs text-slate-700">{usersAndTeams.teamIds.length === 0 ? <li>Ingen funnet i lastede data.</li> : null}{usersAndTeams.teamIds.map((teamId) => (<li key={teamId}>Team {teamId.slice(0, 8)} ({teamId})</li>))}</ul></article>
+          <article className="rounded border border-slate-200 p-3 text-sm">
+            <h3 className="mb-2 font-medium">Current User</h3>
+            <p>{me.user.displayName}</p>
+            <p className="text-xs text-slate-600">{me.user.email}</p>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {usersAndTeams.roles.map((role) => (
+                <span key={role} className="rounded bg-slate-100 px-2 py-1 text-xs">
+                  {role}
+                </span>
+              ))}
+            </div>
+            <Link
+              className="mt-3 inline-block rounded border px-2 py-1 text-xs text-sky-700 hover:bg-slate-50"
+              href={`/employees/${me.user.id}`}
+            >
+              Apne ansattside
+            </Link>
+          </article>
+          <article className="rounded border border-slate-200 p-3 text-sm">
+            <h3 className="mb-2 font-medium">Team Membership</h3>
+            <ul className="space-y-1 text-xs text-slate-700">
+              {usersAndTeams.teamIds.length === 0 ? <li>Ingen funnet i lastede data.</li> : null}
+              {usersAndTeams.teamIds.map((teamId) => (
+                <li key={teamId}>
+                  Team {teamId.slice(0, 8)} ({teamId})
+                </li>
+              ))}
+            </ul>
+          </article>
         </div>
-        <div className="mt-3 overflow-x-auto"><table className="min-w-full text-left text-sm"><thead><tr className="border-b text-slate-600"><th className="py-2">Navn</th><th className="py-2">E-post</th><th className="py-2">Roller</th><th className="py-2">Profil</th></tr></thead><tbody>{crewUsers.map((user) => (<tr key={user.id} className="border-b"><td className="py-2"><Link className="text-sky-700 hover:underline" href={`/employees/${user.id}`}>{user.displayName}</Link></td><td className="py-2 text-xs">{user.email}</td><td className="py-2 text-xs">{user.roles.join(', ') || '-'}</td><td className="py-2"><Link className="rounded border px-2 py-1 text-xs hover:bg-slate-50" href={`/employees/${user.id}`}>Apne</Link></td></tr>))}</tbody></table></div>
+        <div className="mt-3 overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead>
+              <tr className="border-b text-slate-600">
+                <th className="py-2">Navn</th>
+                <th className="py-2">E-post</th>
+                <th className="py-2">Roller</th>
+                <th className="py-2">Profil</th>
+              </tr>
+            </thead>
+            <tbody>
+              {crewUsers.map((user) => (
+                <tr key={user.id} className="border-b">
+                  <td className="py-2">
+                    <Link className="text-sky-700 hover:underline" href={`/employees/${user.id}`}>
+                      {user.displayName}
+                    </Link>
+                  </td>
+                  <td className="py-2 text-xs">{user.email}</td>
+                  <td className="py-2 text-xs">{user.roles.join(', ') || '-'}</td>
+                  <td className="py-2">
+                    <Link
+                      className="rounded border px-2 py-1 text-xs hover:bg-slate-50"
+                      href={`/employees/${user.id}`}
+                    >
+                      Apne
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </SectionShell>
 
-      <SectionShell title="Timesheets" subtitle="Daglige entries + ukesummering" kpis={[`Entries: ${timesheets.length}`, `Uke-start: ${weekly.weekStart}`, `Timer uke: ${weekly.totalHours}`, `Nullable links: ${timesheets.filter((t) => t.workOrderId === null || t.projectId === null).length}`]} error={sections.timesheets.status === 'error' ? sections.timesheets.message : sections.weeklySummary.status === 'error' ? sections.weeklySummary.message : undefined} onRefresh={() => router.refresh()}>
-        <div className="mb-2"><button className="rounded border px-3 py-1 text-xs" onClick={() => void pinWidget('HOURS_THIS_WEEK', 'Timer denne uken', { source: 'overview.weekly-summary' })}>Legg til pa Min side</button></div>
-        <input className="mb-2 w-full rounded border px-3 py-2 text-sm" placeholder="Sok pa activity/workorder/project" value={timesheetSearch} onChange={(e) => { setTimesheetSearch(e.target.value); setTimesheetPage(1); }} />
+      <SectionShell
+        title="Timesheets"
+        subtitle="Daglige entries + ukesummering"
+        kpis={[
+          `Entries: ${timesheets.length}`,
+          `Uke-start: ${weekly.weekStart}`,
+          `Timer uke: ${weekly.totalHours}`,
+          `Nullable links: ${timesheets.filter((t) => t.workOrderId === null || t.projectId === null).length}`,
+        ]}
+        error={
+          sections.timesheets.status === 'error'
+            ? sections.timesheets.message
+            : sections.weeklySummary.status === 'error'
+              ? sections.weeklySummary.message
+              : undefined
+        }
+        onRefresh={() => router.refresh()}
+      >
+        <div className="mb-2">
+          <button
+            className="rounded border px-3 py-1 text-xs"
+            onClick={() =>
+              void pinWidget('HOURS_THIS_WEEK', 'Timer denne uken', {
+                source: 'overview.weekly-summary',
+              })
+            }
+          >
+            Legg til pa Min side
+          </button>
+        </div>
+        <input
+          className="mb-2 w-full rounded border px-3 py-2 text-sm"
+          placeholder="Sok pa activity/workorder/project"
+          value={timesheetSearch}
+          onChange={(e) => {
+            setTimesheetSearch(e.target.value);
+            setTimesheetPage(1);
+          }}
+        />
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead>
@@ -490,11 +921,16 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
                   <td className="py-2">{formatDate(row.date)}</td>
                   <td className="py-2">{toNumber(row.hours)}</td>
                   <td className="py-2">{row.activityType}</td>
-                  <td className="py-2 text-xs">{row.workOrder?.title ?? shortId(row.workOrderId)}</td>
+                  <td className="py-2 text-xs">
+                    {row.workOrder?.title ?? shortId(row.workOrderId)}
+                  </td>
                   <td className="py-2 text-xs">{row.project?.name ?? shortId(row.projectId)}</td>
                   <td className="py-2 text-xs">{row.note?.trim() ? row.note : '-'}</td>
                   <td className="py-2">
-                    <button className="rounded border px-2 py-1 text-xs" onClick={() => setDetail({ title: 'Timesheet', payload: row })}>
+                    <button
+                      className="rounded border px-2 py-1 text-xs"
+                      onClick={() => setDetail({ title: 'Timesheet', payload: row })}
+                    >
                       Inspect
                     </button>
                   </td>
@@ -503,25 +939,150 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
             </tbody>
           </table>
         </div>
-        <TablePager page={timesheetPaging.page} totalPages={timesheetPaging.totalPages} onPage={setTimesheetPage} />
+        <TablePager
+          page={timesheetPaging.page}
+          totalPages={timesheetPaging.totalPages}
+          onPage={setTimesheetPage}
+        />
       </SectionShell>
 
-      <SectionShell title="Todos" subtitle="Mine/team med status og forfallsdato" kpis={[`Total: ${todos.length}`, `OPEN: ${todos.filter((t) => t.status === 'OPEN').length}`, `Team: ${todos.filter((t) => t.teamId).length}`, `Mine: ${todos.filter((t) => t.userId === me.user.id).length}`]} error={sections.todos.status === 'error' ? sections.todos.message : undefined} onRefresh={() => router.refresh()}>
-        <div className="mb-2"><button className="rounded border px-3 py-1 text-xs" onClick={() => void pinWidget('TODO', 'Todo', { source: 'overview.todos' })}>Legg til pa Min side</button></div>
+      <SectionShell
+        title="Todos"
+        subtitle="Mine/team med status og forfallsdato"
+        kpis={[
+          `Total: ${todos.length}`,
+          `OPEN: ${todos.filter((t) => t.status === 'OPEN').length}`,
+          `Team: ${todos.filter((t) => t.teamId).length}`,
+          `Mine: ${todos.filter((t) => t.userId === me.user.id).length}`,
+        ]}
+        error={sections.todos.status === 'error' ? sections.todos.message : undefined}
+        onRefresh={() => router.refresh()}
+      >
+        <div className="mb-2">
+          <button
+            className="rounded border px-3 py-1 text-xs"
+            onClick={() => void pinWidget('TODO', 'Todo', { source: 'overview.todos' })}
+          >
+            Legg til pa Min side
+          </button>
+        </div>
         <div className="mb-2 grid gap-2 md:grid-cols-3">
-          <input className="rounded border px-3 py-2 text-sm" placeholder="Sok pa todo" value={todoSearch} onChange={(e) => { setTodoSearch(e.target.value); setTodoPage(1); }} />
-          <select className="rounded border px-3 py-2 text-sm" value={todoStatus} onChange={(e) => { setTodoStatus(e.target.value); setTodoPage(1); }}>
-            <option value="ALL">Alle statuser</option><option value="OPEN">OPEN</option><option value="IN_PROGRESS">IN_PROGRESS</option><option value="DONE">DONE</option><option value="CANCELLED">CANCELLED</option>
+          <input
+            className="rounded border px-3 py-2 text-sm"
+            placeholder="Sok pa todo"
+            value={todoSearch}
+            onChange={(e) => {
+              setTodoSearch(e.target.value);
+              setTodoPage(1);
+            }}
+          />
+          <select
+            className="rounded border px-3 py-2 text-sm"
+            value={todoStatus}
+            onChange={(e) => {
+              setTodoStatus(e.target.value);
+              setTodoPage(1);
+            }}
+          >
+            <option value="ALL">Alle statuser</option>
+            <option value="OPEN">OPEN</option>
+            <option value="IN_PROGRESS">IN_PROGRESS</option>
+            <option value="DONE">DONE</option>
+            <option value="CANCELLED">CANCELLED</option>
           </select>
         </div>
-        <div className="overflow-x-auto"><table className="min-w-full text-left text-sm"><thead><tr className="border-b text-slate-600"><th className="py-2">Tittel</th><th className="py-2">Status</th><th className="py-2">Forfall</th><th className="py-2">Scope</th><th className="py-2">Detaljer</th></tr></thead><tbody>{todoPaging.pageItems.map((row) => (<tr key={row.id} className="border-b"><td className="py-2">{row.title}</td><td className="py-2">{row.status}</td><td className="py-2 text-xs">{formatDate(row.dueDate)}</td><td className="py-2 text-xs">{row.userId ? 'User' : row.teamId ? 'Team' : 'Global'}</td><td className="py-2"><button className="rounded border px-2 py-1 text-xs" onClick={() => setDetail({ title: 'Todo', payload: row })}>Inspect</button></td></tr>))}</tbody></table></div>
-        <TablePager page={todoPaging.page} totalPages={todoPaging.totalPages} onPage={setTodoPage} />
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead>
+              <tr className="border-b text-slate-600">
+                <th className="py-2">Tittel</th>
+                <th className="py-2">Status</th>
+                <th className="py-2">Forfall</th>
+                <th className="py-2">Scope</th>
+                <th className="py-2">Detaljer</th>
+              </tr>
+            </thead>
+            <tbody>
+              {todoPaging.pageItems.map((row) => (
+                <tr key={row.id} className="border-b">
+                  <td className="py-2">{row.title}</td>
+                  <td className="py-2">{row.status}</td>
+                  <td className="py-2 text-xs">{formatDate(row.dueDate)}</td>
+                  <td className="py-2 text-xs">
+                    {row.userId ? 'User' : row.teamId ? 'Team' : 'Global'}
+                  </td>
+                  <td className="py-2">
+                    <button
+                      className="rounded border px-2 py-1 text-xs"
+                      onClick={() => setDetail({ title: 'Todo', payload: row })}
+                    >
+                      Inspect
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <TablePager
+          page={todoPaging.page}
+          totalPages={todoPaging.totalPages}
+          onPage={setTodoPage}
+        />
       </SectionShell>
 
-      <SectionShell title="Dashboard Widgets" subtitle="Tilgjengelige widget-typer + mine instanser/config" kpis={[`Typer: ${widgetTypes.length}`, `Mine widgets: ${dashboard.widgets.length}`, `Layout columns: ${dashboard.layout?.columns ?? 0}`]} error={sections.dashboard.status === 'error' ? sections.dashboard.message : undefined} onRefresh={() => router.refresh()}>
-        <input className="mb-2 w-full rounded border px-3 py-2 text-sm" placeholder="Sok pa widget type" value={widgetSearch} onChange={(e) => { setWidgetSearch(e.target.value); setWidgetPage(1); }} />
-        <div className="overflow-x-auto"><table className="min-w-full text-left text-sm"><thead><tr className="border-b text-slate-600"><th className="py-2">Type</th><th className="py-2">Mine instanser</th><th className="py-2">Detaljer</th></tr></thead><tbody>{widgetPaging.pageItems.map((row) => (<tr key={row.type} className="border-b"><td className="py-2">{row.type}</td><td className="py-2">{row.mineCount}</td><td className="py-2"><button className="rounded border px-2 py-1 text-xs" onClick={() => setDetail({ title: 'WidgetType', payload: row })}>Inspect</button></td></tr>))}</tbody></table></div>
-        <TablePager page={widgetPaging.page} totalPages={widgetPaging.totalPages} onPage={setWidgetPage} />
+      <SectionShell
+        title="Dashboard Widgets"
+        subtitle="Tilgjengelige widget-typer + mine instanser/config"
+        kpis={[
+          `Typer: ${widgetTypes.length}`,
+          `Mine widgets: ${dashboard.widgets.length}`,
+          `Layout columns: ${dashboard.layout?.columns ?? 0}`,
+        ]}
+        error={sections.dashboard.status === 'error' ? sections.dashboard.message : undefined}
+        onRefresh={() => router.refresh()}
+      >
+        <input
+          className="mb-2 w-full rounded border px-3 py-2 text-sm"
+          placeholder="Sok pa widget type"
+          value={widgetSearch}
+          onChange={(e) => {
+            setWidgetSearch(e.target.value);
+            setWidgetPage(1);
+          }}
+        />
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead>
+              <tr className="border-b text-slate-600">
+                <th className="py-2">Type</th>
+                <th className="py-2">Mine instanser</th>
+                <th className="py-2">Detaljer</th>
+              </tr>
+            </thead>
+            <tbody>
+              {widgetPaging.pageItems.map((row) => (
+                <tr key={row.type} className="border-b">
+                  <td className="py-2">{row.type}</td>
+                  <td className="py-2">{row.mineCount}</td>
+                  <td className="py-2">
+                    <button
+                      className="rounded border px-2 py-1 text-xs"
+                      onClick={() => setDetail({ title: 'WidgetType', payload: row })}
+                    >
+                      Inspect
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <TablePager
+          page={widgetPaging.page}
+          totalPages={widgetPaging.totalPages}
+          onPage={setWidgetPage}
+        />
       </SectionShell>
 
       {detail ? (
@@ -529,11 +1090,16 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
           <div className="max-h-[80vh] w-full max-w-2xl overflow-auto rounded-xl bg-white p-4 shadow-xl">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-lg font-semibold">Inspect: {detail.title}</h3>
-              <button className="rounded border border-slate-300 px-2 py-1 text-sm" onClick={() => setDetail(null)}>
+              <button
+                className="rounded border border-slate-300 px-2 py-1 text-sm"
+                onClick={() => setDetail(null)}
+              >
                 Lukk
               </button>
             </div>
-            <pre className="overflow-auto rounded bg-slate-900 p-3 text-xs text-slate-100">{JSON.stringify(detail.payload, null, 2)}</pre>
+            <pre className="overflow-auto rounded bg-slate-900 p-3 text-xs text-slate-100">
+              {JSON.stringify(detail.payload, null, 2)}
+            </pre>
           </div>
         </div>
       ) : null}

@@ -1,4 +1,4 @@
-﻿import jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import type { OidcAdapter } from './oidc-adapter.interface.js';
 import type { AuthUser } from '../types.js';
@@ -24,4 +24,3 @@ export class DevJwtAdapter implements OidcAdapter {
     }
   }
 }
-

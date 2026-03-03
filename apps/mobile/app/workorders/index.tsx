@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'expo-router';
 import { FlatList, Text, View } from 'react-native';
 import { mobileApiClient } from '../../src/api/client';
@@ -28,4 +28,3 @@ export default function WorkordersScreen() {
     </View>
   );
 }
-

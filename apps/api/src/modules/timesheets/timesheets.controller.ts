@@ -1,4 +1,16 @@
-import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Query, UseGuards, UsePipes } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Inject,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+  UsePipes,
+} from '@nestjs/common';
 import { createTimesheetSchema, updateTimesheetSchema } from '@portal/shared';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator.js';
 import { Roles } from '../../common/auth/decorators/roles.decorator.js';
@@ -35,7 +47,11 @@ export class TimesheetsController {
   @Patch(':id')
   @Roles('planner', 'technician', 'member', 'org_admin', 'system_admin')
   @UsePipes(new ZodValidationPipe(updateTimesheetSchema))
-  update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() body: Record<string, unknown>) {
+  update(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
     return this.service.update(user.organizationId, user.id, id, body);
   }
 
@@ -47,8 +63,17 @@ export class TimesheetsController {
 
   @Get('weekly-summary')
   @Roles('planner', 'technician', 'member', 'org_admin', 'system_admin')
-  weeklySummary(@CurrentUser() user: AuthUser, @Query('weekStart') weekStart?: string, @Query('userId') targetUserId?: string) {
-    return this.service.weeklySummary(user.organizationId, user.id, user.roles, weekStart, targetUserId);
+  weeklySummary(
+    @CurrentUser() user: AuthUser,
+    @Query('weekStart') weekStart?: string,
+    @Query('userId') targetUserId?: string,
+  ) {
+    return this.service.weeklySummary(
+      user.organizationId,
+      user.id,
+      user.roles,
+      weekStart,
+      targetUserId,
+    );
   }
 }
-

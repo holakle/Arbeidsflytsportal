@@ -1,4 +1,4 @@
-﻿import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -158,40 +158,84 @@ async function main() {
     });
   }
 
-  const plannerRole = await prisma.role.findFirstOrThrow({ where: { organizationId: organization.id, code: 'planner' } });
-  const adminRole = await prisma.role.findFirstOrThrow({ where: { organizationId: organization.id, code: 'org_admin' } });
-  const techRole = await prisma.role.findFirstOrThrow({ where: { organizationId: organization.id, code: 'technician' } });
-  const memberRole = await prisma.role.findFirstOrThrow({ where: { organizationId: organization.id, code: 'member' } });
+  const plannerRole = await prisma.role.findFirstOrThrow({
+    where: { organizationId: organization.id, code: 'planner' },
+  });
+  const adminRole = await prisma.role.findFirstOrThrow({
+    where: { organizationId: organization.id, code: 'org_admin' },
+  });
+  const techRole = await prisma.role.findFirstOrThrow({
+    where: { organizationId: organization.id, code: 'technician' },
+  });
+  const memberRole = await prisma.role.findFirstOrThrow({
+    where: { organizationId: organization.id, code: 'member' },
+  });
 
   await prisma.userRole.upsert({
-    where: { userId_roleId_organizationId: { userId: planner.id, roleId: plannerRole.id, organizationId: organization.id } },
+    where: {
+      userId_roleId_organizationId: {
+        userId: planner.id,
+        roleId: plannerRole.id,
+        organizationId: organization.id,
+      },
+    },
     update: {},
     create: { userId: planner.id, roleId: plannerRole.id, organizationId: organization.id },
   });
 
   await prisma.userRole.upsert({
-    where: { userId_roleId_organizationId: { userId: tech.id, roleId: techRole.id, organizationId: organization.id } },
+    where: {
+      userId_roleId_organizationId: {
+        userId: tech.id,
+        roleId: techRole.id,
+        organizationId: organization.id,
+      },
+    },
     update: {},
     create: { userId: tech.id, roleId: techRole.id, organizationId: organization.id },
   });
   await prisma.userRole.upsert({
-    where: { userId_roleId_organizationId: { userId: tech2.id, roleId: techRole.id, organizationId: organization.id } },
+    where: {
+      userId_roleId_organizationId: {
+        userId: tech2.id,
+        roleId: techRole.id,
+        organizationId: organization.id,
+      },
+    },
     update: {},
     create: { userId: tech2.id, roleId: techRole.id, organizationId: organization.id },
   });
   await prisma.userRole.upsert({
-    where: { userId_roleId_organizationId: { userId: tech3.id, roleId: techRole.id, organizationId: organization.id } },
+    where: {
+      userId_roleId_organizationId: {
+        userId: tech3.id,
+        roleId: techRole.id,
+        organizationId: organization.id,
+      },
+    },
     update: {},
     create: { userId: tech3.id, roleId: techRole.id, organizationId: organization.id },
   });
 
   await prisma.userRole.upsert({
-    where: { userId_roleId_organizationId: { userId: member.id, roleId: memberRole.id, organizationId: organization.id } },
+    where: {
+      userId_roleId_organizationId: {
+        userId: member.id,
+        roleId: memberRole.id,
+        organizationId: organization.id,
+      },
+    },
     update: {},
     create: { userId: member.id, roleId: memberRole.id, organizationId: organization.id },
   });
   await prisma.userRole.upsert({
-    where: { userId_roleId_organizationId: { userId: member2.id, roleId: memberRole.id, organizationId: organization.id } },
+    where: {
+      userId_roleId_organizationId: {
+        userId: member2.id,
+        roleId: memberRole.id,
+        organizationId: organization.id,
+      },
+    },
     update: {},
     create: { userId: member2.id, roleId: memberRole.id, organizationId: organization.id },
   });
@@ -238,7 +282,13 @@ async function main() {
 
   await prisma.equipmentItem.upsert({
     where: { id: ids.equipmentLift },
-    update: { name: 'Lift 20m', serialNumber: 'LIFT-20-001', barcode: 'WF-LIFT-20M-001', type: 'EQUIPMENT', active: true },
+    update: {
+      name: 'Lift 20m',
+      serialNumber: 'LIFT-20-001',
+      barcode: 'WF-LIFT-20M-001',
+      type: 'EQUIPMENT',
+      active: true,
+    },
     create: {
       id: ids.equipmentLift,
       organizationId: organization.id,
@@ -252,7 +302,13 @@ async function main() {
 
   await prisma.equipmentItem.upsert({
     where: { id: ids.equipmentScanner },
-    update: { name: 'Laser Scanner', serialNumber: 'SCAN-XL-007', barcode: 'QR:DEMO:SCAN-XL-007', type: 'EQUIPMENT', active: true },
+    update: {
+      name: 'Laser Scanner',
+      serialNumber: 'SCAN-XL-007',
+      barcode: 'QR:DEMO:SCAN-XL-007',
+      type: 'EQUIPMENT',
+      active: true,
+    },
     create: {
       id: ids.equipmentScanner,
       organizationId: organization.id,
@@ -266,7 +322,13 @@ async function main() {
 
   await prisma.equipmentItem.upsert({
     where: { id: ids.consumableScrews },
-    update: { name: 'Skruer 6x40', serialNumber: null, barcode: 'MAT-SCREW-6X40', type: 'CONSUMABLE', active: true },
+    update: {
+      name: 'Skruer 6x40',
+      serialNumber: null,
+      barcode: 'MAT-SCREW-6X40',
+      type: 'CONSUMABLE',
+      active: true,
+    },
     create: {
       id: ids.consumableScrews,
       organizationId: organization.id,
@@ -591,5 +653,3 @@ async function main() {
 }
 
 main().finally(async () => prisma.$disconnect());
-
-

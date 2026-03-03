@@ -1,8 +1,9 @@
-﻿# Arbeidsflytsportal Monorepo
+# Arbeidsflytsportal Monorepo
 
 Produksjonsrettet monorepo med `pnpm workspaces` + `turborepo` for montasjeplattform (web + mobil), med fokus på Del 1 (arbeidsordre) og Del 4 (personlig arbeidsflate).
 
 ## Stack
+
 - `apps/api`: NestJS + Prisma + Postgres
 - `apps/web`: Next.js App Router + Tailwind
 - `apps/mobile`: Expo React Native
@@ -11,12 +12,14 @@ Produksjonsrettet monorepo med `pnpm workspaces` + `turborepo` for montasjeplatt
 - `packages/ui`: enkle delte UI-byggesteiner
 
 ## Multi-tenant og domene
+
 - `organizationId` er obligatorisk tenant-scope på alle forretningsentiteter.
 - `Project` er flytende/valgfri dimensjon (nullable), uten tvunget hierarki.
 - `WorkOrder` og `TimesheetEntry` støtter nullable `projectId`.
 - `Department` og `Location` er også valgfrie dimensjoner.
 
 ## Sikkerhet
+
 - Dev JWT OIDC-adapter (forberedt for Auth0/Entra/Clerk senere)
 - RBAC (`system_admin`, `org_admin`, `planner`, `technician`, `member`)
 - Tenant enforcement i guards
@@ -25,6 +28,7 @@ Produksjonsrettet monorepo med `pnpm workspaces` + `turborepo` for montasjeplatt
 - Audit logg for kritiske hendelser
 
 ## API-endepunkter (MVP)
+
 - `GET /health`
 - `GET /me`
 - `GET/POST/GET:id/PATCH:id/DELETE:id /workorders`
@@ -39,6 +43,7 @@ Produksjonsrettet monorepo med `pnpm workspaces` + `turborepo` for montasjeplatt
 - `GET/PUT /dashboard`
 
 ## Lokal oppstart
+
 1. Kopier `.env.example` til `.env` og juster ved behov.
 2. Kopier `.env` til `apps/api/.env` for Prisma CLI lokalt:
    - `Copy-Item .env apps/api/.env` (PowerShell)
@@ -59,6 +64,7 @@ Produksjonsrettet monorepo med `pnpm workspaces` + `turborepo` for montasjeplatt
    - Åpne `http://localhost:3000/scan`
 
 ## Anbefalt daglig drift (web+api)
+
 1. Start database:
    - `pnpm infra:up`
 2. Start core-apps:
@@ -71,6 +77,7 @@ Produksjonsrettet monorepo med `pnpm workspaces` + `turborepo` for montasjeplatt
    - Les URL: `docker logs workflow-tunnel --tail 80`
 
 ## Dev token (lokal auth)
+
 Generer et dev JWT med claims som matcher seed-data (`planner@demo.no`):
 
 ```bash
@@ -78,6 +85,7 @@ node -e "const jwt=require('jsonwebtoken'); console.log(jwt.sign({sub:'22222222-
 ```
 
 Bruk token i:
+
 - Web: `NEXT_PUBLIC_DEV_TOKEN`
 - Mobile: lagre token i SecureStore
 - API-kall: `Authorization: Bearer <token>`
@@ -90,6 +98,7 @@ NEXT_PUBLIC_DEV_TOKEN=<token>
 ```
 
 ## Mobil scanning over HTTPS (dev)
+
 - LAN med Caddy (lokalt sertifikat):
   - Sett `LAN_HOST` i `.env`, f.eks. `workflow.local`
   - Start: `docker compose --profile https up -d https`
@@ -99,11 +108,12 @@ NEXT_PUBLIC_DEV_TOKEN=<token>
   - Start: `docker compose --profile https --profile tunnel up -d https tunnel`
 
 ## Kvalitet
+
 - `pnpm lint`
 - `pnpm typecheck`
 - `pnpm test`
 - `pnpm build`
 
 ## CI
-GitHub Actions workflow: `.github/workflows/ci.yml`
 
+GitHub Actions workflow: `.github/workflows/ci.yml`

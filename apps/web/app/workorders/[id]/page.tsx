@@ -117,7 +117,10 @@ export default function WorkOrderDetailPage() {
   const [scheduleEnd, setScheduleEnd] = useState('');
   const [scheduleNote, setScheduleNote] = useState('');
 
-  const planningOwnerLabel = useMemo(() => users.find((u) => u.id === planningOwnerUserId)?.displayName ?? '-', [planningOwnerUserId, users]);
+  const planningOwnerLabel = useMemo(
+    () => users.find((u) => u.id === planningOwnerUserId)?.displayName ?? '-',
+    [planningOwnerUserId, users],
+  );
 
   async function load() {
     if (!token || !id) return;
@@ -293,7 +296,8 @@ export default function WorkOrderDetailPage() {
           <h1 className="text-2xl font-semibold">Arbeidsordre</h1>
           <p className="text-sm text-slate-600">{id}</p>
           <p className="text-xs text-slate-600">
-            Plassering: {workOrder?.department?.name ?? '-'} / {workOrder?.location?.name ?? '-'} / {workOrder?.project?.name ?? '-'}
+            Plassering: {workOrder?.department?.name ?? '-'} / {workOrder?.location?.name ?? '-'} /{' '}
+            {workOrder?.project?.name ?? '-'}
           </p>
         </div>
         <ConnectionStatus />
@@ -305,13 +309,26 @@ export default function WorkOrderDetailPage() {
         </Link>
       </div>
 
-      {error ? <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</div> : null}
-      {success ? <div className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{success}</div> : null}
+      {error ? (
+        <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+          {error}
+        </div>
+      ) : null}
+      {success ? (
+        <div className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          {success}
+        </div>
+      ) : null}
 
       <section className="rounded border bg-white p-4">
         <h2 className="mb-2 text-lg">Rediger info</h2>
         <div className="grid gap-2 md:grid-cols-2">
-          <input className="rounded border px-3 py-2 md:col-span-2" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Tittel" />
+          <input
+            className="rounded border px-3 py-2 md:col-span-2"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Tittel"
+          />
           <textarea
             className="rounded border px-3 py-2 md:col-span-2"
             value={description}
@@ -319,17 +336,40 @@ export default function WorkOrderDetailPage() {
             placeholder="Beskrivelse"
             rows={4}
           />
-          <select className="rounded border px-3 py-2" value={status} onChange={(e) => setStatus(e.target.value)}>
+          <select
+            className="rounded border px-3 py-2"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+          >
             {statuses.map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>
             ))}
           </select>
-          <input className="rounded border px-3 py-2" value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} placeholder="Avdeling ID (valgfri)" />
-          <input className="rounded border px-3 py-2" value={locationId} onChange={(e) => setLocationId(e.target.value)} placeholder="Lokasjon ID (valgfri)" />
-          <input className="rounded border px-3 py-2" value={projectId} onChange={(e) => setProjectId(e.target.value)} placeholder="Prosjekt ID (valgfri)" />
-          <button className="rounded bg-accent px-3 py-2 text-white md:col-span-2" onClick={() => void save()} disabled={!workOrder}>
+          <input
+            className="rounded border px-3 py-2"
+            value={departmentId}
+            onChange={(e) => setDepartmentId(e.target.value)}
+            placeholder="Avdeling ID (valgfri)"
+          />
+          <input
+            className="rounded border px-3 py-2"
+            value={locationId}
+            onChange={(e) => setLocationId(e.target.value)}
+            placeholder="Lokasjon ID (valgfri)"
+          />
+          <input
+            className="rounded border px-3 py-2"
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+            placeholder="Prosjekt ID (valgfri)"
+          />
+          <button
+            className="rounded bg-accent px-3 py-2 text-white md:col-span-2"
+            onClick={() => void save()}
+            disabled={!workOrder}
+          >
             Lagre
           </button>
         </div>
@@ -338,14 +378,21 @@ export default function WorkOrderDetailPage() {
       <section className="rounded border bg-white p-4">
         <h2 className="mb-2 text-lg">Tildelinger</h2>
         <div className="mb-3 grid gap-2 md:grid-cols-3">
-          <select className="rounded border px-3 py-2 md:col-span-2" value={assignmentUserId} onChange={(e) => setAssignmentUserId(e.target.value)}>
+          <select
+            className="rounded border px-3 py-2 md:col-span-2"
+            value={assignmentUserId}
+            onChange={(e) => setAssignmentUserId(e.target.value)}
+          >
             {users.map((user) => (
               <option key={user.id} value={user.id}>
                 {user.displayName}
               </option>
             ))}
           </select>
-          <button className="rounded bg-accent px-3 py-2 text-white" onClick={() => void addAssignment()}>
+          <button
+            className="rounded bg-accent px-3 py-2 text-white"
+            onClick={() => void addAssignment()}
+          >
             Tildel bruker
           </button>
         </div>
@@ -361,10 +408,13 @@ export default function WorkOrderDetailPage() {
             <tbody>
               {(workOrder?.assignments ?? []).map((assignment) => {
                 const assignedUser = users.find((user) => user.id === assignment.assigneeUserId);
-                const xorValid = Boolean(assignment.assigneeUserId) !== Boolean(assignment.assigneeTeamId);
+                const xorValid =
+                  Boolean(assignment.assigneeUserId) !== Boolean(assignment.assigneeTeamId);
                 return (
                   <tr key={assignment.id} className="border-b">
-                    <td className="py-2">{assignedUser?.displayName ?? assignment.assigneeUserId ?? '-'}</td>
+                    <td className="py-2">
+                      {assignedUser?.displayName ?? assignment.assigneeUserId ?? '-'}
+                    </td>
                     <td className="py-2">{assignment.assigneeTeamId ?? '-'}</td>
                     <td className="py-2">{xorValid ? 'OK' : 'INVALID'}</td>
                   </tr>
@@ -385,7 +435,11 @@ export default function WorkOrderDetailPage() {
       <section className="rounded border bg-white p-4">
         <h2 className="mb-2 text-lg">Planansvarlig (planlegger)</h2>
         <div className="grid gap-2 md:grid-cols-3">
-          <select className="rounded border px-3 py-2 md:col-span-2" value={planningOwnerUserId} onChange={(e) => setPlanningOwnerUserId(e.target.value)}>
+          <select
+            className="rounded border px-3 py-2 md:col-span-2"
+            value={planningOwnerUserId}
+            onChange={(e) => setPlanningOwnerUserId(e.target.value)}
+          >
             <option value="">Ingen</option>
             {users.map((user) => (
               <option key={user.id} value={user.id}>
@@ -393,7 +447,10 @@ export default function WorkOrderDetailPage() {
               </option>
             ))}
           </select>
-          <button className="rounded bg-accent px-3 py-2 text-white" onClick={() => void savePlanningOwner()}>
+          <button
+            className="rounded bg-accent px-3 py-2 text-white"
+            onClick={() => void savePlanningOwner()}
+          >
             Lagre planansvarlig
           </button>
         </div>
@@ -403,16 +460,33 @@ export default function WorkOrderDetailPage() {
       <section className="rounded border bg-white p-4">
         <h2 className="mb-2 text-lg">Tildelt arbeid (tidspunkt)</h2>
         <div className="grid gap-2 md:grid-cols-5">
-          <select className="rounded border px-3 py-2 md:col-span-2" value={scheduleAssigneeUserId} onChange={(e) => setScheduleAssigneeUserId(e.target.value)}>
+          <select
+            className="rounded border px-3 py-2 md:col-span-2"
+            value={scheduleAssigneeUserId}
+            onChange={(e) => setScheduleAssigneeUserId(e.target.value)}
+          >
             {users.map((user) => (
               <option key={user.id} value={user.id}>
                 {user.displayName}
               </option>
             ))}
           </select>
-          <input className="rounded border px-3 py-2" type="datetime-local" value={scheduleStart} onChange={(e) => setScheduleStart(e.target.value)} />
-          <input className="rounded border px-3 py-2" type="datetime-local" value={scheduleEnd} onChange={(e) => setScheduleEnd(e.target.value)} />
-          <button className="rounded bg-accent px-3 py-2 text-white" onClick={() => void addScheduleEntry()}>
+          <input
+            className="rounded border px-3 py-2"
+            type="datetime-local"
+            value={scheduleStart}
+            onChange={(e) => setScheduleStart(e.target.value)}
+          />
+          <input
+            className="rounded border px-3 py-2"
+            type="datetime-local"
+            value={scheduleEnd}
+            onChange={(e) => setScheduleEnd(e.target.value)}
+          />
+          <button
+            className="rounded bg-accent px-3 py-2 text-white"
+            onClick={() => void addScheduleEntry()}
+          >
             Legg til
           </button>
           <input
@@ -438,13 +512,18 @@ export default function WorkOrderDetailPage() {
             <tbody>
               {scheduleEntries.map((entry) => (
                 <tr key={entry.id} className="border-b">
-                  <td className="py-2">{entry.assigneeUser?.displayName ?? entry.assigneeTeam?.name ?? '-'}</td>
+                  <td className="py-2">
+                    {entry.assigneeUser?.displayName ?? entry.assigneeTeam?.name ?? '-'}
+                  </td>
                   <td className="py-2">{formatDate(entry.startAt)}</td>
                   <td className="py-2">{formatDate(entry.endAt)}</td>
                   <td className="py-2">{entry.status}</td>
                   <td className="py-2">{entry.note ?? '-'}</td>
                   <td className="py-2">
-                    <button className="rounded border px-2 py-1 text-xs hover:bg-slate-50" onClick={() => void deleteScheduleEntry(entry.id)}>
+                    <button
+                      className="rounded border px-2 py-1 text-xs hover:bg-slate-50"
+                      onClick={() => void deleteScheduleEntry(entry.id)}
+                    >
                       Slett
                     </button>
                   </td>
@@ -458,7 +537,11 @@ export default function WorkOrderDetailPage() {
       <section className="rounded border bg-white p-4">
         <h2 className="mb-2 text-lg">Forbruksmateriell</h2>
         <div className="grid gap-2 md:grid-cols-4">
-          <select className="rounded border px-3 py-2 md:col-span-2" value={selectedConsumableId} onChange={(e) => setSelectedConsumableId(e.target.value)}>
+          <select
+            className="rounded border px-3 py-2 md:col-span-2"
+            value={selectedConsumableId}
+            onChange={(e) => setSelectedConsumableId(e.target.value)}
+          >
             {consumableCatalog.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.name} ({item.barcode ?? item.id})
@@ -473,7 +556,11 @@ export default function WorkOrderDetailPage() {
             onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
             placeholder="Antall"
           />
-          <button className="rounded bg-accent px-3 py-2 text-white" onClick={() => void addConsumable()} disabled={!selectedConsumableId}>
+          <button
+            className="rounded bg-accent px-3 py-2 text-white"
+            onClick={() => void addConsumable()}
+            disabled={!selectedConsumableId}
+          >
             Legg til
           </button>
           <input

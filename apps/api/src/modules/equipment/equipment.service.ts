@@ -1,4 +1,10 @@
-import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { AuditService } from '../../common/audit/audit.service.js';
 import { PrismaService } from '../../common/prisma/prisma.service.js';
 
@@ -126,7 +132,12 @@ export class EquipmentService {
     };
   }
 
-  async attachBarcode(organizationId: string, actorUserId: string, itemId: string, rawBarcode: string) {
+  async attachBarcode(
+    organizationId: string,
+    actorUserId: string,
+    itemId: string,
+    rawBarcode: string,
+  ) {
     const barcode = this.normalizeBarcode(rawBarcode);
 
     const item = await this.prisma.equipmentItem.findFirst({

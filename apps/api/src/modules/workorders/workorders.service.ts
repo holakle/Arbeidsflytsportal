@@ -9,7 +9,11 @@ export class WorkOrdersService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  async list(organizationId: string, userId: string, query: { page: number; limit: number; status?: string; assignedToMe?: boolean }) {
+  async list(
+    organizationId: string,
+    userId: string,
+    query: { page: number; limit: number; status?: string; assignedToMe?: boolean },
+  ) {
     const where = {
       organizationId,
       deletedAt: null,
@@ -17,7 +21,12 @@ export class WorkOrdersService {
       ...(query.assignedToMe
         ? {
             assignments: {
-              some: { OR: [{ assigneeUserId: userId }, { assigneeTeam: { memberships: { some: { userId } } } }] },
+              some: {
+                OR: [
+                  { assigneeUserId: userId },
+                  { assigneeTeam: { memberships: { some: { userId } } } },
+                ],
+              },
             },
           }
         : {}),
@@ -77,13 +86,25 @@ export class WorkOrdersService {
       where: { id },
       data: {
         title: body.title ? String(body.title) : undefined,
-        description: body.description !== undefined ? (body.description ? String(body.description) : null) : undefined,
+        description:
+          body.description !== undefined
+            ? body.description
+              ? String(body.description)
+              : null
+            : undefined,
         status: body.status ? String(body.status) : undefined,
-        departmentId: body.departmentId !== undefined ? ((body.departmentId as string | null) ?? null) : undefined,
-        locationId: body.locationId !== undefined ? ((body.locationId as string | null) ?? null) : undefined,
-        projectId: body.projectId !== undefined ? ((body.projectId as string | null) ?? null) : undefined,
+        departmentId:
+          body.departmentId !== undefined
+            ? ((body.departmentId as string | null) ?? null)
+            : undefined,
+        locationId:
+          body.locationId !== undefined ? ((body.locationId as string | null) ?? null) : undefined,
+        projectId:
+          body.projectId !== undefined ? ((body.projectId as string | null) ?? null) : undefined,
         planningOwnerUserId:
-          body.planningOwnerUserId !== undefined ? ((body.planningOwnerUserId as string | null) ?? null) : undefined,
+          body.planningOwnerUserId !== undefined
+            ? ((body.planningOwnerUserId as string | null) ?? null)
+            : undefined,
       },
     });
 
@@ -107,7 +128,12 @@ export class WorkOrdersService {
     return this.prisma.workOrder.update({ where: { id }, data: { deletedAt: new Date() } });
   }
 
-  async assign(organizationId: string, userId: string, id: string, payload: { assigneeUserId?: string; assigneeTeamId?: string }) {
+  async assign(
+    organizationId: string,
+    userId: string,
+    id: string,
+    payload: { assigneeUserId?: string; assigneeTeamId?: string },
+  ) {
     if (Boolean(payload.assigneeUserId) === Boolean(payload.assigneeTeamId)) {
       throw new BadRequestException('Exactly one assigneeUserId or assigneeTeamId is required');
     }
@@ -140,7 +166,9 @@ export class WorkOrdersService {
       where: { organizationId, workOrderId },
       orderBy: { createdAt: 'desc' },
       include: {
-        equipmentItem: { select: { id: true, name: true, serialNumber: true, barcode: true, type: true } },
+        equipmentItem: {
+          select: { id: true, name: true, serialNumber: true, barcode: true, type: true },
+        },
       },
     });
   }
@@ -172,7 +200,9 @@ export class WorkOrdersService {
         note: payload.note ?? null,
       },
       include: {
-        equipmentItem: { select: { id: true, name: true, serialNumber: true, barcode: true, type: true } },
+        equipmentItem: {
+          select: { id: true, name: true, serialNumber: true, barcode: true, type: true },
+        },
       },
     });
 
@@ -230,7 +260,14 @@ export class WorkOrdersService {
     organizationId: string,
     actorUserId: string,
     workOrderId: string,
-    payload: { assigneeUserId?: string; assigneeTeamId?: string; startAt: string; endAt: string; note?: string; status?: string },
+    payload: {
+      assigneeUserId?: string;
+      assigneeTeamId?: string;
+      startAt: string;
+      endAt: string;
+      note?: string;
+      status?: string;
+    },
   ) {
     await this.get(organizationId, workOrderId);
 
@@ -274,7 +311,12 @@ export class WorkOrdersService {
     return record;
   }
 
-  async deleteSchedule(organizationId: string, actorUserId: string, workOrderId: string, scheduleId: string) {
+  async deleteSchedule(
+    organizationId: string,
+    actorUserId: string,
+    workOrderId: string,
+    scheduleId: string,
+  ) {
     await this.get(organizationId, workOrderId);
     const schedule = await this.prisma.workOrderSchedule.findFirst({
       where: { id: scheduleId, organizationId, workOrderId },
@@ -293,7 +335,12 @@ export class WorkOrdersService {
     return { success: true as const };
   }
 
-  async listScheduleForWorkOrder(organizationId: string, userId: string, roles: string[], workOrderId: string) {
+  async listScheduleForWorkOrder(
+    organizationId: string,
+    userId: string,
+    roles: string[],
+    workOrderId: string,
+  ) {
     await this.get(organizationId, workOrderId);
     const canSeeAll = this.canManagePlanning(roles);
     return this.prisma.workOrderSchedule.findMany({
@@ -318,8 +365,8 @@ export class WorkOrdersService {
   }
 
   private canManagePlanning(roles: string[]) {
-    return roles.includes('planner') || roles.includes('org_admin') || roles.includes('system_admin');
+    return (
+      roles.includes('planner') || roles.includes('org_admin') || roles.includes('system_admin')
+    );
   }
-
 }
-

@@ -46,4 +46,3 @@
     "seed": "tsx prisma/seed.ts"
   }
 }
-

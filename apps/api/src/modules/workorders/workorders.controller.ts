@@ -57,7 +57,11 @@ export class WorkOrdersController {
   @Patch(':id')
   @Roles('planner', 'technician', 'org_admin')
   @UsePipes(new ZodValidationPipe(updateWorkOrderSchema))
-  update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() body: Record<string, unknown>) {
+  update(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
     return this.service.update(user.organizationId, user.id, id, body);
   }
 
@@ -109,7 +113,12 @@ export class WorkOrdersController {
     @Param('id') id: string,
     @Body() body: { planningOwnerUserId: string | null },
   ) {
-    return this.service.setPlanningOwner(user.organizationId, user.id, id, body.planningOwnerUserId);
+    return this.service.setPlanningOwner(
+      user.organizationId,
+      user.id,
+      id,
+      body.planningOwnerUserId,
+    );
   }
 
   @Post(':id/schedule')
@@ -118,14 +127,26 @@ export class WorkOrdersController {
   createSchedule(
     @CurrentUser() user: AuthUser,
     @Param('id') id: string,
-    @Body() body: { assigneeUserId?: string; assigneeTeamId?: string; startAt: string; endAt: string; note?: string; status?: string },
+    @Body()
+    body: {
+      assigneeUserId?: string;
+      assigneeTeamId?: string;
+      startAt: string;
+      endAt: string;
+      note?: string;
+      status?: string;
+    },
   ) {
     return this.service.createSchedule(user.organizationId, user.id, id, body);
   }
 
   @Delete(':id/schedule/:scheduleId')
   @Roles('planner', 'org_admin')
-  removeSchedule(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('scheduleId') scheduleId: string) {
+  removeSchedule(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('scheduleId') scheduleId: string,
+  ) {
     return this.service.deleteSchedule(user.organizationId, user.id, id, scheduleId);
   }
 }

@@ -36,16 +36,18 @@ type FullCalendarLike = {
 
 const AnyFullCalendar = FullCalendar as unknown as ComponentType<Record<string, unknown>>;
 
-export const FullCalendarCompat = forwardRef<FullCalendarCompatRef, FullCalendarCompatProps>(function FullCalendarCompat(props, ref) {
-  const internalRef = useRef<FullCalendarLike | null>(null);
+export const FullCalendarCompat = forwardRef<FullCalendarCompatRef, FullCalendarCompatProps>(
+  function FullCalendarCompat(props, ref) {
+    const internalRef = useRef<FullCalendarLike | null>(null);
 
-  useImperativeHandle(
-    ref,
-    () => ({
-      getApi: () => internalRef.current?.getApi?.() ?? null,
-    }),
-    [],
-  );
+    useImperativeHandle(
+      ref,
+      () => ({
+        getApi: () => internalRef.current?.getApi?.() ?? null,
+      }),
+      [],
+    );
 
-  return <AnyFullCalendar {...props} ref={internalRef} />;
-});
+    return <AnyFullCalendar {...props} ref={internalRef} />;
+  },
+);

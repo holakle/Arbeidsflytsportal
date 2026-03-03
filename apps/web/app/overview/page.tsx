@@ -4,7 +4,8 @@ import OverviewClient, { type OverviewSections } from './overview-client';
 import { apiRequest, canAccessOverview, getServerToken, trySection } from '@/lib/server-api';
 
 export default async function OverviewPage() {
-  const overviewEnabled = process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_ENABLE_OVERVIEW === 'true';
+  const overviewEnabled =
+    process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_ENABLE_OVERVIEW === 'true';
   if (!overviewEnabled) {
     notFound();
   }
@@ -28,9 +29,15 @@ export default async function OverviewPage() {
   const sections: OverviewSections = {
     workOrders: await trySection('WorkOrders', apiRequest('/workorders?page=1&limit=100', token)),
     equipmentItems: await trySection('EquipmentItems', apiRequest('/equipment', token)),
-    reservations: await trySection('EquipmentReservations', apiRequest('/equipment/reservations?page=1&limit=100', token)),
+    reservations: await trySection(
+      'EquipmentReservations',
+      apiRequest('/equipment/reservations?page=1&limit=100', token),
+    ),
     timesheets: await trySection('Timesheets', apiRequest('/timesheets', token)),
-    weeklySummary: await trySection('Weekly summary', apiRequest('/timesheets/weekly-summary', token)),
+    weeklySummary: await trySection(
+      'Weekly summary',
+      apiRequest('/timesheets/weekly-summary', token),
+    ),
     todos: await trySection('Todos', apiRequest('/todos', token)),
     dashboard: await trySection('Dashboard', apiRequest('/dashboard', token)),
   };

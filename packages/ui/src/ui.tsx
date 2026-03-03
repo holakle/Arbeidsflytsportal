@@ -1,4 +1,4 @@
-﻿import * as React from 'react';
+import * as React from 'react';
 
 export const tokens = {
   colors: {
@@ -12,7 +12,14 @@ export const tokens = {
 
 export function Card(props: React.PropsWithChildren<{ title: string }>) {
   return (
-    <section style={{ background: tokens.colors.surface, border: `1px solid ${tokens.colors.border}`, borderRadius: 12, padding: 16 }}>
+    <section
+      style={{
+        background: tokens.colors.surface,
+        border: `1px solid ${tokens.colors.border}`,
+        borderRadius: 12,
+        padding: 16,
+      }}
+    >
       <h3 style={{ marginTop: 0 }}>{props.title}</h3>
       {props.children}
     </section>
@@ -34,4 +41,3 @@ export function Button(props: React.ButtonHTMLAttributes<HTMLButtonElement>) {
     />
   );
 }
-

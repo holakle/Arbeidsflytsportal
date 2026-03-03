@@ -15,7 +15,8 @@ export class ScheduleService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async list(organizationId: string, userId: string, roles: string[], query: ScheduleQuery) {
-    const canManageAll = roles.includes('planner') || roles.includes('org_admin') || roles.includes('system_admin');
+    const canManageAll =
+      roles.includes('planner') || roles.includes('org_admin') || roles.includes('system_admin');
     const scope = query.scope ?? 'mine';
     if (scope === 'all' && !canManageAll) {
       throw new ForbiddenException('scope=all is only allowed for planner/admin');
@@ -32,7 +33,10 @@ export class ScheduleService {
       ...(query.assigneeTeamId ? { assigneeTeamId: query.assigneeTeamId } : {}),
       ...(scope === 'mine' && !canManageAll
         ? {
-            OR: [{ assigneeUserId: userId }, { assigneeTeam: { memberships: { some: { userId } } } }],
+            OR: [
+              { assigneeUserId: userId },
+              { assigneeTeam: { memberships: { some: { userId } } } },
+            ],
           }
         : {}),
     };
@@ -51,7 +55,10 @@ export class ScheduleService {
             workOrder: {
               assignments: {
                 some: {
-                  OR: [{ assigneeUserId: userId }, { assigneeTeam: { memberships: { some: { userId } } } }],
+                  OR: [
+                    { assigneeUserId: userId },
+                    { assigneeTeam: { memberships: { some: { userId } } } },
+                  ],
                 },
               },
             },
@@ -89,11 +96,19 @@ export class ScheduleService {
         status: entry.status,
         note: entry.note,
         resourceRef: entry.assigneeUser
-          ? { kind: 'user' as const, id: entry.assigneeUser.id, label: entry.assigneeUser.displayName }
+          ? {
+              kind: 'user' as const,
+              id: entry.assigneeUser.id,
+              label: entry.assigneeUser.displayName,
+            }
           : entry.assigneeTeam
             ? { kind: 'team' as const, id: entry.assigneeTeam.id, label: entry.assigneeTeam.name }
             : null,
-        workOrderRef: { id: entry.workOrder.id, title: entry.workOrder.title, status: entry.workOrder.status },
+        workOrderRef: {
+          id: entry.workOrder.id,
+          title: entry.workOrder.title,
+          status: entry.workOrder.status,
+        },
       })),
       ...reservations.map((entry) => ({
         id: entry.id,
@@ -103,8 +118,16 @@ export class ScheduleService {
         end: entry.endAt.toISOString(),
         status: null,
         note: null,
-        resourceRef: { kind: 'equipment' as const, id: entry.equipmentItem.id, label: entry.equipmentItem.name },
-        workOrderRef: { id: entry.workOrder.id, title: entry.workOrder.title, status: entry.workOrder.status },
+        resourceRef: {
+          kind: 'equipment' as const,
+          id: entry.equipmentItem.id,
+          label: entry.equipmentItem.name,
+        },
+        workOrderRef: {
+          id: entry.workOrder.id,
+          title: entry.workOrder.title,
+          status: entry.workOrder.status,
+        },
       })),
     ].sort((a, b) => a.start.localeCompare(b.start));
   }

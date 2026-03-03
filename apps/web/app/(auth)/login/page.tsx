@@ -63,8 +63,16 @@ function LoginPageContent() {
   return (
     <main className="space-y-4">
       <h1 className="text-2xl font-semibold">Dev Login</h1>
-      {reason ? <div className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">{reason}</div> : null}
-      {error ? <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</div> : null}
+      {reason ? (
+        <div className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          {reason}
+        </div>
+      ) : null}
+      {error ? (
+        <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+          {error}
+        </div>
+      ) : null}
 
       <section className="rounded border bg-white p-4">
         <h2 className="mb-2 text-lg font-medium">Aktiv bruker</h2>
@@ -80,7 +88,10 @@ function LoginPageContent() {
                 </span>
               ))}
             </div>
-            <button className="rounded border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50" onClick={logout}>
+            <button
+              className="rounded border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50"
+              onClick={logout}
+            >
               Logg ut
             </button>
           </div>
@@ -92,7 +103,9 @@ function LoginPageContent() {
       <section className="rounded border bg-white p-4">
         <h2 className="mb-2 text-lg font-medium">Logg inn som</h2>
         {loading ? <p className="text-sm text-slate-600">Laster brukere...</p> : null}
-        {!loading && users.length === 0 ? <p className="text-sm text-slate-600">Ingen dev-brukere tilgjengelig.</p> : null}
+        {!loading && users.length === 0 ? (
+          <p className="text-sm text-slate-600">Ingen dev-brukere tilgjengelig.</p>
+        ) : null}
         <div className="grid gap-2 md:grid-cols-2">
           {users.map((user) => (
             <article key={user.id} className="rounded border p-3">

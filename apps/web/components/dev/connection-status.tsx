@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { useUiPrefs } from '@/hooks/use-ui-prefs';
@@ -46,5 +46,7 @@ export function ConnectionStatus() {
           ? 'API: offline'
           : 'API: checking';
 
-  return <span className={`inline-flex rounded px-2 py-1 text-xs font-medium ${style}`}>{label}</span>;
+  return (
+    <span className={`inline-flex rounded px-2 py-1 text-xs font-medium ${style}`}>{label}</span>
+  );
 }

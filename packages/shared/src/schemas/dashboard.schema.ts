@@ -1,4 +1,4 @@
-﻿import { z } from 'zod';
+import { z } from 'zod';
 import { widgetTypes } from '../enums';
 
 export const widgetInstanceSchema = z.object({
@@ -28,4 +28,3 @@ export const dashboardResponseSchema = z.object({
 });
 
 export const updateDashboardSchema = dashboardResponseSchema;
-

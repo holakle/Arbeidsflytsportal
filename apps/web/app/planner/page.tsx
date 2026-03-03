@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -11,7 +11,10 @@ import type { DatesSetArg, EventClickArg, EventContentArg, EventInput } from '@f
 import { apiClient } from '@/lib/api-client';
 import { getDevToken } from '@/lib/auth';
 import { ConnectionStatus } from '@/components/dev/connection-status';
-import { FullCalendarCompat, type FullCalendarCompatRef } from '@/components/planner/fullcalendar-compat';
+import {
+  FullCalendarCompat,
+  type FullCalendarCompatRef,
+} from '@/components/planner/fullcalendar-compat';
 
 type WorkOrder = {
   id: string;
@@ -164,7 +167,10 @@ function PlannerPageInner() {
 
       if (event.type !== 'equipment_reservation') return false;
       if (selectedEquipmentFilterId === 'ALL') return true;
-      return event.resourceRef?.kind === 'equipment' && event.resourceRef.id === selectedEquipmentFilterId;
+      return (
+        event.resourceRef?.kind === 'equipment' &&
+        event.resourceRef.id === selectedEquipmentFilterId
+      );
     });
   }, [resourceMode, scheduleEvents, selectedEquipmentFilterId, selectedUserFilterId]);
 
@@ -175,7 +181,10 @@ function PlannerPageInner() {
       (resourceMode === 'UTSTYR' && selectedEquipmentFilterId !== 'ALL');
 
     if (!specificSelected) {
-      return { label: 'Velg ressurs for ledighetsstatus', className: 'bg-slate-100 text-slate-700' };
+      return {
+        label: 'Velg ressurs for ledighetsstatus',
+        className: 'bg-slate-100 text-slate-700',
+      };
     }
 
     const hasActiveEvent = filteredScheduleEvents.some((event) => {
@@ -502,10 +511,18 @@ function PlannerPageInner() {
       if (!overlaps) return false;
 
       if (resourceMode === 'MANNSKAP') {
-        return event.type === 'workorder_schedule' && event.resourceRef?.kind === 'user' && event.resourceRef.id === selectionUserId;
+        return (
+          event.type === 'workorder_schedule' &&
+          event.resourceRef?.kind === 'user' &&
+          event.resourceRef.id === selectionUserId
+        );
       }
 
-      return event.type === 'equipment_reservation' && event.resourceRef?.kind === 'equipment' && event.resourceRef.id === selectionEquipmentId;
+      return (
+        event.type === 'equipment_reservation' &&
+        event.resourceRef?.kind === 'equipment' &&
+        event.resourceRef.id === selectionEquipmentId
+      );
     });
 
     if (conflicts.length > 0) {
@@ -574,8 +591,16 @@ function PlannerPageInner() {
         <ConnectionStatus />
       </div>
 
-      {error ? <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</div> : null}
-      {success ? <div className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{success}</div> : null}
+      {error ? (
+        <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+          {error}
+        </div>
+      ) : null}
+      {success ? (
+        <div className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          {success}
+        </div>
+      ) : null}
 
       <section className="rounded border bg-white p-4">
         <div className="mb-3 flex gap-2">
@@ -596,32 +621,55 @@ function PlannerPageInner() {
                 value={calendarAnchorDate}
                 onChange={(e) => setCalendarAnchorDate(e.target.value)}
               />
-              <button className="rounded border px-3 py-2 text-sm hover:bg-slate-50" onClick={calendarPrev}>
+              <button
+                className="rounded border px-3 py-2 text-sm hover:bg-slate-50"
+                onClick={calendarPrev}
+              >
                 Forrige
               </button>
-              <button className="rounded border px-3 py-2 text-sm hover:bg-slate-50" onClick={calendarToday}>
+              <button
+                className="rounded border px-3 py-2 text-sm hover:bg-slate-50"
+                onClick={calendarToday}
+              >
                 I dag
               </button>
-              <button className="rounded border px-3 py-2 text-sm hover:bg-slate-50" onClick={calendarNext}>
+              <button
+                className="rounded border px-3 py-2 text-sm hover:bg-slate-50"
+                onClick={calendarNext}
+              >
                 Neste
               </button>
-              <select className="rounded border px-3 py-2" value={calendarView} onChange={(e) => setCalendarView(e.target.value as CalendarViewMode)}>
+              <select
+                className="rounded border px-3 py-2"
+                value={calendarView}
+                onChange={(e) => setCalendarView(e.target.value as CalendarViewMode)}
+              >
                 <option value="timeGridDay">Dag</option>
                 <option value="timeGridWeek">Uke</option>
                 <option value="dayGridMonth">Maaned</option>
               </select>
-              <span className={`inline-flex items-center justify-center rounded px-2 py-1 text-xs font-medium ${availabilityBadge.className}`}>
+              <span
+                className={`inline-flex items-center justify-center rounded px-2 py-1 text-xs font-medium ${availabilityBadge.className}`}
+              >
                 {availabilityBadge.label}
               </span>
             </div>
 
             <div className="grid gap-2 md:grid-cols-3">
-              <select className="rounded border px-3 py-2" value={resourceMode} onChange={(e) => setResourceMode(e.target.value as ResourceMode)}>
+              <select
+                className="rounded border px-3 py-2"
+                value={resourceMode}
+                onChange={(e) => setResourceMode(e.target.value as ResourceMode)}
+              >
                 <option value="MANNSKAP">Mannskap</option>
                 <option value="UTSTYR">Utstyr</option>
               </select>
               {resourceMode === 'MANNSKAP' ? (
-                <select className="rounded border px-3 py-2 md:col-span-2" value={selectedUserFilterId} onChange={(e) => setSelectedUserFilterId(e.target.value)}>
+                <select
+                  className="rounded border px-3 py-2 md:col-span-2"
+                  value={selectedUserFilterId}
+                  onChange={(e) => setSelectedUserFilterId(e.target.value)}
+                >
                   <option value="ALL">Alle brukere</option>
                   {users.map((user) => (
                     <option key={user.id} value={user.id}>
@@ -669,30 +717,44 @@ function PlannerPageInner() {
               />
             </div>
 
-            {calendarEvents.length === 0 ? <p className="text-sm text-slate-500">Ingen hendelser i valgt intervall/filter.</p> : null}
+            {calendarEvents.length === 0 ? (
+              <p className="text-sm text-slate-500">Ingen hendelser i valgt intervall/filter.</p>
+            ) : null}
 
             {selectedCalendarEvent ? (
               <div className="rounded border p-3 text-sm">
                 <div className="mb-1 flex items-center justify-between">
                   <strong>{selectedCalendarEvent.title}</strong>
-                  <span className="rounded bg-slate-100 px-2 py-0.5 text-xs">{selectedCalendarEvent.type}</span>
+                  <span className="rounded bg-slate-100 px-2 py-0.5 text-xs">
+                    {selectedCalendarEvent.type}
+                  </span>
                 </div>
                 <div className="text-slate-600">
-                  {formatDate(selectedCalendarEvent.start)} - {formatDate(selectedCalendarEvent.end)}
+                  {formatDate(selectedCalendarEvent.start)} -{' '}
+                  {formatDate(selectedCalendarEvent.end)}
                 </div>
                 {selectedCalendarEvent.resourceRef ? (
-                  <div className="text-slate-600">Ressurs: {selectedCalendarEvent.resourceRef.label ?? selectedCalendarEvent.resourceRef.id}</div>
+                  <div className="text-slate-600">
+                    Ressurs:{' '}
+                    {selectedCalendarEvent.resourceRef.label ??
+                      selectedCalendarEvent.resourceRef.id}
+                  </div>
                 ) : null}
                 {selectedCalendarEvent.workOrderRef ? (
                   <div className="text-slate-600">
                     Arbeidsordre:{' '}
-                    <Link className="underline" href={`/workorders/${selectedCalendarEvent.workOrderRef.id}`}>
+                    <Link
+                      className="underline"
+                      href={`/workorders/${selectedCalendarEvent.workOrderRef.id}`}
+                    >
                       {selectedCalendarEvent.workOrderRef.title}
                     </Link>{' '}
                     ({selectedCalendarEvent.workOrderRef.status})
                   </div>
                 ) : null}
-                {selectedCalendarEvent.note ? <div className="text-slate-600">Notat: {selectedCalendarEvent.note}</div> : null}
+                {selectedCalendarEvent.note ? (
+                  <div className="text-slate-600">Notat: {selectedCalendarEvent.note}</div>
+                ) : null}
               </div>
             ) : (
               <p className="text-sm text-slate-500">Klikk pa en hendelse for detaljer.</p>
@@ -701,7 +763,12 @@ function PlannerPageInner() {
         ) : (
           <div className="space-y-2">
             <h2 className="text-lg">Opprett arbeidsordre</h2>
-            <input className="w-full rounded border px-3 py-2" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Tittel" />
+            <input
+              className="w-full rounded border px-3 py-2"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Tittel"
+            />
             <textarea
               className="w-full rounded border px-3 py-2"
               value={description}
@@ -709,7 +776,11 @@ function PlannerPageInner() {
               placeholder="Beskrivelse"
               rows={3}
             />
-            <button className="rounded bg-accent px-3 py-2 text-white disabled:opacity-40" onClick={createWorkOrder} disabled={!title || loading}>
+            <button
+              className="rounded bg-accent px-3 py-2 text-white disabled:opacity-40"
+              onClick={createWorkOrder}
+              disabled={!title || loading}
+            >
               Opprett
             </button>
           </div>
@@ -721,7 +792,11 @@ function PlannerPageInner() {
           <div className="rounded border bg-white p-4">
             <h2 className="mb-2 text-lg">Tildel person</h2>
             <div className="grid gap-2 md:grid-cols-3">
-              <select className="rounded border px-3 py-2" value={selectedWorkOrderId} onChange={(e) => setSelectedWorkOrderId(e.target.value)}>
+              <select
+                className="rounded border px-3 py-2"
+                value={selectedWorkOrderId}
+                onChange={(e) => setSelectedWorkOrderId(e.target.value)}
+              >
                 {workOrders.map((wo) => (
                   <option key={wo.id} value={wo.id}>
                     {wo.title} ({wo.status})
@@ -729,7 +804,11 @@ function PlannerPageInner() {
                 ))}
               </select>
 
-              <select className="rounded border px-3 py-2" value={assigneeUserId} onChange={(e) => setAssigneeUserId(e.target.value)}>
+              <select
+                className="rounded border px-3 py-2"
+                value={assigneeUserId}
+                onChange={(e) => setAssigneeUserId(e.target.value)}
+              >
                 {users.map((user) => (
                   <option key={user.id} value={user.id}>
                     {user.displayName} ({user.roles.join(', ') || 'no-role'})
@@ -745,13 +824,21 @@ function PlannerPageInner() {
                 Tildel
               </button>
             </div>
-            {selectedWorkOrder ? <p className="mt-2 text-xs text-slate-600">Valgt arbeidsordre: {selectedWorkOrder.title}</p> : null}
+            {selectedWorkOrder ? (
+              <p className="mt-2 text-xs text-slate-600">
+                Valgt arbeidsordre: {selectedWorkOrder.title}
+              </p>
+            ) : null}
           </div>
 
           <div className="rounded border bg-white p-4">
             <h2 className="mb-2 text-lg">Book utstyr</h2>
             <div className="grid gap-2 md:grid-cols-5">
-              <select className="rounded border px-3 py-2" value={selectedWorkOrderId} onChange={(e) => setSelectedWorkOrderId(e.target.value)}>
+              <select
+                className="rounded border px-3 py-2"
+                value={selectedWorkOrderId}
+                onChange={(e) => setSelectedWorkOrderId(e.target.value)}
+              >
                 {workOrders.map((wo) => (
                   <option key={wo.id} value={wo.id}>
                     {wo.title} ({wo.status})
@@ -759,7 +846,11 @@ function PlannerPageInner() {
                 ))}
               </select>
 
-              <select className="rounded border px-3 py-2" value={equipmentItemId} onChange={(e) => setEquipmentItemId(e.target.value)}>
+              <select
+                className="rounded border px-3 py-2"
+                value={equipmentItemId}
+                onChange={(e) => setEquipmentItemId(e.target.value)}
+              >
                 {equipmentItems.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.name} ({item.serialNumber ?? item.id})
@@ -767,13 +858,29 @@ function PlannerPageInner() {
                 ))}
               </select>
 
-              <input className="rounded border px-3 py-2" type="datetime-local" value={reserveStart} onChange={(e) => setReserveStart(e.target.value)} />
-              <input className="rounded border px-3 py-2" type="datetime-local" value={reserveEnd} onChange={(e) => setReserveEnd(e.target.value)} />
+              <input
+                className="rounded border px-3 py-2"
+                type="datetime-local"
+                value={reserveStart}
+                onChange={(e) => setReserveStart(e.target.value)}
+              />
+              <input
+                className="rounded border px-3 py-2"
+                type="datetime-local"
+                value={reserveEnd}
+                onChange={(e) => setReserveEnd(e.target.value)}
+              />
 
               <button
                 className="rounded bg-accent px-3 py-2 text-white disabled:opacity-40"
                 onClick={reserveEquipment}
-                disabled={!selectedWorkOrderId || !equipmentItemId || !reserveStart || !reserveEnd || loading}
+                disabled={
+                  !selectedWorkOrderId ||
+                  !equipmentItemId ||
+                  !reserveStart ||
+                  !reserveEnd ||
+                  loading
+                }
               >
                 Book
               </button>
@@ -787,7 +894,10 @@ function PlannerPageInner() {
                 <li key={item.id} className="rounded border p-2">
                   <strong>{item.title}</strong>
                   <div className="text-sm text-gray-600">Status: {item.status}</div>
-                  <Link className="mt-1 inline-block rounded border px-2 py-1 text-xs hover:bg-slate-50" href={`/workorders/${item.id}`}>
+                  <Link
+                    className="mt-1 inline-block rounded border px-2 py-1 text-xs hover:bg-slate-50"
+                    href={`/workorders/${item.id}`}
+                  >
                     Apne
                   </Link>
                 </li>
@@ -802,7 +912,11 @@ function PlannerPageInner() {
           <div className="w-full max-w-xl rounded-xl bg-white p-4 shadow-xl">
             <h2 className="mb-3 text-lg font-semibold">Book valgt tidsrom</h2>
             <div className="grid gap-2 md:grid-cols-2">
-              <select className="rounded border px-3 py-2 md:col-span-2" value={selectionWorkOrderId} onChange={(e) => setSelectionWorkOrderId(e.target.value)}>
+              <select
+                className="rounded border px-3 py-2 md:col-span-2"
+                value={selectionWorkOrderId}
+                onChange={(e) => setSelectionWorkOrderId(e.target.value)}
+              >
                 {workOrders.map((wo) => (
                   <option key={wo.id} value={wo.id}>
                     {wo.title} ({wo.status})
@@ -811,7 +925,11 @@ function PlannerPageInner() {
               </select>
 
               {resourceMode === 'MANNSKAP' ? (
-                <select className="rounded border px-3 py-2 md:col-span-2" value={selectionUserId} onChange={(e) => setSelectionUserId(e.target.value)}>
+                <select
+                  className="rounded border px-3 py-2 md:col-span-2"
+                  value={selectionUserId}
+                  onChange={(e) => setSelectionUserId(e.target.value)}
+                >
                   {users.map((user) => (
                     <option key={user.id} value={user.id}>
                       {user.displayName}
@@ -819,7 +937,11 @@ function PlannerPageInner() {
                   ))}
                 </select>
               ) : (
-                <select className="rounded border px-3 py-2 md:col-span-2" value={selectionEquipmentId} onChange={(e) => setSelectionEquipmentId(e.target.value)}>
+                <select
+                  className="rounded border px-3 py-2 md:col-span-2"
+                  value={selectionEquipmentId}
+                  onChange={(e) => setSelectionEquipmentId(e.target.value)}
+                >
                   {equipmentItems.map((item) => (
                     <option key={item.id} value={item.id}>
                       {item.name} ({item.serialNumber ?? item.id})
@@ -828,14 +950,30 @@ function PlannerPageInner() {
                 </select>
               )}
 
-              <input className="rounded border px-3 py-2" type="datetime-local" value={selectionStart} onChange={(e) => setSelectionStart(e.target.value)} />
-              <input className="rounded border px-3 py-2" type="datetime-local" value={selectionEnd} onChange={(e) => setSelectionEnd(e.target.value)} />
+              <input
+                className="rounded border px-3 py-2"
+                type="datetime-local"
+                value={selectionStart}
+                onChange={(e) => setSelectionStart(e.target.value)}
+              />
+              <input
+                className="rounded border px-3 py-2"
+                type="datetime-local"
+                value={selectionEnd}
+                onChange={(e) => setSelectionEnd(e.target.value)}
+              />
             </div>
             <div className="mt-4 flex justify-end gap-2">
-              <button className="rounded border px-3 py-2 text-sm hover:bg-slate-50" onClick={() => setSelectionModalOpen(false)}>
+              <button
+                className="rounded border px-3 py-2 text-sm hover:bg-slate-50"
+                onClick={() => setSelectionModalOpen(false)}
+              >
                 Avbryt
               </button>
-              <button className="rounded bg-accent px-3 py-2 text-sm text-white" onClick={() => void confirmSelectionBooking()}>
+              <button
+                className="rounded bg-accent px-3 py-2 text-sm text-white"
+                onClick={() => void confirmSelectionBooking()}
+              >
                 Book
               </button>
             </div>
@@ -848,16 +986,22 @@ function PlannerPageInner() {
           <div className="w-full max-w-xl rounded-xl bg-white p-4 shadow-xl">
             <h2 className="mb-2 text-lg font-semibold">Konflikt oppdaget</h2>
             <p className="text-sm text-slate-700">
-              Valgt tidsrom overlapper med {selectionConflicts.length} eksisterende booking(er) for valgt ressurs.
+              Valgt tidsrom overlapper med {selectionConflicts.length} eksisterende booking(er) for
+              valgt ressurs.
             </p>
             <ul className="mt-3 max-h-40 space-y-1 overflow-auto rounded border bg-slate-50 p-2 text-sm">
               {selectionConflicts.slice(0, 8).map((event) => (
                 <li key={event.id}>
-                  <strong>{event.title}</strong> ({formatDate(event.start)} - {formatDate(event.end)})
+                  <strong>{event.title}</strong> ({formatDate(event.start)} -{' '}
+                  {formatDate(event.end)})
                 </li>
               ))}
             </ul>
-            {selectionConflicts.length > 8 ? <p className="mt-2 text-xs text-slate-500">Viser 8 av {selectionConflicts.length} konflikter.</p> : null}
+            {selectionConflicts.length > 8 ? (
+              <p className="mt-2 text-xs text-slate-500">
+                Viser 8 av {selectionConflicts.length} konflikter.
+              </p>
+            ) : null}
             <div className="mt-4 flex justify-end gap-2">
               <button
                 className="rounded border px-3 py-2 text-sm hover:bg-slate-50"
@@ -868,7 +1012,10 @@ function PlannerPageInner() {
               >
                 Avbryt
               </button>
-              <button className="rounded bg-amber-600 px-3 py-2 text-sm text-white hover:bg-amber-700" onClick={() => void confirmSelectionBookingWithOverlap()}>
+              <button
+                className="rounded bg-amber-600 px-3 py-2 text-sm text-white hover:bg-amber-700"
+                onClick={() => void confirmSelectionBookingWithOverlap()}
+              >
                 Book likevel
               </button>
             </div>

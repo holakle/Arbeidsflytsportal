@@ -1,4 +1,10 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Inject, Injectable } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator.js';
 
@@ -22,4 +28,3 @@ export class RolesGuard implements CanActivate {
     throw new ForbiddenException('Insufficient role');
   }
 }
-

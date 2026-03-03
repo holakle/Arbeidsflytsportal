@@ -85,7 +85,14 @@ export default function WorkOrdersPage() {
       const statusMatch = statusFilter === 'ALL' || wo.status === statusFilter;
       const searchMatch =
         q.length === 0 ||
-        [wo.title, wo.description ?? '', wo.id, wo.department?.name ?? '', wo.location?.name ?? '', wo.project?.name ?? '']
+        [
+          wo.title,
+          wo.description ?? '',
+          wo.id,
+          wo.department?.name ?? '',
+          wo.location?.name ?? '',
+          wo.project?.name ?? '',
+        ]
           .join(' ')
           .toLowerCase()
           .includes(q);
@@ -102,13 +109,26 @@ export default function WorkOrdersPage() {
         <ConnectionStatus />
       </div>
 
-      {error ? <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</div> : null}
-      {success ? <div className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{success}</div> : null}
+      {error ? (
+        <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+          {error}
+        </div>
+      ) : null}
+      {success ? (
+        <div className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          {success}
+        </div>
+      ) : null}
 
       <section className="rounded border bg-white p-4">
         <h2 className="mb-2 text-lg">Opprett arbeidsordre</h2>
         <div className="grid gap-2">
-          <input className="rounded border px-3 py-2" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Tittel" />
+          <input
+            className="rounded border px-3 py-2"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Tittel"
+          />
           <textarea
             className="rounded border px-3 py-2"
             rows={4}
@@ -116,7 +136,11 @@ export default function WorkOrdersPage() {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Beskrivelse (valgfri)"
           />
-          <button className="w-fit rounded bg-accent px-3 py-2 text-white disabled:opacity-50" disabled={!title.trim()} onClick={() => void createWorkOrder()}>
+          <button
+            className="w-fit rounded bg-accent px-3 py-2 text-white disabled:opacity-50"
+            disabled={!title.trim()}
+            onClick={() => void createWorkOrder()}
+          >
             Opprett
           </button>
         </div>
@@ -125,7 +149,9 @@ export default function WorkOrdersPage() {
       <section className="rounded border bg-white p-4">
         <h2 className="mb-2 text-lg">Arbeidsordreliste</h2>
         <div className="mb-3 flex flex-wrap gap-2">
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">Total: {items.length}</span>
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+            Total: {items.length}
+          </span>
           <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
             OPEN: {items.filter((w) => w.status === 'OPEN').length}
           </span>
@@ -174,13 +200,20 @@ export default function WorkOrdersPage() {
             </thead>
             <tbody>
               {paging.pageItems.map((item) => {
-                const userCount = (item.assignments ?? []).filter((a) => Boolean(a.assigneeUserId)).length;
-                const teamCount = (item.assignments ?? []).filter((a) => Boolean(a.assigneeTeamId)).length;
+                const userCount = (item.assignments ?? []).filter((a) =>
+                  Boolean(a.assigneeUserId),
+                ).length;
+                const teamCount = (item.assignments ?? []).filter((a) =>
+                  Boolean(a.assigneeTeamId),
+                ).length;
 
                 return (
                   <tr key={item.id} className="border-b">
                     <td className="py-2">
-                      <Link className="text-sky-700 hover:underline" href={`/workorders/${item.id}`}>
+                      <Link
+                        className="text-sky-700 hover:underline"
+                        href={`/workorders/${item.id}`}
+                      >
                         {item.title}
                       </Link>
                     </td>
@@ -188,9 +221,14 @@ export default function WorkOrdersPage() {
                     <td className="py-2">{item.department?.name ?? '-'}</td>
                     <td className="py-2">{item.location?.name ?? '-'}</td>
                     <td className="py-2">{item.project?.name ?? '-'}</td>
-                    <td className="py-2">{userCount || teamCount ? `Bruker: ${userCount}, Team: ${teamCount}` : '-'}</td>
                     <td className="py-2">
-                      <Link className="rounded border px-2 py-1 text-xs hover:bg-slate-50" href={`/workorders/${item.id}`}>
+                      {userCount || teamCount ? `Bruker: ${userCount}, Team: ${teamCount}` : '-'}
+                    </td>
+                    <td className="py-2">
+                      <Link
+                        className="rounded border px-2 py-1 text-xs hover:bg-slate-50"
+                        href={`/workorders/${item.id}`}
+                      >
                         Inspect
                       </Link>
                     </td>
@@ -201,7 +239,11 @@ export default function WorkOrdersPage() {
           </table>
         </div>
         <div className="mt-3 flex items-center gap-2 text-sm">
-          <button className="rounded border border-slate-300 px-2 py-1 disabled:opacity-40" disabled={paging.page <= 1} onClick={() => setPage(paging.page - 1)}>
+          <button
+            className="rounded border border-slate-300 px-2 py-1 disabled:opacity-40"
+            disabled={paging.page <= 1}
+            onClick={() => setPage(paging.page - 1)}
+          >
             Forrige
           </button>
           <span>
