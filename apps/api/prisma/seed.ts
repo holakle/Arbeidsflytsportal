@@ -21,15 +21,34 @@ const ids = {
   workOrder1: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
   workOrder2: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
   workOrder3: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
+  workOrder4: 'dededede-dede-dede-dede-dededededede',
+  workOrder5: 'cdcdcdcd-cdcd-cdcd-cdcd-cdcdcdcdcdcd',
+  workOrder6: 'abab1111-abab-1111-abab-1111abab1111',
+  workOrder7: 'abab2222-abab-2222-abab-2222abab2222',
   assignment1: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
   assignment2: 'ffffffff-ffff-ffff-ffff-ffffffffffff',
+  assignment3: 'f0f0f0f0-f0f0-f0f0-f0f0-f0f0f0f0f0f0',
   reservation1: '12121212-1212-1212-1212-121212121212',
   schedule1: '18181818-1818-1818-1818-181818181818',
   schedule2: '19191919-1919-1919-1919-191919191919',
+  schedule3: '20202020-2020-2020-2020-202020202020',
+  schedule4: '21212121-2121-2121-2121-212121212121',
   timesheet1: '13131313-1313-1313-1313-131313131313',
   timesheet2: '14141414-1414-1414-1414-141414141414',
+  timesheet3: '23232323-4545-4545-4545-454545454545',
   todo1: '15151515-1515-1515-1515-151515151515',
   todo2: '16161616-1616-1616-1616-161616161616',
+  session1: '90909090-9090-9090-9090-909090909090',
+  session2: '91919191-9191-9191-9191-919191919191',
+  session3: '92929292-9292-9292-9292-929292929292',
+  attachment1: '93939393-9393-9393-9393-939393939393',
+  attachment2: '94949494-9494-9494-9494-949494949494',
+  attachment3: '95959595-9595-9595-9595-959595959595',
+  notification1: '96969696-9696-9696-9696-969696969696',
+  notification2: '97979797-9797-9797-9797-979797979797',
+  notification3: '98989898-9898-9898-9898-989898989898',
+  notification4: '99990000-9999-0000-9999-000099990000',
+  notification5: '99991111-9999-1111-9999-111199991111',
 };
 
 async function main() {
@@ -346,6 +365,16 @@ async function main() {
       title: 'Monter stålrammer i fløy A',
       description: 'Bruk lift og scanner for justering før feste.',
       status: 'IN_PROGRESS',
+      customerName: 'Bygdøy Museum',
+      contactName: 'Erik Holm',
+      contactPhone: '+47 900 11 223',
+      addressLine1: 'Bygdøy allé 10',
+      postalCode: '0286',
+      city: 'Oslo',
+      lat: new Prisma.Decimal(59.9072421),
+      lng: new Prisma.Decimal(10.6849802),
+      accessNotes: 'Ring vaktrom ved ankomst',
+      hmsNotes: 'Bruk hjelm og fallsikring i fløy A',
       departmentId: department.id,
       locationId: location.id,
       projectId: project.id,
@@ -359,6 +388,16 @@ async function main() {
       title: 'Monter stålrammer i fløy A',
       description: 'Bruk lift og scanner for justering før feste.',
       status: 'IN_PROGRESS',
+      customerName: 'Bygdøy Museum',
+      contactName: 'Erik Holm',
+      contactPhone: '+47 900 11 223',
+      addressLine1: 'Bygdøy allé 10',
+      postalCode: '0286',
+      city: 'Oslo',
+      lat: new Prisma.Decimal(59.9072421),
+      lng: new Prisma.Decimal(10.6849802),
+      accessNotes: 'Ring vaktrom ved ankomst',
+      hmsNotes: 'Bruk hjelm og fallsikring i fløy A',
       departmentId: department.id,
       locationId: location.id,
       projectId: project.id,
@@ -373,7 +412,13 @@ async function main() {
     update: {
       title: 'Kabeltrekking sceneområde',
       description: 'Trekk og merk kabler i teknisk rom.',
-      status: 'OPEN',
+      status: 'READY_FOR_PLANNING',
+      customerName: 'Bygdøy Museum',
+      contactName: 'Nora Vik',
+      contactPhone: '+47 900 44 556',
+      addressLine1: 'Bygdøy allé 10',
+      postalCode: '0286',
+      city: 'Oslo',
       locationId: location.id,
       planningOwnerUserId: planner.id,
       createdByUserId: planner.id,
@@ -384,7 +429,13 @@ async function main() {
       id: ids.workOrder2,
       title: 'Kabeltrekking sceneområde',
       description: 'Trekk og merk kabler i teknisk rom.',
-      status: 'OPEN',
+      status: 'READY_FOR_PLANNING',
+      customerName: 'Bygdøy Museum',
+      contactName: 'Nora Vik',
+      contactPhone: '+47 900 44 556',
+      addressLine1: 'Bygdøy allé 10',
+      postalCode: '0286',
+      city: 'Oslo',
       locationId: location.id,
       planningOwnerUserId: planner.id,
       createdByUserId: planner.id,
@@ -398,6 +449,12 @@ async function main() {
       title: 'Sluttkontroll av installasjon',
       description: 'Sjekk låspunkter og mål avvik.',
       status: 'DONE',
+      customerName: 'Bygdøy Museum',
+      contactName: 'Trygve Solheim',
+      contactPhone: '+47 901 77 889',
+      addressLine1: 'Bygdøy allé 10',
+      postalCode: '0286',
+      city: 'Oslo',
       projectId: project.id,
       planningOwnerUserId: planner.id,
       createdByUserId: planner.id,
@@ -409,7 +466,151 @@ async function main() {
       title: 'Sluttkontroll av installasjon',
       description: 'Sjekk låspunkter og mål avvik.',
       status: 'DONE',
+      customerName: 'Bygdøy Museum',
+      contactName: 'Trygve Solheim',
+      contactPhone: '+47 901 77 889',
+      addressLine1: 'Bygdøy allé 10',
+      postalCode: '0286',
+      city: 'Oslo',
       projectId: project.id,
+      planningOwnerUserId: planner.id,
+      createdByUserId: planner.id,
+      organizationId: organization.id,
+    },
+  });
+
+  await prisma.workOrder.upsert({
+    where: { id: ids.workOrder4 },
+    update: {
+      title: 'Kontroll av porter lager B',
+      description: 'Sikkerhetskontroll og funksjonstest.',
+      status: 'DRAFT',
+      customerName: 'Oslo Lagerdrift',
+      contactName: 'Rune Berg',
+      contactPhone: '+47 980 22 111',
+      addressLine1: 'Lagerveien 5',
+      postalCode: '0675',
+      city: 'Oslo',
+      planningOwnerUserId: planner.id,
+      createdByUserId: planner.id,
+      organizationId: organization.id,
+      deletedAt: null,
+    },
+    create: {
+      id: ids.workOrder4,
+      title: 'Kontroll av porter lager B',
+      description: 'Sikkerhetskontroll og funksjonstest.',
+      status: 'DRAFT',
+      customerName: 'Oslo Lagerdrift',
+      contactName: 'Rune Berg',
+      contactPhone: '+47 980 22 111',
+      addressLine1: 'Lagerveien 5',
+      postalCode: '0675',
+      city: 'Oslo',
+      planningOwnerUserId: planner.id,
+      createdByUserId: planner.id,
+      organizationId: organization.id,
+    },
+  });
+
+  await prisma.workOrder.upsert({
+    where: { id: ids.workOrder5 },
+    update: {
+      title: 'Prosjektering lysrigg ny sal',
+      description: 'Planlegging med kundemøte og oppmåling.',
+      status: 'PLANNED',
+      customerName: 'Bygdøy Museum',
+      contactName: 'Lena Aasen',
+      contactPhone: '+47 915 45 004',
+      addressLine1: 'Bygdøy allé 10',
+      postalCode: '0286',
+      city: 'Oslo',
+      projectId: project.id,
+      planningOwnerUserId: planner.id,
+      createdByUserId: planner.id,
+      organizationId: organization.id,
+      deletedAt: null,
+    },
+    create: {
+      id: ids.workOrder5,
+      title: 'Prosjektering lysrigg ny sal',
+      description: 'Planlegging med kundemøte og oppmåling.',
+      status: 'PLANNED',
+      customerName: 'Bygdøy Museum',
+      contactName: 'Lena Aasen',
+      contactPhone: '+47 915 45 004',
+      addressLine1: 'Bygdøy allé 10',
+      postalCode: '0286',
+      city: 'Oslo',
+      projectId: project.id,
+      planningOwnerUserId: planner.id,
+      createdByUserId: planner.id,
+      organizationId: organization.id,
+    },
+  });
+
+  await prisma.workOrder.upsert({
+    where: { id: ids.workOrder6 },
+    update: {
+      title: 'Skifte styreskap hovedscene',
+      description: 'Mangler komponenter, avventer levering.',
+      status: 'BLOCKED',
+      customerName: 'Bygdøy Museum',
+      contactName: 'Hanne Morset',
+      contactPhone: '+47 988 00 331',
+      addressLine1: 'Bygdøy allé 10',
+      postalCode: '0286',
+      city: 'Oslo',
+      planningOwnerUserId: planner.id,
+      createdByUserId: planner.id,
+      organizationId: organization.id,
+      deletedAt: null,
+    },
+    create: {
+      id: ids.workOrder6,
+      title: 'Skifte styreskap hovedscene',
+      description: 'Mangler komponenter, avventer levering.',
+      status: 'BLOCKED',
+      customerName: 'Bygdøy Museum',
+      contactName: 'Hanne Morset',
+      contactPhone: '+47 988 00 331',
+      addressLine1: 'Bygdøy allé 10',
+      postalCode: '0286',
+      city: 'Oslo',
+      planningOwnerUserId: planner.id,
+      createdByUserId: planner.id,
+      organizationId: organization.id,
+    },
+  });
+
+  await prisma.workOrder.upsert({
+    where: { id: ids.workOrder7 },
+    update: {
+      title: 'Demontering gammel kabelbro',
+      description: 'Oppdrag kansellert etter kundebeslutning.',
+      status: 'CANCELLED',
+      customerName: 'Kulturbygg Oslo',
+      contactName: 'Pia Moholt',
+      contactPhone: '+47 930 78 550',
+      addressLine1: 'Operagata 1',
+      postalCode: '0150',
+      city: 'Oslo',
+      planningOwnerUserId: planner.id,
+      createdByUserId: planner.id,
+      organizationId: organization.id,
+      deletedAt: null,
+    },
+    create: {
+      id: ids.workOrder7,
+      title: 'Demontering gammel kabelbro',
+      description: 'Oppdrag kansellert etter kundebeslutning.',
+      status: 'CANCELLED',
+      customerName: 'Kulturbygg Oslo',
+      contactName: 'Pia Moholt',
+      contactPhone: '+47 930 78 550',
+      addressLine1: 'Operagata 1',
+      postalCode: '0150',
+      city: 'Oslo',
       planningOwnerUserId: planner.id,
       createdByUserId: planner.id,
       organizationId: organization.id,
@@ -426,6 +627,12 @@ async function main() {
     where: { id: ids.assignment2 },
     update: { workOrderId: workOrder2.id, assigneeUserId: null, assigneeTeamId: team.id },
     create: { id: ids.assignment2, workOrderId: workOrder2.id, assigneeTeamId: team.id },
+  });
+
+  await prisma.assignment.upsert({
+    where: { id: ids.assignment3 },
+    update: { workOrderId: ids.workOrder5, assigneeUserId: tech2.id, assigneeTeamId: null },
+    create: { id: ids.assignment3, workOrderId: ids.workOrder5, assigneeUserId: tech2.id },
   });
 
   await prisma.equipmentReservation.upsert({
@@ -489,6 +696,54 @@ async function main() {
   });
 
   await prisma.workOrderSchedule.upsert({
+    where: { id: ids.schedule3 },
+    update: {
+      organizationId: organization.id,
+      workOrderId: ids.workOrder5,
+      assigneeUserId: tech2.id,
+      assigneeTeamId: null,
+      startAt: new Date('2026-03-03T08:30:00.000Z'),
+      endAt: new Date('2026-03-03T11:30:00.000Z'),
+      note: 'Planlagt prosjektering',
+      status: 'PLANNED',
+    },
+    create: {
+      id: ids.schedule3,
+      organizationId: organization.id,
+      workOrderId: ids.workOrder5,
+      assigneeUserId: tech2.id,
+      startAt: new Date('2026-03-03T08:30:00.000Z'),
+      endAt: new Date('2026-03-03T11:30:00.000Z'),
+      note: 'Planlagt prosjektering',
+      status: 'PLANNED',
+    },
+  });
+
+  await prisma.workOrderSchedule.upsert({
+    where: { id: ids.schedule4 },
+    update: {
+      organizationId: organization.id,
+      workOrderId: ids.workOrder6,
+      assigneeUserId: tech2.id,
+      assigneeTeamId: null,
+      startAt: new Date('2026-03-03T10:00:00.000Z'),
+      endAt: new Date('2026-03-03T12:30:00.000Z'),
+      note: 'Bevisst konflikt for varseltest',
+      status: 'PLANNED',
+    },
+    create: {
+      id: ids.schedule4,
+      organizationId: organization.id,
+      workOrderId: ids.workOrder6,
+      assigneeUserId: tech2.id,
+      startAt: new Date('2026-03-03T10:00:00.000Z'),
+      endAt: new Date('2026-03-03T12:30:00.000Z'),
+      note: 'Bevisst konflikt for varseltest',
+      status: 'PLANNED',
+    },
+  });
+
+  await prisma.workOrderSchedule.upsert({
     where: { id: ids.schedule2 },
     update: {
       organizationId: organization.id,
@@ -523,6 +778,7 @@ async function main() {
       workOrderId: workOrder1.id,
       projectId: project.id,
       note: 'Montering og oppmåling i fløy A',
+      status: 'SUBMITTED',
     },
     create: {
       id: ids.timesheet1,
@@ -534,6 +790,7 @@ async function main() {
       workOrderId: workOrder1.id,
       projectId: project.id,
       note: 'Montering og oppmåling i fløy A',
+      status: 'SUBMITTED',
     },
   });
 
@@ -548,6 +805,7 @@ async function main() {
       workOrderId: null,
       projectId: project.id,
       note: 'Transport mellom lager og byggeplass',
+      status: 'SUBMITTED',
     },
     create: {
       id: ids.timesheet2,
@@ -559,6 +817,34 @@ async function main() {
       workOrderId: null,
       projectId: project.id,
       note: 'Transport mellom lager og byggeplass',
+      status: 'SUBMITTED',
+    },
+  });
+
+  await prisma.timesheetEntry.upsert({
+    where: { id: ids.timesheet3 },
+    update: {
+      userId: tech.id,
+      organizationId: organization.id,
+      date: new Date('2026-03-02T12:15:00.000Z'),
+      hours: new Prisma.Decimal(2),
+      activityType: 'INSTALLATION',
+      workOrderId: workOrder2.id,
+      projectId: project.id,
+      note: 'Auto-utkast fra arbeidsøkt',
+      status: 'DRAFT',
+    },
+    create: {
+      id: ids.timesheet3,
+      userId: tech.id,
+      organizationId: organization.id,
+      date: new Date('2026-03-02T12:15:00.000Z'),
+      hours: new Prisma.Decimal(2),
+      activityType: 'INSTALLATION',
+      workOrderId: workOrder2.id,
+      projectId: project.id,
+      note: 'Auto-utkast fra arbeidsøkt',
+      status: 'DRAFT',
     },
   });
 
@@ -581,6 +867,238 @@ async function main() {
       description: 'Oppdater bilder og kommentarfelt før innsending.',
       status: 'OPEN',
       dueDate: new Date('2026-03-03T15:00:00.000Z'),
+    },
+  });
+
+  await prisma.workSession.upsert({
+    where: { id: ids.session1 },
+    update: {
+      organizationId: organization.id,
+      workOrderId: workOrder2.id,
+      userId: tech.id,
+      startedAt: new Date('2026-03-03T08:00:00.000Z'),
+      endedAt: null,
+      state: 'RUNNING',
+    },
+    create: {
+      id: ids.session1,
+      organizationId: organization.id,
+      workOrderId: workOrder2.id,
+      userId: tech.id,
+      startedAt: new Date('2026-03-03T08:00:00.000Z'),
+      state: 'RUNNING',
+    },
+  });
+
+  await prisma.workSession.upsert({
+    where: { id: ids.session2 },
+    update: {
+      organizationId: organization.id,
+      workOrderId: workOrder1.id,
+      userId: tech2.id,
+      startedAt: new Date('2026-03-02T06:00:00.000Z'),
+      endedAt: new Date('2026-03-02T09:00:00.000Z'),
+      state: 'DONE',
+    },
+    create: {
+      id: ids.session2,
+      organizationId: organization.id,
+      workOrderId: workOrder1.id,
+      userId: tech2.id,
+      startedAt: new Date('2026-03-02T06:00:00.000Z'),
+      endedAt: new Date('2026-03-02T09:00:00.000Z'),
+      state: 'DONE',
+    },
+  });
+
+  await prisma.workSession.upsert({
+    where: { id: ids.session3 },
+    update: {
+      organizationId: organization.id,
+      workOrderId: ids.workOrder5,
+      userId: tech3.id,
+      startedAt: new Date('2026-03-02T10:00:00.000Z'),
+      endedAt: new Date('2026-03-02T12:00:00.000Z'),
+      state: 'DONE',
+    },
+    create: {
+      id: ids.session3,
+      organizationId: organization.id,
+      workOrderId: ids.workOrder5,
+      userId: tech3.id,
+      startedAt: new Date('2026-03-02T10:00:00.000Z'),
+      endedAt: new Date('2026-03-02T12:00:00.000Z'),
+      state: 'DONE',
+    },
+  });
+
+  await prisma.attachment.upsert({
+    where: { id: ids.attachment1 },
+    update: {
+      organizationId: organization.id,
+      workOrderId: workOrder1.id,
+      uploadedByUserId: tech.id,
+      kind: 'BEFORE',
+      mimeType: 'image/jpeg',
+      size: 123456,
+      storageKey: 'demo/workorder1/before.jpg',
+      url: null,
+    },
+    create: {
+      id: ids.attachment1,
+      organizationId: organization.id,
+      workOrderId: workOrder1.id,
+      uploadedByUserId: tech.id,
+      kind: 'BEFORE',
+      mimeType: 'image/jpeg',
+      size: 123456,
+      storageKey: 'demo/workorder1/before.jpg',
+      url: null,
+    },
+  });
+
+  await prisma.attachment.upsert({
+    where: { id: ids.attachment2 },
+    update: {
+      organizationId: organization.id,
+      workOrderId: workOrder1.id,
+      uploadedByUserId: tech.id,
+      kind: 'AFTER',
+      mimeType: 'image/jpeg',
+      size: 136789,
+      storageKey: 'demo/workorder1/after.jpg',
+      url: null,
+    },
+    create: {
+      id: ids.attachment2,
+      organizationId: organization.id,
+      workOrderId: workOrder1.id,
+      uploadedByUserId: tech.id,
+      kind: 'AFTER',
+      mimeType: 'image/jpeg',
+      size: 136789,
+      storageKey: 'demo/workorder1/after.jpg',
+      url: null,
+    },
+  });
+
+  await prisma.attachment.upsert({
+    where: { id: ids.attachment3 },
+    update: {
+      organizationId: organization.id,
+      workOrderId: workOrder2.id,
+      uploadedByUserId: tech2.id,
+      kind: 'GENERAL',
+      mimeType: 'image/png',
+      size: 99999,
+      storageKey: 'demo/workorder2/general.png',
+      url: null,
+    },
+    create: {
+      id: ids.attachment3,
+      organizationId: organization.id,
+      workOrderId: workOrder2.id,
+      uploadedByUserId: tech2.id,
+      kind: 'GENERAL',
+      mimeType: 'image/png',
+      size: 99999,
+      storageKey: 'demo/workorder2/general.png',
+      url: null,
+    },
+  });
+
+  await prisma.notification.upsert({
+    where: { id: ids.notification1 },
+    update: {
+      organizationId: organization.id,
+      userId: tech.id,
+      type: 'WORKORDER_ASSIGNED',
+      payload: { workOrderId: workOrder1.id, title: workOrder1.title },
+      readAt: null,
+    },
+    create: {
+      id: ids.notification1,
+      organizationId: organization.id,
+      userId: tech.id,
+      type: 'WORKORDER_ASSIGNED',
+      payload: { workOrderId: workOrder1.id, title: workOrder1.title },
+      readAt: null,
+    },
+  });
+
+  await prisma.notification.upsert({
+    where: { id: ids.notification2 },
+    update: {
+      organizationId: organization.id,
+      userId: tech2.id,
+      type: 'SCHEDULE_CHANGED',
+      payload: { workOrderId: ids.workOrder5 },
+      readAt: null,
+    },
+    create: {
+      id: ids.notification2,
+      organizationId: organization.id,
+      userId: tech2.id,
+      type: 'SCHEDULE_CHANGED',
+      payload: { workOrderId: ids.workOrder5 },
+      readAt: null,
+    },
+  });
+
+  await prisma.notification.upsert({
+    where: { id: ids.notification3 },
+    update: {
+      organizationId: organization.id,
+      userId: tech2.id,
+      type: 'WORKORDER_BLOCKED',
+      payload: { workOrderId: ids.workOrder6 },
+      readAt: new Date('2026-03-03T09:00:00.000Z'),
+    },
+    create: {
+      id: ids.notification3,
+      organizationId: organization.id,
+      userId: tech2.id,
+      type: 'WORKORDER_BLOCKED',
+      payload: { workOrderId: ids.workOrder6 },
+      readAt: new Date('2026-03-03T09:00:00.000Z'),
+    },
+  });
+
+  await prisma.notification.upsert({
+    where: { id: ids.notification4 },
+    update: {
+      organizationId: organization.id,
+      userId: tech3.id,
+      type: 'WORKORDER_DONE',
+      payload: { workOrderId: ids.workOrder3 },
+      readAt: null,
+    },
+    create: {
+      id: ids.notification4,
+      organizationId: organization.id,
+      userId: tech3.id,
+      type: 'WORKORDER_DONE',
+      payload: { workOrderId: ids.workOrder3 },
+      readAt: null,
+    },
+  });
+
+  await prisma.notification.upsert({
+    where: { id: ids.notification5 },
+    update: {
+      organizationId: organization.id,
+      userId: planner.id,
+      type: 'SCHEDULE_CHANGED',
+      payload: { workOrderId: workOrder2.id, source: 'seed' },
+      readAt: null,
+    },
+    create: {
+      id: ids.notification5,
+      organizationId: organization.id,
+      userId: planner.id,
+      type: 'SCHEDULE_CHANGED',
+      payload: { workOrderId: workOrder2.id, source: 'seed' },
+      readAt: null,
     },
   });
 

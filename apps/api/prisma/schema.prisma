@@ -27,6 +27,9 @@ model Organization {
   auditLogs   AuditLog[]
   workOrderConsumables WorkOrderConsumable[]
   workOrderSchedules WorkOrderSchedule[]
+  workSessions WorkSession[]
+  attachments Attachment[]
+  notifications Notification[]
 }
 
 model Department {
@@ -82,6 +85,9 @@ model User {
   todoItems      TodoItem[]
   dashboards     Dashboard[]
   auditLogs      AuditLog[] @relation("AuditActor")
+  workSessions   WorkSession[]
+  attachments    Attachment[]
+  notifications  Notification[]
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
@@ -181,7 +187,17 @@ model WorkOrder {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   title          String
   description    String?
-  status         String @default("OPEN")
+  status         WorkOrderStatus @default(READY_FOR_PLANNING)
+  customerName   String?
+  contactName    String?
+  contactPhone   String?
+  addressLine1   String?
+  postalCode     String?
+  city           String?
+  lat            Decimal? @db.Decimal(10,7)
+  lng            Decimal? @db.Decimal(10,7)
+  accessNotes    String?
+  hmsNotes       String?
   departmentId   String?
   department     Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   locationId     String?
@@ -198,6 +214,8 @@ model WorkOrder {
   reservations   EquipmentReservation[]
   consumables    WorkOrderConsumable[]
   timesheetEntries TimesheetEntry[]
+  workSessions   WorkSession[]
+  attachments    Attachment[]
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   deletedAt      DateTime?
@@ -303,6 +321,7 @@ model TimesheetEntry {
   projectId      String?
   project        Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   note           String?
+  status         TimesheetStatus @default(DRAFT)
   submittedAt    DateTime @default(now())
 }
 
@@ -320,5 +339,94 @@ model TodoItem {
   dueDate        DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+model WorkSession {
+  id             String @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  workOrderId    String
+  workOrder      WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startedAt      DateTime
+  endedAt        DateTime?
+  state          WorkSessionState @default(RUNNING)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId, userId, state])
+  @@index([organizationId, workOrderId, startedAt])
+}
+
+model Attachment {
+  id               String @id @default(uuid())
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  workOrderId      String
+  workOrder        WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  uploadedByUserId String
+  uploadedByUser   User @relation(fields: [uploadedByUserId], references: [id], onDelete: Cascade)
+  kind             AttachmentKind @default(GENERAL)
+  mimeType         String
+  size             Int
+  storageKey       String
+  url              String?
+  createdAt        DateTime @default(now())
+
+  @@index([organizationId, workOrderId, createdAt])
+}
+
+model Notification {
+  id             String @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type           NotificationType
+  payload        Json
+  readAt         DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId, userId, createdAt])
+  @@index([organizationId, userId, readAt])
+}
+
+enum WorkOrderStatus {
+  DRAFT
+  READY_FOR_PLANNING
+  PLANNED
+  IN_PROGRESS
+  BLOCKED
+  DONE
+  CANCELLED
+}
+
+enum WorkSessionState {
+  RUNNING
+  PAUSED
+  DONE
+}
+
+enum AttachmentKind {
+  BEFORE
+  AFTER
+  GENERAL
+  DEVIATION
+  SIGNATURE
+}
+
+enum TimesheetStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+}
+
+enum NotificationType {
+  WORKORDER_ASSIGNED
+  SCHEDULE_CHANGED
+  WORKORDER_BLOCKED
+  WORKORDER_DONE
 }
 

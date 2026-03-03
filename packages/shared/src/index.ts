@@ -7,4 +7,7 @@ export * from './schemas/timesheet.schema';
 export * from './schemas/todo.schema';
 export * from './schemas/dashboard.schema';
 export * from './schemas/schedule.schema';
+export * from './schemas/work-session.schema';
+export * from './schemas/attachment.schema';
+export * from './schemas/notification.schema';
 export * from './client/api-client';

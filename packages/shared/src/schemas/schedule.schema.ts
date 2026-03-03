@@ -4,6 +4,8 @@ export const scheduleQuerySchema = z.object({
   from: z.string().datetime(),
   to: z.string().datetime(),
   scope: z.enum(['mine', 'all']).optional(),
+  userId: z.string().min(1).optional(),
+  teamId: z.string().min(1).optional(),
   assigneeUserId: z.string().min(1).optional(),
   assigneeTeamId: z.string().min(1).optional(),
   equipmentItemId: z.string().min(1).optional(),
@@ -21,6 +23,7 @@ export const createWorkOrderScheduleSchema = z
     endAt: z.string().datetime(),
     note: z.string().trim().min(1).max(500).optional(),
     status: z.string().trim().min(1).max(50).optional(),
+    allowConflict: z.boolean().optional(),
   })
   .refine((v) => Boolean(v.assigneeUserId) !== Boolean(v.assigneeTeamId), {
     message: 'Exactly one of assigneeUserId or assigneeTeamId is required',
@@ -47,6 +50,9 @@ export const scheduleEventSchema = z.object({
       id: z.string().uuid(),
       title: z.string().min(1),
       status: z.string(),
+      customerName: z.string().nullable().optional(),
+      addressLine1: z.string().nullable().optional(),
+      city: z.string().nullable().optional(),
     })
     .nullable()
     .optional(),

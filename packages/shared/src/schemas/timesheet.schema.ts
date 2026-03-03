@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { activityTypes } from '../enums';
+import { activityTypes, timesheetStatuses } from '../enums';
 
 export const timesheetEntrySchema = z.object({
   id: z.string().uuid(),
@@ -25,6 +25,7 @@ export const timesheetEntrySchema = z.object({
     .nullable()
     .optional(),
   note: z.string().nullable(),
+  status: z.enum(timesheetStatuses).optional(),
 });
 
 export const createTimesheetSchema = z.object({
@@ -35,6 +36,7 @@ export const createTimesheetSchema = z.object({
   workOrderId: z.string().min(1).nullable().optional(),
   projectId: z.string().min(1).nullable().optional(),
   note: z.string().optional(),
+  status: z.enum(timesheetStatuses).optional(),
 });
 
 export const updateTimesheetSchema = createTimesheetSchema.partial();
