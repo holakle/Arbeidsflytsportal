@@ -18,6 +18,10 @@
 - Opprettet denne notaten for hardening-praksis i `docs/engineering/`.
 - BOM/encoding normalisert: UTF-8 BOM fjernet fra tekstfiler og linjeslutt satt til LF.
 - Innfort Prettier med felles konfig i root og CI-sjekk for formattering.
+- Dependabot aktivert for npm-avhengigheter og GitHub Actions (ukentlig oppdateringsflyt).
+- Docker hardening: Postgres credentials flyttet til `.env`, `.env.example` bruker tydelige placeholders, og DB-port er bundet til localhost.
+- Rate limit TTL unit clarified: bruker `RATE_LIMIT_TTL_MS` (ms) for entydig throttler-konfig.
+- `/health + compose healthcheck`: API health-payload er utvidet, compose har healthcheck for API, og API-oppstart venter robust på DB.
 
 ## Hvordan verifisere
 
