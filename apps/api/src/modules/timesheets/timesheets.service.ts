@@ -1,5 +1,5 @@
 import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, type TimesheetStatus } from '@prisma/client';
 import { AuditService } from '../../common/audit/audit.service.js';
 import { PrismaService } from '../../common/prisma/prisma.service.js';
 
@@ -76,6 +76,7 @@ export class TimesheetsService {
       workOrderId?: string | null;
       projectId?: string | null;
       note?: string;
+      status?: 'DRAFT' | 'SUBMITTED' | 'APPROVED';
     },
   ) {
     const targetUserId = await this.resolveTargetUserId(
@@ -94,6 +95,7 @@ export class TimesheetsService {
         workOrderId: payload.workOrderId ?? null,
         projectId: payload.projectId ?? null,
         note: payload.note ?? null,
+        status: payload.status ?? 'SUBMITTED',
       },
     });
 
@@ -131,6 +133,7 @@ export class TimesheetsService {
         projectId:
           payload.projectId !== undefined ? (payload.projectId as string | null) : undefined,
         note: payload.note !== undefined ? (payload.note as string | null) : undefined,
+        status: payload.status ? (payload.status as TimesheetStatus) : undefined,
       },
     });
   }

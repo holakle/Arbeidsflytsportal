@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -20,6 +21,7 @@ import {
   updateWorkOrderSchema,
   workOrderListQuerySchema,
 } from '@portal/shared';
+import { z } from 'zod';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator.js';
 import { Roles } from '../../common/auth/decorators/roles.decorator.js';
 import { JwtAuthGuard } from '../../common/auth/guards/jwt-auth.guard.js';
@@ -35,7 +37,7 @@ export class WorkOrdersController {
   constructor(@Inject(WorkOrdersService) private readonly service: WorkOrdersService) {}
 
   @Get()
-  @Roles('planner', 'technician', 'org_admin')
+  @Roles('planner', 'technician', 'org_admin', 'member')
   async list(@CurrentUser() user: AuthUser, @Query() query: Record<string, string>) {
     const parsed = workOrderListQuerySchema.parse(query);
     return this.service.list(user.organizationId, user.id, parsed);
@@ -49,7 +51,7 @@ export class WorkOrdersController {
   }
 
   @Get(':id')
-  @Roles('planner', 'technician', 'org_admin')
+  @Roles('planner', 'technician', 'org_admin', 'member')
   get(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.service.get(user.organizationId, id);
   }
@@ -135,9 +137,61 @@ export class WorkOrdersController {
       endAt: string;
       note?: string;
       status?: string;
+      allowConflict?: boolean;
     },
   ) {
     return this.service.createSchedule(user.organizationId, user.id, id, body);
+  }
+
+  @Post(':id/start')
+  @Roles('planner', 'technician', 'org_admin', 'member')
+  start(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.service.startSession(user.organizationId, user.id, id);
+  }
+
+  @Post(':id/pause')
+  @Roles('planner', 'technician', 'org_admin', 'member')
+  pause(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.service.pauseSession(user.organizationId, user.id, id);
+  }
+
+  @Post(':id/finish')
+  @Roles('planner', 'technician', 'org_admin', 'member')
+  finish(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.service.finishSession(user.organizationId, user.id, id);
+  }
+
+  @Get(':id/attachments')
+  @Roles('planner', 'technician', 'org_admin', 'member')
+  listAttachments(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.service.listAttachments(user.organizationId, id);
+  }
+
+  @Post(':id/attachments')
+  @Roles('planner', 'technician', 'org_admin', 'member')
+  addAttachment(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body()
+    body: {
+      fileName: string;
+      mimeType: string;
+      contentBase64: string;
+      kind?: 'BEFORE' | 'AFTER' | 'GENERAL' | 'DEVIATION' | 'SIGNATURE';
+    },
+  ) {
+    const parsed = z
+      .object({
+        fileName: z.string().min(1),
+        mimeType: z.string().min(1),
+        contentBase64: z.string().min(1),
+        kind: z.enum(['BEFORE', 'AFTER', 'GENERAL', 'DEVIATION', 'SIGNATURE']).optional(),
+      })
+      .safeParse(body);
+    if (!parsed.success) {
+      throw new BadRequestException(parsed.error.flatten());
+    }
+    return this.service.addAttachment(user.organizationId, user.id, id, parsed.data);
   }
 
   @Delete(':id/schedule/:scheduleId')

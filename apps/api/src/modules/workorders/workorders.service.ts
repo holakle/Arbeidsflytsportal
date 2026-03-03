@@ -1,12 +1,38 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../common/prisma/prisma.service.js';
+import type { WorkOrderStatus } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { AuditService } from '../../common/audit/audit.service.js';
+import { PrismaService } from '../../common/prisma/prisma.service.js';
+import { STORAGE_PROVIDER, type StorageProvider } from '../../common/storage/storage-provider.interface.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
+
+type CreateOrUpdateWorkOrderPayload = {
+  title?: string;
+  description?: string | null;
+  status?: WorkOrderStatus;
+  customerName?: string;
+  contactName?: string;
+  contactPhone?: string;
+  addressLine1?: string;
+  postalCode?: string;
+  city?: string;
+  lat?: number;
+  lng?: number;
+  accessNotes?: string;
+  hmsNotes?: string;
+  departmentId?: string | null;
+  locationId?: string | null;
+  projectId?: string | null;
+  planningOwnerUserId?: string | null;
+};
 
 @Injectable()
 export class WorkOrdersService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
+    @Inject(NotificationsService) private readonly notifications: NotificationsService,
   ) {}
 
   async list(
@@ -17,7 +43,7 @@ export class WorkOrdersService {
     const where = {
       organizationId,
       deletedAt: null,
-      ...(query.status ? { status: query.status } : {}),
+      ...(query.status ? { status: query.status as WorkOrderStatus } : {}),
       ...(query.assignedToMe
         ? {
             assignments: {
@@ -51,17 +77,28 @@ export class WorkOrdersService {
     return { items, page: query.page, limit: query.limit, total };
   }
 
-  create(organizationId: string, userId: string, body: Record<string, unknown>) {
+  create(organizationId: string, userId: string, body: CreateOrUpdateWorkOrderPayload) {
     return this.prisma.workOrder.create({
       data: {
         organizationId,
         createdByUserId: userId,
         title: String(body.title),
-        description: body.description ? String(body.description) : null,
-        departmentId: (body.departmentId as string | undefined) ?? null,
-        locationId: (body.locationId as string | undefined) ?? null,
-        projectId: (body.projectId as string | undefined) ?? null,
-        planningOwnerUserId: (body.planningOwnerUserId as string | undefined) ?? null,
+        description: body.description ?? null,
+        status: body.status ?? 'READY_FOR_PLANNING',
+        customerName: body.customerName ?? null,
+        contactName: body.contactName ?? null,
+        contactPhone: body.contactPhone ?? null,
+        addressLine1: body.addressLine1 ?? null,
+        postalCode: body.postalCode ?? null,
+        city: body.city ?? null,
+        lat: body.lat !== undefined ? new Prisma.Decimal(body.lat) : null,
+        lng: body.lng !== undefined ? new Prisma.Decimal(body.lng) : null,
+        accessNotes: body.accessNotes ?? null,
+        hmsNotes: body.hmsNotes ?? null,
+        departmentId: body.departmentId ?? null,
+        locationId: body.locationId ?? null,
+        projectId: body.projectId ?? null,
+        planningOwnerUserId: body.planningOwnerUserId ?? null,
       },
     });
   }
@@ -80,31 +117,34 @@ export class WorkOrdersService {
     return wo;
   }
 
-  async update(organizationId: string, userId: string, id: string, body: Record<string, unknown>) {
+  async update(
+    organizationId: string,
+    userId: string,
+    id: string,
+    body: CreateOrUpdateWorkOrderPayload,
+  ) {
     const existing = await this.get(organizationId, id);
     const updated = await this.prisma.workOrder.update({
       where: { id },
       data: {
-        title: body.title ? String(body.title) : undefined,
-        description:
-          body.description !== undefined
-            ? body.description
-              ? String(body.description)
-              : null
-            : undefined,
-        status: body.status ? String(body.status) : undefined,
-        departmentId:
-          body.departmentId !== undefined
-            ? ((body.departmentId as string | null) ?? null)
-            : undefined,
-        locationId:
-          body.locationId !== undefined ? ((body.locationId as string | null) ?? null) : undefined,
-        projectId:
-          body.projectId !== undefined ? ((body.projectId as string | null) ?? null) : undefined,
+        title: body.title ?? undefined,
+        description: body.description !== undefined ? body.description : undefined,
+        status: body.status ?? undefined,
+        customerName: body.customerName !== undefined ? body.customerName : undefined,
+        contactName: body.contactName !== undefined ? body.contactName : undefined,
+        contactPhone: body.contactPhone !== undefined ? body.contactPhone : undefined,
+        addressLine1: body.addressLine1 !== undefined ? body.addressLine1 : undefined,
+        postalCode: body.postalCode !== undefined ? body.postalCode : undefined,
+        city: body.city !== undefined ? body.city : undefined,
+        lat: body.lat !== undefined ? new Prisma.Decimal(body.lat) : undefined,
+        lng: body.lng !== undefined ? new Prisma.Decimal(body.lng) : undefined,
+        accessNotes: body.accessNotes !== undefined ? body.accessNotes : undefined,
+        hmsNotes: body.hmsNotes !== undefined ? body.hmsNotes : undefined,
+        departmentId: body.departmentId !== undefined ? body.departmentId : undefined,
+        locationId: body.locationId !== undefined ? body.locationId : undefined,
+        projectId: body.projectId !== undefined ? body.projectId : undefined,
         planningOwnerUserId:
-          body.planningOwnerUserId !== undefined
-            ? ((body.planningOwnerUserId as string | null) ?? null)
-            : undefined,
+          body.planningOwnerUserId !== undefined ? body.planningOwnerUserId : undefined,
       },
     });
 
@@ -118,6 +158,13 @@ export class WorkOrdersService {
         before: { status: existing.status },
         after: { status: updated.status },
       });
+      if (updated.status === 'BLOCKED' || updated.status === 'DONE') {
+        await this.pushNotificationsForAssignments(
+          organizationId,
+          id,
+          updated.status === 'BLOCKED' ? 'WORKORDER_BLOCKED' : 'WORKORDER_DONE',
+        );
+      }
     }
 
     return updated;
@@ -156,6 +203,8 @@ export class WorkOrdersService {
       entityId: id,
       after: payload,
     });
+
+    await this.pushNotificationsForAssignments(organizationId, id, 'WORKORDER_ASSIGNED');
 
     return { success: true as const };
   }
@@ -267,6 +316,7 @@ export class WorkOrdersService {
       endAt: string;
       note?: string;
       status?: string;
+      allowConflict?: boolean;
     },
   ) {
     await this.get(organizationId, workOrderId);
@@ -286,14 +336,39 @@ export class WorkOrdersService {
       if (!team) throw new NotFoundException('Assignee team not found');
     }
 
+    const startAt = new Date(payload.startAt);
+    const endAt = new Date(payload.endAt);
+    if (!(startAt < endAt)) {
+      throw new BadRequestException('startAt must be before endAt');
+    }
+
+    const conflicts = await this.prisma.workOrderSchedule.findMany({
+      where: {
+        organizationId,
+        startAt: { lt: endAt },
+        endAt: { gt: startAt },
+        ...(payload.assigneeUserId ? { assigneeUserId: payload.assigneeUserId } : {}),
+        ...(payload.assigneeTeamId ? { assigneeTeamId: payload.assigneeTeamId } : {}),
+      },
+      select: { id: true, workOrderId: true, startAt: true, endAt: true },
+      take: 5,
+    });
+    if (conflicts.length > 0 && !payload.allowConflict) {
+      throw new BadRequestException({
+        message: 'Schedule conflict detected',
+        code: 'SCHEDULE_CONFLICT',
+        conflicts,
+      });
+    }
+
     const record = await this.prisma.workOrderSchedule.create({
       data: {
         organizationId,
         workOrderId,
         assigneeUserId: payload.assigneeUserId ?? null,
         assigneeTeamId: payload.assigneeTeamId ?? null,
-        startAt: new Date(payload.startAt),
-        endAt: new Date(payload.endAt),
+        startAt,
+        endAt,
         note: payload.note ?? null,
         status: payload.status ?? 'PLANNED',
       },
@@ -308,7 +383,9 @@ export class WorkOrdersService {
       after: payload,
     });
 
-    return record;
+    await this.pushNotificationsForAssignments(organizationId, workOrderId, 'SCHEDULE_CHANGED');
+
+    return { ...record, conflicts };
   }
 
   async deleteSchedule(
@@ -361,6 +438,157 @@ export class WorkOrdersService {
         assigneeUser: { select: { id: true, displayName: true, email: true } },
         assigneeTeam: { select: { id: true, name: true } },
       },
+    });
+  }
+
+  async startSession(organizationId: string, userId: string, workOrderId: string) {
+    await this.get(organizationId, workOrderId);
+    const activeSession = await this.prisma.workSession.findFirst({
+      where: { organizationId, userId, state: 'RUNNING' },
+    });
+    if (activeSession) {
+      throw new BadRequestException('User already has an active running session');
+    }
+
+    await this.prisma.workOrder.update({
+      where: { id: workOrderId },
+      data: { status: 'IN_PROGRESS' },
+    });
+
+    const session = await this.prisma.workSession.create({
+      data: {
+        organizationId,
+        userId,
+        workOrderId,
+        startedAt: new Date(),
+        state: 'RUNNING',
+      },
+    });
+
+    return { session };
+  }
+
+  async pauseSession(organizationId: string, userId: string, workOrderId: string) {
+    await this.get(organizationId, workOrderId);
+    const active = await this.prisma.workSession.findFirst({
+      where: { organizationId, userId, workOrderId, state: 'RUNNING' },
+    });
+    if (!active) {
+      throw new NotFoundException('No active session for this work order');
+    }
+    return this.prisma.workSession.update({
+      where: { id: active.id },
+      data: { state: 'PAUSED' },
+    });
+  }
+
+  async finishSession(organizationId: string, userId: string, workOrderId: string) {
+    await this.get(organizationId, workOrderId);
+    const active = await this.prisma.workSession.findFirst({
+      where: { organizationId, userId, workOrderId, state: { in: ['RUNNING', 'PAUSED'] } },
+      orderBy: { startedAt: 'desc' },
+    });
+    if (!active) {
+      throw new NotFoundException('No active session for this work order');
+    }
+    const endedAt = new Date();
+    const session = await this.prisma.workSession.update({
+      where: { id: active.id },
+      data: { state: 'DONE', endedAt },
+    });
+
+    const hours = Math.max(0.25, (endedAt.getTime() - active.startedAt.getTime()) / 3600000);
+    const timesheet = await this.prisma.timesheetEntry.create({
+      data: {
+        organizationId,
+        userId,
+        workOrderId,
+        date: endedAt,
+        activityType: 'INSTALLATION',
+        hours: new Prisma.Decimal(Number(hours.toFixed(2))),
+        note: 'Auto draft from WorkSession',
+        status: 'DRAFT',
+      },
+    });
+
+    return { session, timesheetDraftId: timesheet.id };
+  }
+
+  async listAttachments(organizationId: string, workOrderId: string) {
+    await this.get(organizationId, workOrderId);
+    return this.prisma.attachment.findMany({
+      where: { organizationId, workOrderId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async addAttachment(
+    organizationId: string,
+    actorUserId: string,
+    workOrderId: string,
+    payload: {
+      fileName: string;
+      mimeType: string;
+      contentBase64: string;
+      kind?: 'BEFORE' | 'AFTER' | 'GENERAL' | 'DEVIATION' | 'SIGNATURE';
+    },
+  ) {
+    await this.get(organizationId, workOrderId);
+    const raw = payload.contentBase64.includes(',')
+      ? payload.contentBase64.split(',').at(-1) ?? payload.contentBase64
+      : payload.contentBase64;
+    const fileBuffer = Buffer.from(raw, 'base64');
+    if (fileBuffer.byteLength === 0) {
+      throw new BadRequestException('Attachment content is empty');
+    }
+
+    const saved = await this.storage.save({
+      organizationId,
+      workOrderId,
+      fileName: payload.fileName,
+      mimeType: payload.mimeType,
+      content: fileBuffer,
+    });
+
+    return this.prisma.attachment.create({
+      data: {
+        organizationId,
+        workOrderId,
+        uploadedByUserId: actorUserId,
+        kind: payload.kind ?? 'GENERAL',
+        mimeType: payload.mimeType,
+        size: fileBuffer.byteLength,
+        storageKey: saved.storageKey,
+        url: saved.url ?? null,
+      },
+    });
+  }
+
+  private async pushNotificationsForAssignments(
+    organizationId: string,
+    workOrderId: string,
+    type: 'WORKORDER_ASSIGNED' | 'SCHEDULE_CHANGED' | 'WORKORDER_BLOCKED' | 'WORKORDER_DONE',
+  ) {
+    const assignments = await this.prisma.assignment.findMany({
+      where: { workOrderId },
+      include: {
+        assigneeTeam: {
+          include: {
+            memberships: { select: { userId: true } },
+          },
+        },
+      },
+    });
+    const userIds = assignments.flatMap((assignment) => [
+      ...(assignment.assigneeUserId ? [assignment.assigneeUserId] : []),
+      ...((assignment.assigneeTeam?.memberships ?? []).map((membership) => membership.userId) ?? []),
+    ]);
+
+    await this.notifications.createForUsers({
+      organizationId,
+      userIds,
+      type,
+      payload: { workOrderId },
     });
   }
 

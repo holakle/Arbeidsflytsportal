@@ -29,4 +29,16 @@ export class MeController {
       organizationId: user.organizationId,
     };
   }
+
+  @Get('sessions/active')
+  async activeSession(@CurrentUser() user: AuthUser) {
+    return this.prisma.workSession.findFirst({
+      where: {
+        organizationId: user.organizationId,
+        userId: user.id,
+        state: 'RUNNING',
+      },
+      orderBy: { startedAt: 'desc' },
+    });
+  }
 }

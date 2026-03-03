@@ -8,6 +8,9 @@ import type {
   equipmentReservationSchema,
 } from '../schemas/equipment.schema';
 import type { WorkOrder, workOrderConsumableSchema } from '../schemas/workorder.schema';
+import type { attachmentSchema } from '../schemas/attachment.schema';
+import type { notificationSchema } from '../schemas/notification.schema';
+import type { workSessionActionResponseSchema, workSessionSchema } from '../schemas/work-session.schema';
 import { HttpClient } from './http-client';
 
 type Paged<T> = { items: T[]; page: number; limit: number; total: number };
@@ -16,6 +19,10 @@ type EquipmentReservation = z.infer<typeof equipmentReservationSchema>;
 type EquipmentLookupResponse = z.infer<typeof equipmentLookupResponseSchema>;
 type AttachBarcodeResponse = z.infer<typeof attachBarcodeResponseSchema>;
 type WorkOrderConsumable = z.infer<typeof workOrderConsumableSchema>;
+type Attachment = z.infer<typeof attachmentSchema>;
+type Notification = z.infer<typeof notificationSchema>;
+type WorkSession = z.infer<typeof workSessionSchema>;
+type WorkSessionActionResponse = z.infer<typeof workSessionActionResponseSchema>;
 
 export class ApiClient {
   private readonly http: HttpClient;
@@ -87,6 +94,7 @@ export class ApiClient {
       endAt: string;
       note?: string;
       status?: string;
+      allowConflict?: boolean;
     },
   ): Promise<unknown> {
     return this.http.request(`/workorders/${id}/schedule`, { method: 'POST', body });
@@ -180,6 +188,8 @@ export class ApiClient {
     from: string;
     to: string;
     scope?: 'mine' | 'all';
+    userId?: string;
+    teamId?: string;
     assigneeUserId?: string;
     assigneeTeamId?: string;
     equipmentItemId?: string;
@@ -188,9 +198,46 @@ export class ApiClient {
     params.set('from', query.from);
     params.set('to', query.to);
     if (query.scope) params.set('scope', query.scope);
+    if (query.userId) params.set('userId', query.userId);
+    if (query.teamId) params.set('teamId', query.teamId);
     if (query.assigneeUserId) params.set('assigneeUserId', query.assigneeUserId);
     if (query.assigneeTeamId) params.set('assigneeTeamId', query.assigneeTeamId);
     if (query.equipmentItemId) params.set('equipmentItemId', query.equipmentItemId);
     return this.http.request(`/schedule?${params.toString()}`);
+  }
+
+  startWorkOrder(id: string): Promise<WorkSessionActionResponse> {
+    return this.http.request(`/workorders/${id}/start`, { method: 'POST' });
+  }
+
+  pauseWorkOrder(id: string): Promise<WorkSession> {
+    return this.http.request(`/workorders/${id}/pause`, { method: 'POST' });
+  }
+
+  finishWorkOrder(id: string): Promise<WorkSessionActionResponse> {
+    return this.http.request(`/workorders/${id}/finish`, { method: 'POST' });
+  }
+
+  getActiveSession(): Promise<WorkSession | null> {
+    return this.http.request('/me/sessions/active');
+  }
+
+  listWorkOrderAttachments(id: string): Promise<Attachment[]> {
+    return this.http.request(`/workorders/${id}/attachments`);
+  }
+
+  uploadWorkOrderAttachment(
+    id: string,
+    body: { fileName: string; mimeType: string; contentBase64: string; kind?: string },
+  ): Promise<Attachment> {
+    return this.http.request(`/workorders/${id}/attachments`, { method: 'POST', body });
+  }
+
+  listNotifications(): Promise<Notification[]> {
+    return this.http.request('/notifications');
+  }
+
+  markNotificationsRead(ids: string[]): Promise<{ success: true; updated: number }> {
+    return this.http.request('/notifications/read', { method: 'POST', body: { ids } });
   }
 }
