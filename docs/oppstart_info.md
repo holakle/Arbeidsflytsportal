@@ -29,10 +29,10 @@
 Quick tunnel mister ofte forbindelsen ved nettverksbrudd. Kjør dette:
 
 1. Restart tunnel:
-   - `pnpm tunnel:down`
-   - `pnpm tunnel:up`
+pnpm tunnel:down
+pnpm tunnel:up
 2. Hent ny URL:
-   - `docker logs workflow-tunnel --tail 80`
+docker logs workflow-tunnel --tail 80
 3. Verifiser at appene fortsatt kjører lokalt:
    - API: `http://localhost:3001/health`
    - Web: `http://localhost:3000/login`
