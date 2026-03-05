@@ -24,6 +24,8 @@ Dette dokumentet beskriver standard arbeidsflyt for Codex i dette repoet.
   - `pnpm -w test` (hvis test-oppsett finnes)
   - `pnpm -w build` (når rimelig)
 - Rapporter kort: pass/fail + evt. viktig feilmelding.
+- Hvis en oppgave i plan ikke går gjennom/fullføres, legg denne inn under :
+  docs/ INFO.md under: "## Neste steg " 
 
 ## Sikkerhet / secrets
 
@@ -53,3 +55,19 @@ Dette dokumentet beskriver standard arbeidsflyt for Codex i dette repoet.
   - 3) kjør malrettet reinstall (`pnpm --filter <pakke> add ...`) eller `pnpm rebuild` for berorte pakker
   - 4) kjor full `pnpm install --force` kun hvis stegene over feiler
 - Full sletting av `node_modules` skal kun brukes som siste utvei, og alltid dokumenteres i statusrapport med arsaken.
+
+## Master prompt: Planhandtering
+
+- Nye brukerplaner skal lagres i docs/videre_plan/planer/ med filnavn:
+  - YYYY-MM-DD-kort-navn.md
+- Aktiv planoversikt skal kun ligge i:
+  - docs/videre_plan/videre_plan.md
+- Struktur i aktiv planoversikt:
+  - Statusoppdatering (fullfort) skal sta overst med korte linjer + dato
+  - Gjenstar skal sta under og kun inneholde aktive punkter
+- Nar en plan er fullfort:
+  - flytt punktet ut av Gjenstar
+  - legg inn kort statuslinje med fullfort-dato i Statusoppdatering (fullfort)
+- Lange historiske plantekster skal arkiveres i:
+  - docs/videre_plan/arkiv/
+- docs/fremtidig_arbeid.md beholdes som langsiktig backlog, men ikke som aktiv gjennomforingsliste.
