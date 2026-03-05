@@ -120,7 +120,13 @@ export class ApiClient {
     return this.http.request(`/equipment/reservations${query ? `?${query}` : ''}`);
   }
 
-  reserveEquipment(body: Record<string, unknown>): Promise<unknown> {
+  reserveEquipment(body: {
+    equipmentItemId: string;
+    workOrderId: string;
+    startAt: string;
+    endAt: string;
+    allowConflict?: boolean;
+  }): Promise<unknown> {
     return this.http.request('/equipment/reserve', { method: 'POST', body });
   }
 

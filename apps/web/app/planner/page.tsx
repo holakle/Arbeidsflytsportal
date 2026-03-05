@@ -79,6 +79,11 @@ function toErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
+function withEndpointContext(error: unknown, endpoint: string, fallback: string) {
+  const base = toErrorMessage(error, fallback);
+  return `${endpoint}: ${base}`;
+}
+
 function toIso(localDateTime: string) {
   const date = new Date(localDateTime);
   if (Number.isNaN(date.getTime())) return null;
@@ -671,6 +676,14 @@ function PlannerPageInner() {
       setError('Ugyldig tidsrom valgt.');
       return;
     }
+    if (resourceMode === 'MANNSKAP' && !selectionUserId) {
+      setError('Velg mannskap for booking.');
+      return;
+    }
+    if (resourceMode === 'UTSTYR' && !selectionEquipmentId) {
+      setError('Velg utstyr for booking.');
+      return;
+    }
 
     const selectionStartDate = new Date(startAt);
     const selectionEndDate = new Date(endAt);
@@ -704,7 +717,7 @@ function PlannerPageInner() {
     await executeSelectionBooking(startAt, endAt);
   }
 
-  async function executeSelectionBooking(startAt: string, endAt: string) {
+  async function executeSelectionBooking(startAt: string, endAt: string, allowConflict = false) {
     if (!token || !selectionWorkOrderId) return;
 
     try {
@@ -717,6 +730,7 @@ function PlannerPageInner() {
           assigneeUserId: selectionUserId,
           startAt,
           endAt,
+          allowConflict,
         });
         setSuccess('Mannskap ble booket fra kalenderen.');
       } else {
@@ -729,6 +743,7 @@ function PlannerPageInner() {
           equipmentItemId: selectionEquipmentId,
           startAt,
           endAt,
+          allowConflict,
         });
         setSuccess('Utstyr ble booket fra kalenderen.');
       }
@@ -740,7 +755,9 @@ function PlannerPageInner() {
       await load();
     } catch (err) {
       setSuccess(null);
-      setError(toErrorMessage(err, 'Kunne ikke booke valgt tidsrom.'));
+      const endpoint =
+        resourceMode === 'MANNSKAP' ? 'POST /workorders/:id/schedule' : 'POST /equipment/reserve';
+      setError(withEndpointContext(err, endpoint, 'Kunne ikke booke valgt tidsrom.'));
     }
   }
 
@@ -751,7 +768,15 @@ function PlannerPageInner() {
       setError('Ugyldig tidsrom valgt.');
       return;
     }
-    await executeSelectionBooking(startAt, endAt);
+    if (resourceMode === 'MANNSKAP' && !selectionUserId) {
+      setError('Velg mannskap for booking.');
+      return;
+    }
+    if (resourceMode === 'UTSTYR' && !selectionEquipmentId) {
+      setError('Velg utstyr for booking.');
+      return;
+    }
+    await executeSelectionBooking(startAt, endAt, true);
   }
 
   return (

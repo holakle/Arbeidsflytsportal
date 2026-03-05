@@ -71,7 +71,13 @@ export class EquipmentController {
   reserve(
     @CurrentUser() user: AuthUser,
     @Body(new ZodValidationPipe(reserveEquipmentSchema))
-    body: { equipmentItemId: string; workOrderId: string; startAt: string; endAt: string },
+    body: {
+      equipmentItemId: string;
+      workOrderId: string;
+      startAt: string;
+      endAt: string;
+      allowConflict?: boolean;
+    },
   ) {
     return this.service.reserve(user.organizationId, user.id, body);
   }

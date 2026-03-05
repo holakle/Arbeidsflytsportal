@@ -176,7 +176,13 @@ export class EquipmentService {
   async reserve(
     organizationId: string,
     actorUserId: string,
-    payload: { equipmentItemId: string; workOrderId: string; startAt: string; endAt: string },
+    payload: {
+      equipmentItemId: string;
+      workOrderId: string;
+      startAt: string;
+      endAt: string;
+      allowConflict?: boolean;
+    },
   ) {
     const startAt = new Date(payload.startAt);
     const endAt = new Date(payload.endAt);
@@ -199,7 +205,7 @@ export class EquipmentService {
       },
     });
 
-    if (conflict) {
+    if (conflict && !payload.allowConflict) {
       throw new ConflictException('Equipment already reserved in this period');
     }
 

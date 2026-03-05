@@ -16,6 +16,7 @@ export const reserveEquipmentSchema = z.object({
   workOrderId: z.string().min(1),
   startAt: z.string().datetime(),
   endAt: z.string().datetime(),
+  allowConflict: z.boolean().optional(),
 });
 
 export const equipmentReservationSchema = z.object({
