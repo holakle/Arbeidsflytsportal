@@ -2,6 +2,7 @@
 
 ## Statusoppdatering (fullfort)
 
+- 2026-03-05: Ansattprofil utvidet med strukturert kompetanse (førerkort/kurs), utløpsdato og filterbar kompetansedata i Mannskap + Kalender-booking.
 - 2026-03-05: Arbeidsordre-oppretting har fått kartstøtte (GPS/lenke) og vedleggsopplasting ved opprettelse, samt kartlenke inne på arbeidsordre-detalj.
 - 2026-03-05: Todo-liste har fått inline redigering (tittel, forfall og beskrivelse) med Lagre/Avbryt per rad.
 - 2026-03-05: Times-siden fikset ved å bruke `workorders`-limit innenfor API-kontrakt (100), som fjernet 500-feilen og ga arbeidsordrevalg tilbake.

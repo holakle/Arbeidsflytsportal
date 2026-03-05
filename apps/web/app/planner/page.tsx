@@ -18,6 +18,11 @@ import { apiClient } from '@/lib/api-client';
 import { getDevToken } from '@/lib/auth';
 import { ConnectionStatus } from '@/components/dev/connection-status';
 import {
+  getCompetenceFilterOptions,
+  profileHasCompetence,
+  readEmployeeProfile,
+} from '@/lib/employee-profile-store';
+import {
   FullCalendarCompat,
   type FullCalendarCompatRef,
 } from '@/components/planner/fullcalendar-compat';
@@ -149,6 +154,8 @@ function PlannerPageInner() {
   });
 
   const [resourceMode, setResourceMode] = useState<ResourceMode>('MANNSKAP');
+  const [competenceFilter, setCompetenceFilter] = useState('ALL');
+  const [includeExpiredCompetence, setIncludeExpiredCompetence] = useState(false);
   const [selectedUserFilterId, setSelectedUserFilterId] = useState('ALL');
   const [selectedEquipmentFilterId, setSelectedEquipmentFilterId] = useState('ALL');
   const [scheduleEvents, setScheduleEvents] = useState<ScheduleEvent[]>([]);
@@ -163,6 +170,7 @@ function PlannerPageInner() {
   const [selectionConflicts, setSelectionConflicts] = useState<ScheduleEvent[]>([]);
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
   const [movingEventId, setMovingEventId] = useState<string | null>(null);
+  const [profileRevision, setProfileRevision] = useState(0);
 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -173,11 +181,35 @@ function PlannerPageInner() {
     [selectedWorkOrderId, workOrders],
   );
 
+  const profilesByUserId = useMemo(() => {
+    const pairs = users.map((user) => [user.id, readEmployeeProfile(user.id)] as const);
+    return new Map(pairs);
+  }, [users, profileRevision]);
+
+  const competenceFilterOptions = useMemo(
+    () => getCompetenceFilterOptions(Array.from(profilesByUserId.values())),
+    [profilesByUserId],
+  );
+
+  const filteredUsers = useMemo(() => {
+    if (competenceFilter === 'ALL') return users;
+    return users.filter((user) => {
+      const profile = profilesByUserId.get(user.id) ?? readEmployeeProfile(user.id);
+      return profileHasCompetence(profile, competenceFilter, includeExpiredCompetence);
+    });
+  }, [competenceFilter, includeExpiredCompetence, profilesByUserId, users]);
+
   const filteredScheduleEvents = useMemo(() => {
     return scheduleEvents.filter((event) => {
       if (resourceMode === 'MANNSKAP') {
         if (event.type !== 'workorder_schedule') return false;
-        if (selectedUserFilterId === 'ALL') return true;
+        if (selectedUserFilterId === 'ALL') {
+          if (competenceFilter === 'ALL') return true;
+          return (
+            event.resourceRef?.kind === 'user' &&
+            filteredUsers.some((user) => user.id === event.resourceRef?.id)
+          );
+        }
         return event.resourceRef?.kind === 'user' && event.resourceRef.id === selectedUserFilterId;
       }
 
@@ -188,7 +220,14 @@ function PlannerPageInner() {
         event.resourceRef.id === selectedEquipmentFilterId
       );
     });
-  }, [resourceMode, scheduleEvents, selectedEquipmentFilterId, selectedUserFilterId]);
+  }, [
+    competenceFilter,
+    filteredUsers,
+    resourceMode,
+    scheduleEvents,
+    selectedEquipmentFilterId,
+    selectedUserFilterId,
+  ]);
 
   const availabilityBadge = useMemo(() => {
     const now = new Date();
@@ -348,6 +387,29 @@ function PlannerPageInner() {
   }, [calendarRange, resourceMode, selectedEquipmentFilterId, selectedUserFilterId, plannerTab]);
 
   useEffect(() => {
+    const refresh = () => setProfileRevision((value) => value + 1);
+    window.addEventListener('focus', refresh);
+    window.addEventListener('storage', refresh);
+    return () => {
+      window.removeEventListener('focus', refresh);
+      window.removeEventListener('storage', refresh);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (resourceMode !== 'MANNSKAP') return;
+    if (selectedUserFilterId !== 'ALL' && !filteredUsers.some((user) => user.id === selectedUserFilterId)) {
+      setSelectedUserFilterId('ALL');
+    }
+    if (assigneeUserId && !filteredUsers.some((user) => user.id === assigneeUserId)) {
+      setAssigneeUserId(filteredUsers.at(0)?.id ?? '');
+    }
+    if (selectionUserId && !filteredUsers.some((user) => user.id === selectionUserId)) {
+      setSelectionUserId(filteredUsers.at(0)?.id ?? '');
+    }
+  }, [assigneeUserId, filteredUsers, resourceMode, selectedUserFilterId, selectionUserId]);
+
+  useEffect(() => {
     const api = calendarRef.current?.getApi();
     if (!api) return;
     if (api.view.type !== calendarView) {
@@ -450,7 +512,7 @@ function PlannerPageInner() {
     const nextUserId =
       selectedUserFilterId !== 'ALL'
         ? selectedUserFilterId
-        : assigneeUserId || users.at(0)?.id || '';
+        : assigneeUserId || filteredUsers.at(0)?.id || '';
     const nextEquipmentId =
       selectedEquipmentFilterId !== 'ALL'
         ? selectedEquipmentFilterId
@@ -864,7 +926,7 @@ function PlannerPageInner() {
               >
                 <option value="timeGridDay">Dag</option>
                 <option value="timeGridWeek">Uke</option>
-                <option value="dayGridMonth">Maaned</option>
+                <option value="dayGridMonth">Måned</option>
               </select>
               <span
                 className={`inline-flex items-center justify-center rounded px-2 py-1 text-xs font-medium ${availabilityBadge.className}`}
@@ -873,7 +935,7 @@ function PlannerPageInner() {
               </span>
             </div>
 
-            <div className="grid gap-2 md:grid-cols-3">
+            <div className="grid gap-2 md:grid-cols-4">
               <select
                 className="rounded border px-3 py-2"
                 value={resourceMode}
@@ -883,18 +945,34 @@ function PlannerPageInner() {
                 <option value="UTSTYR">Utstyr</option>
               </select>
               {resourceMode === 'MANNSKAP' ? (
-                <select
-                  className="rounded border px-3 py-2 md:col-span-2"
-                  value={selectedUserFilterId}
-                  onChange={(e) => setSelectedUserFilterId(e.target.value)}
-                >
-                  <option value="ALL">Alle brukere</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.displayName}
-                    </option>
-                  ))}
-                </select>
+                <>
+                  <select
+                    className="rounded border px-3 py-2"
+                    value={competenceFilter}
+                    onChange={(e) => setCompetenceFilter(e.target.value)}
+                  >
+                    <option value="ALL">All kompetanse</option>
+                    {competenceFilterOptions
+                      .filter((item) => item !== 'ALL')
+                      .map((item) => (
+                        <option key={item} value={item}>
+                          {item}
+                        </option>
+                      ))}
+                  </select>
+                  <select
+                    className="rounded border px-3 py-2 md:col-span-2"
+                    value={selectedUserFilterId}
+                    onChange={(e) => setSelectedUserFilterId(e.target.value)}
+                  >
+                    <option value="ALL">Alle brukere</option>
+                    {filteredUsers.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.displayName}
+                      </option>
+                    ))}
+                  </select>
+                </>
               ) : (
                 <select
                   className="rounded border px-3 py-2 md:col-span-2"
@@ -910,6 +988,16 @@ function PlannerPageInner() {
                 </select>
               )}
             </div>
+            {resourceMode === 'MANNSKAP' ? (
+              <label className="inline-flex items-center gap-2 text-xs text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={includeExpiredCompetence}
+                  onChange={(e) => setIncludeExpiredCompetence(e.target.checked)}
+                />
+                Inkluder utløpt kompetanse i filter
+              </label>
+            ) : null}
 
             <div className="overflow-hidden rounded border bg-white p-2">
               <FullCalendarCompat
@@ -980,7 +1068,7 @@ function PlannerPageInner() {
                 ) : null}
               </div>
             ) : (
-              <p className="text-sm text-slate-500">Klikk pa en hendelse for detaljer.</p>
+              <p className="text-sm text-slate-500">Klikk på en hendelse for detaljer.</p>
             )}
           </div>
         ) : (
@@ -1032,17 +1120,21 @@ function PlannerPageInner() {
                 value={assigneeUserId}
                 onChange={(e) => setAssigneeUserId(e.target.value)}
               >
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.displayName} ({user.roles.join(', ') || 'no-role'})
-                  </option>
-                ))}
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.displayName} ({user.roles.join(', ') || 'no-role'})
+                    </option>
+                  ))
+                ) : (
+                  <option value="">Ingen brukere matcher valgt kompetanse</option>
+                )}
               </select>
 
               <button
                 className="rounded bg-accent px-3 py-2 text-white disabled:opacity-40"
                 onClick={assignUser}
-                disabled={!selectedWorkOrderId || !assigneeUserId || loading}
+                disabled={!selectedWorkOrderId || !assigneeUserId || loading || filteredUsers.length === 0}
               >
                 Tildel
               </button>
@@ -1121,7 +1213,7 @@ function PlannerPageInner() {
                     className="mt-1 inline-block rounded border px-2 py-1 text-xs hover:bg-slate-50"
                     href={`/workorders/${item.id}`}
                   >
-                    Apne
+                    Åpne
                   </Link>
                 </li>
               ))}
@@ -1153,11 +1245,15 @@ function PlannerPageInner() {
                   value={selectionUserId}
                   onChange={(e) => setSelectionUserId(e.target.value)}
                 >
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.displayName}
-                    </option>
-                  ))}
+                  {filteredUsers.length > 0 ? (
+                    filteredUsers.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.displayName}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="">Ingen brukere matcher valgt kompetanse</option>
+                  )}
                 </select>
               ) : (
                 <select
