@@ -2,6 +2,7 @@
 
 ## Statusoppdatering (fullfort)
 
+- 2026-03-05: Todo-liste har fått inline redigering (tittel, forfall og beskrivelse) med Lagre/Avbryt per rad.
 - 2026-03-05: Times-siden fikset ved å bruke `workorders`-limit innenfor API-kontrakt (100), som fjernet 500-feilen og ga arbeidsordrevalg tilbake.
 - 2026-03-05: Arbeidsøkt på arbeidsordresiden viser nå registrert varighet i tt:mm ved avslutning (ikke draft-ID).
 - 2026-03-05: Kalender delete-flyt hardnet med fallback-oppslag av workorder-id, race-guard og endpoint-spesifikk feilkontekst.

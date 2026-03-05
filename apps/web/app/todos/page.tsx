@@ -27,6 +27,16 @@ function formatDate(value: string | null) {
   return d.toLocaleDateString('no-NO');
 }
 
+function toDateInputValue(value: string | null) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 export default function TodosPage() {
   const token = getDevToken();
   const [todos, setTodos] = useState<TodoItem[]>([]);
@@ -34,6 +44,10 @@ export default function TodosPage() {
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [mineOnly, setMineOnly] = useState(true);
+  const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editDueDate, setEditDueDate] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -108,6 +122,44 @@ export default function TodosPage() {
     }
   }
 
+  function startEdit(todo: TodoItem) {
+    setEditingTodoId(todo.id);
+    setEditTitle(todo.title);
+    setEditDescription(todo.description ?? '');
+    setEditDueDate(toDateInputValue(todo.dueDate));
+  }
+
+  function cancelEdit() {
+    setEditingTodoId(null);
+    setEditTitle('');
+    setEditDescription('');
+    setEditDueDate('');
+  }
+
+  async function saveEdit(todo: TodoItem) {
+    if (!token) return;
+    if (!editTitle.trim()) {
+      setError('Tittel kan ikke være tom.');
+      return;
+    }
+
+    try {
+      await apiClient(token).updateTodo(todo.id, {
+        title: editTitle.trim(),
+        description: editDescription.trim() ? editDescription.trim() : null,
+        dueDate: editDueDate ? new Date(`${editDueDate}T00:00:00`).toISOString() : null,
+        status: todo.status,
+      });
+      setSuccess('Todo redigert.');
+      setError(null);
+      cancelEdit();
+      await load();
+    } catch (err) {
+      setSuccess(null);
+      setError(toErrorMessage(err, 'Kunne ikke lagre endringer for todo.'));
+    }
+  }
+
   return (
     <main className="space-y-4">
       <div className="flex items-center justify-between">
@@ -175,7 +227,16 @@ export default function TodosPage() {
           {todos.map((todo) => (
             <article key={todo.id} className="rounded border p-3 text-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <strong>{todo.title}</strong>
+                {editingTodoId === todo.id ? (
+                  <input
+                    className="w-full max-w-xl rounded border px-2 py-1 text-sm"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    placeholder="Tittel"
+                  />
+                ) : (
+                  <strong>{todo.title}</strong>
+                )}
                 <div className="flex gap-2">
                   <select
                     className="rounded border px-2 py-1 text-xs"
@@ -188,6 +249,29 @@ export default function TodosPage() {
                       </option>
                     ))}
                   </select>
+                  {editingTodoId === todo.id ? (
+                    <>
+                      <button
+                        className="rounded border px-2 py-1 text-xs hover:bg-slate-50"
+                        onClick={() => void saveEdit(todo)}
+                      >
+                        Lagre
+                      </button>
+                      <button
+                        className="rounded border px-2 py-1 text-xs hover:bg-slate-50"
+                        onClick={cancelEdit}
+                      >
+                        Avbryt
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      className="rounded border px-2 py-1 text-xs hover:bg-slate-50"
+                      onClick={() => startEdit(todo)}
+                    >
+                      Rediger
+                    </button>
+                  )}
                   <button
                     className="rounded border px-2 py-1 text-xs hover:bg-slate-50"
                     onClick={() => void removeTodo(todo.id)}
@@ -196,8 +280,28 @@ export default function TodosPage() {
                   </button>
                 </div>
               </div>
-              <div className="text-xs text-slate-600">Forfall: {formatDate(todo.dueDate)}</div>
-              <p className="mt-1 text-xs text-slate-700">{todo.description ?? '-'}</p>
+              {editingTodoId === todo.id ? (
+                <div className="mt-2 space-y-2">
+                  <input
+                    className="w-full rounded border px-2 py-1 text-xs"
+                    type="date"
+                    value={editDueDate}
+                    onChange={(e) => setEditDueDate(e.target.value)}
+                  />
+                  <textarea
+                    className="w-full rounded border px-2 py-1 text-xs"
+                    rows={3}
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    placeholder="Beskrivelse"
+                  />
+                </div>
+              ) : (
+                <>
+                  <div className="text-xs text-slate-600">Forfall: {formatDate(todo.dueDate)}</div>
+                  <p className="mt-1 text-xs text-slate-700">{todo.description ?? '-'}</p>
+                </>
+              )}
             </article>
           ))}
           {todos.length === 0 ? (
