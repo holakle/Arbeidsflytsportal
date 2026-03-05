@@ -2,6 +2,7 @@
 
 ## Statusoppdatering (fullfort)
 
+- 2026-03-05: Kalender drag/drop-respons hardnet med type-guard, endpoint-spesifikk feilkontekst og state-sync for valgt hendelse.
 - 2026-03-05: Kalender booking-dialog stabilisert med pre-validering, endpoint-spesifikk feiltekst og overlap-flag for "Book likevel".
 - 2026-03-04: Planstruktur ryddet opp i docs/videre_plan/ - ny aktiv hovedfil, planmappe og arkiv etablert.
 - 2026-03-02: Planner UX v1 forbedret med dropdowns, datetime-input og tydeligere feil/suksessflyt.
@@ -21,7 +22,6 @@
 
 ### Kalender og planlegging
 
-- Fullfor drag-and-drop flytting av kalenderhendelser med sikker oppdatering i API.
 - Legg inn robust sletting fra kalenderhendelser (hover + klikkbar soppelkasse) med bekreftelse.
 
 ### Generell CRUD-opprydding

@@ -589,7 +589,7 @@ function PlannerPageInner() {
       revert();
       return;
     }
-    if (movingEventId) {
+    if (movingEventId || deletingEventId === eventId) {
       revert();
       return;
     }
@@ -610,11 +610,16 @@ function PlannerPageInner() {
 
       setSuccess('Booking flyttet.');
       setError(null);
+      setSelectedCalendarEvent((prev) =>
+        prev?.id === eventId ? { ...prev, start: startAt, end: endAt } : prev,
+      );
       await loadSchedule();
     } catch (err) {
       revert();
       setSuccess(null);
-      setError(toErrorMessage(err, 'Kunne ikke flytte booking.'));
+      const endpoint =
+        eventType === 'workorder_schedule' ? 'PATCH /schedule/:id' : 'PATCH /equipment/reservations/:id';
+      setError(withEndpointContext(err, endpoint, 'Kunne ikke flytte booking.'));
     } finally {
       setMovingEventId(null);
     }
@@ -622,6 +627,11 @@ function PlannerPageInner() {
 
   function onCalendarEventDrop(arg: CalendarEventDropArg) {
     const ext = arg.event.extendedProps as CalendarEventExtended;
+    if (!ext.type) {
+      arg.revert();
+      setError('Mangler hendelsestype for flytting.');
+      return;
+    }
     const startAt = arg.event.start?.toISOString();
     const endAt = arg.event.end?.toISOString();
     if (!startAt || !endAt) {
@@ -635,6 +645,11 @@ function PlannerPageInner() {
 
   function onCalendarEventResize(arg: CalendarEventResizeArg) {
     const ext = arg.event.extendedProps as CalendarEventExtended;
+    if (!ext.type) {
+      arg.revert();
+      setError('Mangler hendelsestype for endring.');
+      return;
+    }
     const startAt = arg.event.start?.toISOString();
     const endAt = arg.event.end?.toISOString();
     if (!startAt || !endAt) {
