@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -74,6 +74,14 @@ type AttachmentEntry = {
   createdAt: string;
 };
 
+type FinishWorkOrderResponse = {
+  session?: {
+    startedAt?: string;
+    endedAt?: string | null;
+  };
+  timesheetDraftId?: string | null;
+};
+
 function toErrorMessage(error: unknown, fallback: string) {
   if (error instanceof Error) return error.message;
   return fallback;
@@ -99,6 +107,18 @@ function toIso(localDateTime: string) {
   const date = new Date(localDateTime);
   if (Number.isNaN(date.getTime())) return null;
   return date.toISOString();
+}
+
+function formatDurationHoursMinutes(startAt?: string, endAt?: string | null) {
+  if (!startAt || !endAt) return null;
+  const start = new Date(startAt);
+  const end = new Date(endAt);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return null;
+
+  const totalMinutes = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
 const statuses = [
@@ -264,11 +284,11 @@ export default function WorkOrderDetailPage() {
     if (!token || !id) return;
     try {
       await apiClient(token).startWorkOrder(id);
-      setSessionStatus('Arbeidsøkt startet');
+      setSessionStatus('ArbeidsÃ¸kt startet');
       await load();
     } catch (err) {
       setSessionStatus(null);
-      setError(toErrorMessage(err, 'Kunne ikke starte arbeidsøkt.'));
+      setError(toErrorMessage(err, 'Kunne ikke starte arbeidsÃ¸kt.'));
     }
   }
 
@@ -276,27 +296,26 @@ export default function WorkOrderDetailPage() {
     if (!token || !id) return;
     try {
       await apiClient(token).pauseWorkOrder(id);
-      setSessionStatus('Arbeidsøkt satt på pause');
+      setSessionStatus('ArbeidsÃ¸kt satt pÃ¥ pause');
       await load();
     } catch (err) {
       setSessionStatus(null);
-      setError(toErrorMessage(err, 'Kunne ikke pause arbeidsøkt.'));
+      setError(toErrorMessage(err, 'Kunne ikke pause arbeidsÃ¸kt.'));
     }
   }
 
   async function finishSession() {
     if (!token || !id) return;
     try {
-      const res = (await apiClient(token).finishWorkOrder(id)) as { timesheetDraftId?: string | null };
+      const res = (await apiClient(token).finishWorkOrder(id)) as FinishWorkOrderResponse;
+      const duration = formatDurationHoursMinutes(res?.session?.startedAt, res?.session?.endedAt);
       setSessionStatus(
-        res?.timesheetDraftId
-          ? `Arbeidsøkt avsluttet. Draft timer: ${res.timesheetDraftId}`
-          : 'Arbeidsøkt avsluttet',
+        duration ? `ArbeidsÃ¸kt avsluttet. Registrert tid: ${duration}` : 'ArbeidsÃ¸kt avsluttet',
       );
       await load();
     } catch (err) {
       setSessionStatus(null);
-      setError(toErrorMessage(err, 'Kunne ikke avslutte arbeidsøkt.'));
+      setError(toErrorMessage(err, 'Kunne ikke avslutte arbeidsÃ¸kt.'));
     }
   }
 
@@ -386,7 +405,7 @@ export default function WorkOrderDetailPage() {
 
   async function removeWorkOrder() {
     if (!token || !id || deletingWorkOrder) return;
-    const ok = window.confirm('Er du sikker på at du vil slette denne arbeidsordren?');
+    const ok = window.confirm('Er du sikker pÃ¥ at du vil slette denne arbeidsordren?');
     if (!ok) return;
 
     setDeletingWorkOrder(true);
@@ -550,8 +569,8 @@ export default function WorkOrderDetailPage() {
               <tr className="border-b text-slate-600">
                 <th className="py-2">Type</th>
                 <th className="py-2">Mime</th>
-                <th className="py-2">Størrelse</th>
-                <th className="py-2">Lagringsnøkkel</th>
+                <th className="py-2">StÃ¸rrelse</th>
+                <th className="py-2">LagringsnÃ¸kkel</th>
                 <th className="py-2">Tid</th>
               </tr>
             </thead>
@@ -571,7 +590,7 @@ export default function WorkOrderDetailPage() {
       </section>
 
       <section className="rounded border bg-white p-4">
-        <h2 className="mb-2 text-lg">Arbeidsøkt</h2>
+        <h2 className="mb-2 text-lg">ArbeidsÃ¸kt</h2>
         <div className="flex gap-2">
           <button className="rounded bg-accent px-3 py-2 text-white" onClick={() => void startSession()}>
             Start
