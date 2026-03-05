@@ -2,6 +2,7 @@
 
 ## Statusoppdatering (fullfort)
 
+- 2026-03-05: Min side-widgetene for Mine arbeidsordre og Bookinger er gjort klikkbare med navigering til arbeidsordre/utstyr/planner.
 - 2026-03-05: Ansattprofil utvidet med strukturert kompetanse (førerkort/kurs), utløpsdato og filterbar kompetansedata i Mannskap + Kalender-booking.
 - 2026-03-05: Arbeidsordre-oppretting har fått kartstøtte (GPS/lenke) og vedleggsopplasting ved opprettelse, samt kartlenke inne på arbeidsordre-detalj.
 - 2026-03-05: Todo-liste har fått inline redigering (tittel, forfall og beskrivelse) med Lagre/Avbryt per rad.

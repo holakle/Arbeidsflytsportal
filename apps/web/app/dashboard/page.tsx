@@ -25,8 +25,10 @@ type Reservation = {
   id: string;
   startAt: string;
   endAt: string;
-  equipmentItem?: { name: string | null };
-  workOrder?: { title: string | null };
+  equipmentItemId?: string;
+  workOrderId?: string;
+  equipmentItem?: { id?: string; name: string | null };
+  workOrder?: { id?: string; title: string | null };
 };
 type Todo = { id: string; title: string; status: string; dueDate: string | null };
 type WeeklySummary = {
@@ -75,16 +77,30 @@ function getDateRange(rangeDays: number) {
   };
 }
 
+function getBookingHref(booking: Reservation) {
+  const workOrderId = booking.workOrder?.id ?? booking.workOrderId;
+  if (workOrderId) return `/workorders/${workOrderId}`;
+
+  const equipmentId = booking.equipmentItem?.id ?? booking.equipmentItemId;
+  if (equipmentId) return `/equipment?equipmentItemId=${equipmentId}`;
+
+  return '/planner';
+}
+
 function WidgetRenderer({ widget, data }: { widget: DashboardWidget; data: WidgetData }) {
   switch (widget.type) {
     case 'MY_WORKORDERS':
       return (
         <div className="space-y-1 text-sm">
           {data.myWorkOrders.slice(0, 6).map((wo) => (
-            <div key={wo.id} className="rounded border p-2">
+            <Link
+              key={wo.id}
+              href={`/workorders/${wo.id}`}
+              className="block rounded border p-2 transition hover:bg-slate-50"
+            >
               <div className="font-medium">{wo.title}</div>
               <div className="text-xs text-slate-600">{wo.status}</div>
-            </div>
+            </Link>
           ))}
           {data.myWorkOrders.length === 0 ? (
             <div className="text-xs text-slate-500">Ingen arbeidsordre funnet.</div>
@@ -96,7 +112,11 @@ function WidgetRenderer({ widget, data }: { widget: DashboardWidget; data: Widge
       return (
         <div className="space-y-1 text-sm">
           {data.bookings.slice(0, 6).map((booking) => (
-            <div key={booking.id} className="rounded border p-2">
+            <Link
+              key={booking.id}
+              href={getBookingHref(booking)}
+              className="block rounded border p-2 transition hover:bg-slate-50"
+            >
               <div className="font-medium">{booking.equipmentItem?.name ?? 'Ukjent utstyr'}</div>
               <div className="text-xs text-slate-600">
                 {booking.workOrder?.title ?? 'Ukjent workorder'}
@@ -104,7 +124,7 @@ function WidgetRenderer({ widget, data }: { widget: DashboardWidget; data: Widge
               <div className="text-xs text-slate-600">
                 {formatDate(booking.startAt)} - {formatDate(booking.endAt)}
               </div>
-            </div>
+            </Link>
           ))}
           {data.bookings.length === 0 ? (
             <div className="text-xs text-slate-500">Ingen bookinger funnet.</div>
