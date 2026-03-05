@@ -549,7 +549,7 @@ function PlannerPageInner() {
     eventType: ScheduleEvent['type'],
     workOrderId?: string,
   ) {
-    if (!token || deletingEventId) return;
+    if (!token || deletingEventId || movingEventId === eventId) return;
 
     const ok = window.confirm('Slette denne bookingen fra kalenderen?');
     if (!ok) return;
@@ -557,11 +557,15 @@ function PlannerPageInner() {
     setDeletingEventId(eventId);
     try {
       if (eventType === 'workorder_schedule') {
-        if (!workOrderId) {
+        const resolvedWorkOrderId =
+          workOrderId ??
+          scheduleEvents.find((event) => event.id === eventId && event.type === 'workorder_schedule')
+            ?.workOrderRef?.id;
+        if (!resolvedWorkOrderId) {
           setError('Kunne ikke finne arbeidsordre for valgt booking.');
           return;
         }
-        await apiClient(token).deleteWorkOrderSchedule(workOrderId, eventId);
+        await apiClient(token).deleteWorkOrderSchedule(resolvedWorkOrderId, eventId);
       } else {
         await apiClient(token).deleteEquipmentReservation(eventId);
       }
@@ -572,7 +576,11 @@ function PlannerPageInner() {
       await load();
     } catch (err) {
       setSuccess(null);
-      setError(toErrorMessage(err, 'Kunne ikke slette booking.'));
+      const endpoint =
+        eventType === 'workorder_schedule'
+          ? 'DELETE /workorders/:id/schedule/:scheduleId'
+          : 'DELETE /equipment/reservations/:id';
+      setError(withEndpointContext(err, endpoint, 'Kunne ikke slette booking.'));
     } finally {
       setDeletingEventId(null);
     }

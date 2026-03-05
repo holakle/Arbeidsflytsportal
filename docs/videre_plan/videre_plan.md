@@ -2,6 +2,7 @@
 
 ## Statusoppdatering (fullfort)
 
+- 2026-03-05: Kalender delete-flyt hardnet med fallback-oppslag av workorder-id, race-guard og endpoint-spesifikk feilkontekst.
 - 2026-03-05: Kalender drag/drop-respons hardnet med type-guard, endpoint-spesifikk feilkontekst og state-sync for valgt hendelse.
 - 2026-03-05: Kalender booking-dialog stabilisert med pre-validering, endpoint-spesifikk feiltekst og overlap-flag for "Book likevel".
 - 2026-03-04: Planstruktur ryddet opp i docs/videre_plan/ - ny aktiv hovedfil, planmappe og arkiv etablert.
@@ -22,7 +23,6 @@
 
 ### Kalender og planlegging
 
-- Legg inn robust sletting fra kalenderhendelser (hover + klikkbar soppelkasse) med bekreftelse.
 
 ### Generell CRUD-opprydding
 
