@@ -10,6 +10,7 @@ import { ConnectionStatus } from '@/components/dev/connection-status';
 type WorkOrder = {
   id: string;
   title: string;
+  timesheetCode: string;
   description: string | null;
   status: string;
   lat?: number | null;
@@ -29,7 +30,18 @@ type WorkOrder = {
   department?: { id: string; name: string } | null;
   location?: { id: string; name: string } | null;
   project?: { id: string; name: string } | null;
+  subOrders?: SubOrder[];
   assignments?: Array<{ id: string; assigneeUserId: string | null; assigneeTeamId: string | null }>;
+};
+
+type SubOrder = {
+  id: string;
+  workOrderId: string;
+  title: string;
+  timesheetCode: string;
+  description: string | null;
+  status: string;
+  createdAt: string;
 };
 
 type DevUser = {
@@ -37,6 +49,11 @@ type DevUser = {
   displayName: string;
   email: string;
   roles: string[];
+};
+
+type NamedRefOption = {
+  id: string;
+  name: string;
 };
 
 type ConsumableItem = {
@@ -151,6 +168,7 @@ export default function WorkOrderDetailPage() {
 
   const [workOrder, setWorkOrder] = useState<WorkOrder | null>(null);
   const [title, setTitle] = useState('');
+  const [timesheetCode, setTimesheetCode] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState('READY_FOR_PLANNING');
   const [departmentId, setDepartmentId] = useState('');
@@ -168,6 +186,9 @@ export default function WorkOrderDetailPage() {
   const [assignmentUserId, setAssignmentUserId] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [departmentOptions, setDepartmentOptions] = useState<NamedRefOption[]>([]);
+  const [locationOptions, setLocationOptions] = useState<NamedRefOption[]>([]);
+  const [projectOptions, setProjectOptions] = useState<NamedRefOption[]>([]);
 
   const [users, setUsers] = useState<DevUser[]>([]);
 
@@ -185,6 +206,10 @@ export default function WorkOrderDetailPage() {
   const [attachments, setAttachments] = useState<AttachmentEntry[]>([]);
   const [sessionStatus, setSessionStatus] = useState<string | null>(null);
   const [deletingWorkOrder, setDeletingWorkOrder] = useState(false);
+  const [subOrderTitle, setSubOrderTitle] = useState('');
+  const [subOrderTimesheetCode, setSubOrderTimesheetCode] = useState('');
+  const [subOrderDescription, setSubOrderDescription] = useState('');
+  const [subOrderStatus, setSubOrderStatus] = useState('DRAFT');
 
   const planningOwnerLabel = useMemo(
     () => users.find((u) => u.id === planningOwnerUserId)?.displayName ?? '-',
@@ -200,16 +225,28 @@ export default function WorkOrderDetailPage() {
     return toMapSearchUrl({ lat: latValue, lng: lngValue, address });
   }, [addressLine1, city, postalCode, workOrder?.lat, workOrder?.lng]);
 
+  const nextSubOrderCode = useMemo(() => {
+    const baseCode = timesheetCode.trim() || 'WO';
+    const existing = new Set((workOrder?.subOrders ?? []).map((subOrder) => subOrder.timesheetCode));
+    let index = 1;
+    while (existing.has(`${baseCode}-D${index}`)) {
+      index += 1;
+    }
+    return `${baseCode}-D${index}`;
+  }, [timesheetCode, workOrder?.subOrders]);
+
   async function load() {
     if (!token || !id) return;
     try {
-      const [woRes, consumableRes, catalogRes, userRes, scheduleRes, attachmentRes] = await Promise.all([
+      const [woRes, consumableRes, catalogRes, userRes, scheduleRes, attachmentRes, workOrderListRes] =
+        await Promise.all([
         apiClient(token).getWorkOrder(id),
         apiClient(token).listWorkOrderConsumables(id),
         apiClient(token).listEquipment('type=CONSUMABLE'),
         apiClient(token).listDevUsers(),
         apiClient(token).listWorkOrderSchedule(id),
         apiClient(token).listWorkOrderAttachments(id),
+        apiClient(token).listWorkOrders('page=1&limit=200'),
       ]);
 
       const wo = woRes as WorkOrder;
@@ -218,6 +255,7 @@ export default function WorkOrderDetailPage() {
 
       setWorkOrder(wo);
       setTitle(wo.title ?? '');
+      setTimesheetCode(wo.timesheetCode ?? '');
       setDescription(wo.description ?? '');
       setStatus(wo.status ?? 'READY_FOR_PLANNING');
       setDepartmentId(wo.departmentId ?? '');
@@ -250,6 +288,51 @@ export default function WorkOrderDetailPage() {
 
       setScheduleEntries(entries);
       setAttachments(attachmentRes as AttachmentEntry[]);
+
+      const allWorkOrders = (workOrderListRes.items ?? []) as WorkOrder[];
+      const departmentMap = new Map<string, string>();
+      const locationMap = new Map<string, string>();
+      const projectMap = new Map<string, string>();
+
+      for (const item of allWorkOrders) {
+        if (item.departmentId) {
+          departmentMap.set(item.departmentId, item.department?.name ?? item.departmentId);
+        }
+        if (item.locationId) {
+          locationMap.set(item.locationId, item.location?.name ?? item.locationId);
+        }
+        if (item.projectId) {
+          projectMap.set(item.projectId, item.project?.name ?? item.projectId);
+        }
+      }
+
+      if (wo.departmentId) {
+        departmentMap.set(wo.departmentId, wo.department?.name ?? wo.departmentId);
+      }
+      if (wo.locationId) {
+        locationMap.set(wo.locationId, wo.location?.name ?? wo.locationId);
+      }
+      if (wo.projectId) {
+        projectMap.set(wo.projectId, wo.project?.name ?? wo.projectId);
+      }
+
+      const sortByName = (a: NamedRefOption, b: NamedRefOption) => a.name.localeCompare(b.name, 'no');
+      setDepartmentOptions(
+        Array.from(departmentMap.entries())
+          .map(([refId, name]) => ({ id: refId, name }))
+          .sort(sortByName),
+      );
+      setLocationOptions(
+        Array.from(locationMap.entries())
+          .map(([refId, name]) => ({ id: refId, name }))
+          .sort(sortByName),
+      );
+      setProjectOptions(
+        Array.from(projectMap.entries())
+          .map(([refId, name]) => ({ id: refId, name }))
+          .sort(sortByName),
+      );
+
       if (!scheduleAssigneeUserId && devUsers.length > 0) {
         const firstUser = devUsers.at(0);
         if (firstUser) {
@@ -273,11 +356,18 @@ export default function WorkOrderDetailPage() {
     void load();
   }, [id, token]);
 
+  useEffect(() => {
+    if (!subOrderTimesheetCode) {
+      setSubOrderTimesheetCode(nextSubOrderCode);
+    }
+  }, [nextSubOrderCode, subOrderTimesheetCode]);
+
   async function save() {
     if (!token || !id) return;
     try {
       await apiClient(token).updateWorkOrder(id, {
         title,
+        timesheetCode: timesheetCode.trim() || undefined,
         description: description.trim() ? description : undefined,
         status,
         customerName: customerName.trim() ? customerName : undefined,
@@ -441,12 +531,50 @@ export default function WorkOrderDetailPage() {
     }
   }
 
+  async function createSubOrder() {
+    if (!token || !id || !subOrderTitle.trim()) return;
+    try {
+      await apiClient(token).createWorkOrderSubOrder(id, {
+        title: subOrderTitle.trim(),
+        timesheetCode: subOrderTimesheetCode.trim() || undefined,
+        description: subOrderDescription.trim() || undefined,
+        status: subOrderStatus,
+      });
+      setSuccess('Delordre opprettet.');
+      setError(null);
+      setSubOrderTitle('');
+      setSubOrderDescription('');
+      setSubOrderStatus('DRAFT');
+      setSubOrderTimesheetCode('');
+      await load();
+    } catch (err) {
+      setSuccess(null);
+      setError(toErrorMessage(err, 'Kunne ikke opprette delordre.'));
+    }
+  }
+
+  async function removeSubOrder(subOrderId: string) {
+    if (!token || !id) return;
+    const ok = window.confirm('Er du sikker på at du vil slette delordren?');
+    if (!ok) return;
+    try {
+      await apiClient(token).deleteWorkOrderSubOrder(id, subOrderId);
+      setSuccess('Delordre slettet.');
+      setError(null);
+      await load();
+    } catch (err) {
+      setSuccess(null);
+      setError(toErrorMessage(err, 'Kunne ikke slette delordre.'));
+    }
+  }
+
   return (
     <main className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Arbeidsordre</h1>
-          <p className="text-sm text-slate-600">{id}</p>
+          <p className="text-sm text-slate-600">Arbeidsordre-ID: {id}</p>
+          <p className="text-xs text-slate-600">Hovedkode: {timesheetCode || '-'}</p>
           <p className="text-xs text-slate-600">
             Plassering: {workOrder?.department?.name ?? '-'} / {workOrder?.location?.name ?? '-'} /{' '}
             {workOrder?.project?.name ?? '-'}
@@ -498,6 +626,12 @@ export default function WorkOrderDetailPage() {
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Tittel"
           />
+          <input
+            className="rounded border px-3 py-2 md:col-span-2"
+            value={timesheetCode}
+            onChange={(e) => setTimesheetCode(e.target.value)}
+            placeholder="Hovedkode for timer"
+          />
           <textarea
             className="rounded border px-3 py-2 md:col-span-2"
             value={description}
@@ -516,24 +650,42 @@ export default function WorkOrderDetailPage() {
               </option>
             ))}
           </select>
-          <input
+          <select
             className="rounded border px-3 py-2"
             value={departmentId}
             onChange={(e) => setDepartmentId(e.target.value)}
-            placeholder="Avdeling ID (valgfri)"
-          />
-          <input
+          >
+            <option value="">Ingen avdeling</option>
+            {departmentOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.name} ({option.id})
+              </option>
+            ))}
+          </select>
+          <select
             className="rounded border px-3 py-2"
             value={locationId}
             onChange={(e) => setLocationId(e.target.value)}
-            placeholder="Lokasjon ID (valgfri)"
-          />
-          <input
+          >
+            <option value="">Ingen lokasjon</option>
+            {locationOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.name} ({option.id})
+              </option>
+            ))}
+          </select>
+          <select
             className="rounded border px-3 py-2"
             value={projectId}
             onChange={(e) => setProjectId(e.target.value)}
-            placeholder="Prosjekt ID (valgfri)"
-          />
+          >
+            <option value="">Ingen prosjekt</option>
+            {projectOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.name} ({option.id})
+              </option>
+            ))}
+          </select>
           <input
             className="rounded border px-3 py-2"
             value={customerName}
@@ -589,6 +741,96 @@ export default function WorkOrderDetailPage() {
           >
             Lagre
           </button>
+        </div>
+      </section>
+
+      <section className="rounded border bg-white p-4">
+        <h2 className="mb-2 text-lg">Delordrer</h2>
+        <div className="grid gap-2 md:grid-cols-4">
+          <input
+            className="rounded border px-3 py-2 md:col-span-2"
+            value={subOrderTitle}
+            onChange={(e) => setSubOrderTitle(e.target.value)}
+            placeholder="Tittel på delordre"
+          />
+          <input
+            className="rounded border px-3 py-2"
+            value={subOrderTimesheetCode}
+            onChange={(e) => setSubOrderTimesheetCode(e.target.value)}
+            placeholder={`${nextSubOrderCode} (auto)`}
+          />
+          <select
+            className="rounded border px-3 py-2"
+            value={subOrderStatus}
+            onChange={(e) => setSubOrderStatus(e.target.value)}
+          >
+            {statuses.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+          <input
+            className="rounded border px-3 py-2 md:col-span-3"
+            value={subOrderDescription}
+            onChange={(e) => setSubOrderDescription(e.target.value)}
+            placeholder="Beskrivelse (valgfri)"
+          />
+          <button
+            className="rounded bg-accent px-3 py-2 text-white md:col-span-1"
+            onClick={() => void createSubOrder()}
+            disabled={!subOrderTitle.trim()}
+          >
+            Opprett delordre
+          </button>
+        </div>
+
+        <div className="mt-3 overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead>
+              <tr className="border-b text-slate-600">
+                <th className="py-2">Tittel</th>
+                <th className="py-2">Kode</th>
+                <th className="py-2">Status</th>
+                <th className="py-2">Detaljer</th>
+                <th className="py-2">Handling</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(workOrder?.subOrders ?? []).map((subOrder) => (
+                <tr key={subOrder.id} className="border-b">
+                  <td className="py-2">{subOrder.title}</td>
+                  <td className="py-2">
+                    <code className="text-xs">{subOrder.timesheetCode}</code>
+                  </td>
+                  <td className="py-2">{subOrder.status}</td>
+                  <td className="py-2">
+                    <Link
+                      className="rounded border px-2 py-1 text-xs hover:bg-slate-50"
+                      href={`/workorders/${id}/suborders/${subOrder.id}`}
+                    >
+                      Åpne
+                    </Link>
+                  </td>
+                  <td className="py-2">
+                    <button
+                      className="rounded border px-2 py-1 text-xs hover:bg-slate-50"
+                      onClick={() => void removeSubOrder(subOrder.id)}
+                    >
+                      Slett
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {(workOrder?.subOrders ?? []).length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-3 text-center text-slate-500">
+                    Ingen delordrer registrert ennå.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
         </div>
       </section>
 

@@ -32,6 +32,59 @@ export const COMPETENCE_PRESETS: CompetencePreset[] = [
   { id: 'course-aus-3', kind: 'COURSE', label: 'AUS klasse 3' },
 ];
 
+const DEMO_PROFILES: Record<string, EmployeeProfileData> = {
+  '33333333-3333-3333-3333-333333333333': {
+    skills: ['Fiberterminering', 'Måling og feilsøk', 'Dokumentasjon'],
+    courses: ['FSE', 'Varme arbeider'],
+    notes: 'Foretrekker oppdrag i Oslo vest. Kjører servicebil klasse BE.',
+    competences: [
+      { id: 'demo-ole-license-c', kind: 'LICENSE', name: 'Førerkort klasse C', expiresAt: null },
+      {
+        id: 'demo-ole-license-be',
+        kind: 'LICENSE',
+        name: 'Førerkort klasse BE',
+        expiresAt: null,
+      },
+      { id: 'demo-ole-fse', kind: 'COURSE', name: 'FSE', expiresAt: '2027-05-31' },
+      { id: 'demo-ole-varme', kind: 'COURSE', name: 'Varme arbeider', expiresAt: '2028-02-15' },
+    ],
+    updatedAt: '2026-03-05T10:00:00.000Z',
+  },
+  '34343434-3434-3434-3434-343434343434': {
+    skills: ['Prosjektering', 'Planlegging', 'Laseroppmåling'],
+    courses: ['AUS klasse 2', 'AUS klasse 3'],
+    notes: 'Tilgjengelig for kveldsskift ved behov.',
+    competences: [
+      {
+        id: 'demo-sara-license-be',
+        kind: 'LICENSE',
+        name: 'Førerkort klasse BE',
+        expiresAt: null,
+      },
+      { id: 'demo-sara-aus2', kind: 'COURSE', name: 'AUS klasse 2', expiresAt: '2027-09-30' },
+      { id: 'demo-sara-aus3', kind: 'COURSE', name: 'AUS klasse 3', expiresAt: '2027-09-30' },
+      { id: 'demo-sara-fse', kind: 'COURSE', name: 'FSE', expiresAt: '2026-12-31' },
+    ],
+    updatedAt: '2026-03-05T10:00:00.000Z',
+  },
+  '35353535-3535-3535-3535-353535353535': {
+    skills: ['Montasje', 'Kabeltrekking', 'Service og vedlikehold'],
+    courses: ['FSE', 'Varme arbeider'],
+    notes: 'Kan ta hasteoppdrag innenfor normal arbeidstid.',
+    competences: [
+      {
+        id: 'demo-jonas-license-c',
+        kind: 'LICENSE',
+        name: 'Førerkort klasse C',
+        expiresAt: null,
+      },
+      { id: 'demo-jonas-fse', kind: 'COURSE', name: 'FSE', expiresAt: '2027-03-01' },
+      { id: 'demo-jonas-varme', kind: 'COURSE', name: 'Varme arbeider', expiresAt: '2028-01-01' },
+    ],
+    updatedAt: '2026-03-05T10:00:00.000Z',
+  },
+};
+
 function parseLines(raw: string) {
   return raw
     .split('\n')
@@ -123,13 +176,18 @@ export function normalizeEmployeeProfile(raw: unknown): EmployeeProfileData {
 }
 
 export function readEmployeeProfile(userId: string): EmployeeProfileData {
-  if (typeof window === 'undefined') return createEmptyEmployeeProfile();
+  const fallbackProfile = DEMO_PROFILES[userId];
+  if (typeof window === 'undefined') {
+    return fallbackProfile ? normalizeEmployeeProfile(fallbackProfile) : createEmptyEmployeeProfile();
+  }
   try {
     const raw = window.localStorage.getItem(profileStorageKey(userId));
-    if (!raw) return createEmptyEmployeeProfile();
+    if (!raw) {
+      return fallbackProfile ? normalizeEmployeeProfile(fallbackProfile) : createEmptyEmployeeProfile();
+    }
     return normalizeEmployeeProfile(JSON.parse(raw));
   } catch {
-    return createEmptyEmployeeProfile();
+    return fallbackProfile ? normalizeEmployeeProfile(fallbackProfile) : createEmptyEmployeeProfile();
   }
 }
 

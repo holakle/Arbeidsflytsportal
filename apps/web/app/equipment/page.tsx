@@ -31,6 +31,23 @@ function formatDate(value: string) {
   return d.toLocaleString('no-NO');
 }
 
+function toLocalDateTimeInput(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  const h = String(date.getHours()).padStart(2, '0');
+  const min = String(date.getMinutes()).padStart(2, '0');
+  return `${y}-${m}-${d}T${h}:${min}`;
+}
+
+function toIso(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString();
+}
+
 function toErrorMessage(error: unknown, fallback: string) {
   if (error instanceof Error) return error.message;
   return fallback;
@@ -72,6 +89,10 @@ export default function EquipmentPage() {
   const [query, setQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'EQUIPMENT' | 'CONSUMABLE'>('ALL');
   const [error, setError] = useState<string | null>(null);
+  const [editingReservationId, setEditingReservationId] = useState<string | null>(null);
+  const [editingStartAt, setEditingStartAt] = useState('');
+  const [editingEndAt, setEditingEndAt] = useState('');
+  const [savingReservationId, setSavingReservationId] = useState<string | null>(null);
 
   async function load() {
     if (!token) {
@@ -116,6 +137,46 @@ export default function EquipmentPage() {
         .includes(q);
     });
   }, [items, query, typeFilter]);
+
+  function startEditReservation(reservation: EquipmentReservation) {
+    setEditingReservationId(reservation.id);
+    setEditingStartAt(toLocalDateTimeInput(reservation.startAt));
+    setEditingEndAt(toLocalDateTimeInput(reservation.endAt));
+    setError(null);
+  }
+
+  function cancelEditReservation() {
+    setEditingReservationId(null);
+    setEditingStartAt('');
+    setEditingEndAt('');
+  }
+
+  async function saveReservation(reservationId: string) {
+    if (!token || savingReservationId) return;
+
+    const startAt = toIso(editingStartAt);
+    const endAt = toIso(editingEndAt);
+    if (!startAt || !endAt) {
+      setError('Ugyldig datoformat for reservasjon.');
+      return;
+    }
+    if (new Date(startAt) >= new Date(endAt)) {
+      setError('Start må være før slutt.');
+      return;
+    }
+
+    setSavingReservationId(reservationId);
+    try {
+      await apiClient(token).updateEquipmentReservation(reservationId, { startAt, endAt });
+      setError(null);
+      cancelEditReservation();
+      await load();
+    } catch (err) {
+      setError(toErrorMessage(err, 'Kunne ikke oppdatere reservasjon.'));
+    } finally {
+      setSavingReservationId(null);
+    }
+  }
 
   return (
     <main className="space-y-4">
@@ -188,8 +249,8 @@ export default function EquipmentPage() {
                     {item.type === 'CONSUMABLE'
                       ? 'Legges manuelt pa WO'
                       : reservedNow.has(item.id)
-                        ? 'Booket na'
-                        : 'Ledig na'}
+                        ? 'Booket nå'
+                        : 'Ledig nå'}
                   </td>
                   <td className="py-2">
                     <BarcodePreview code={item.barcode} />
@@ -211,6 +272,7 @@ export default function EquipmentPage() {
                 <th className="py-2">Workorder</th>
                 <th className="py-2">Start</th>
                 <th className="py-2">Slutt</th>
+                <th className="py-2">Handling</th>
               </tr>
             </thead>
             <tbody>
@@ -220,8 +282,56 @@ export default function EquipmentPage() {
                     {reservation.equipmentItem?.name ?? reservation.equipmentItemId}
                   </td>
                   <td className="py-2">{reservation.workOrder?.title ?? '-'}</td>
-                  <td className="py-2">{formatDate(reservation.startAt)}</td>
-                  <td className="py-2">{formatDate(reservation.endAt)}</td>
+                  <td className="py-2">
+                    {editingReservationId === reservation.id ? (
+                      <input
+                        className="w-full rounded border px-2 py-1 text-xs"
+                        type="datetime-local"
+                        value={editingStartAt}
+                        onChange={(e) => setEditingStartAt(e.target.value)}
+                      />
+                    ) : (
+                      formatDate(reservation.startAt)
+                    )}
+                  </td>
+                  <td className="py-2">
+                    {editingReservationId === reservation.id ? (
+                      <input
+                        className="w-full rounded border px-2 py-1 text-xs"
+                        type="datetime-local"
+                        value={editingEndAt}
+                        onChange={(e) => setEditingEndAt(e.target.value)}
+                      />
+                    ) : (
+                      formatDate(reservation.endAt)
+                    )}
+                  </td>
+                  <td className="py-2">
+                    {editingReservationId === reservation.id ? (
+                      <div className="flex gap-2">
+                        <button
+                          className="rounded border px-2 py-1 text-xs hover:bg-slate-50 disabled:opacity-50"
+                          onClick={() => void saveReservation(reservation.id)}
+                          disabled={savingReservationId === reservation.id}
+                        >
+                          {savingReservationId === reservation.id ? 'Lagrer...' : 'Lagre'}
+                        </button>
+                        <button
+                          className="rounded border px-2 py-1 text-xs hover:bg-slate-50"
+                          onClick={cancelEditReservation}
+                        >
+                          Avbryt
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        className="rounded border px-2 py-1 text-xs hover:bg-slate-50"
+                        onClick={() => startEditReservation(reservation)}
+                      >
+                        Rediger
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

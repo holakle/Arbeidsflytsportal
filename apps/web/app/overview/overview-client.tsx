@@ -616,12 +616,12 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
       </SectionShell>
 
       <SectionShell
-        title="EquipmentReservations"
-        subtitle="Tidspunkt + overlap/context per utstyr"
+        title="Reservasjoner"
+        subtitle="Tidspunkt og overlapper per utstyr"
         kpis={[
           `Total: ${reservations.length}`,
           `Neste 7 dager: ${reservations.filter((r) => new Date(r.startAt) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)).length}`,
-          `Utstyr med bookinger: ${new Set(reservations.map((r) => r.equipmentItemId)).size}`,
+          `Utstyr med reservasjoner: ${new Set(reservations.map((r) => r.equipmentItemId)).size}`,
         ]}
         error={sections.reservations.status === 'error' ? sections.reservations.message : undefined}
         onRefresh={() => router.refresh()}
@@ -630,7 +630,7 @@ export default function OverviewClient({ me, sections }: { me: Me; sections: Ove
           <button
             className="rounded border px-3 py-1 text-xs"
             onClick={() =>
-              void pinWidget('BOOKINGS', 'Bookinger', { source: 'overview.reservations' })
+              void pinWidget('BOOKINGS', 'Reservasjoner', { source: 'overview.reservations' })
             }
           >
             Legg til pa Min side

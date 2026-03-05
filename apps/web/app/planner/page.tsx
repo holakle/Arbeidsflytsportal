@@ -156,6 +156,8 @@ function PlannerPageInner() {
   const [resourceMode, setResourceMode] = useState<ResourceMode>('MANNSKAP');
   const [competenceFilter, setCompetenceFilter] = useState('ALL');
   const [includeExpiredCompetence, setIncludeExpiredCompetence] = useState(false);
+  const [selectionCompetenceFilter, setSelectionCompetenceFilter] = useState('ALL');
+  const [selectionIncludeExpiredCompetence, setSelectionIncludeExpiredCompetence] = useState(false);
   const [selectedUserFilterId, setSelectedUserFilterId] = useState('ALL');
   const [selectedEquipmentFilterId, setSelectedEquipmentFilterId] = useState('ALL');
   const [scheduleEvents, setScheduleEvents] = useState<ScheduleEvent[]>([]);
@@ -199,6 +201,18 @@ function PlannerPageInner() {
     });
   }, [competenceFilter, includeExpiredCompetence, profilesByUserId, users]);
 
+  const selectionFilteredUsers = useMemo(() => {
+    if (selectionCompetenceFilter === 'ALL') return users;
+    return users.filter((user) => {
+      const profile = profilesByUserId.get(user.id) ?? readEmployeeProfile(user.id);
+      return profileHasCompetence(
+        profile,
+        selectionCompetenceFilter,
+        selectionIncludeExpiredCompetence,
+      );
+    });
+  }, [profilesByUserId, selectionCompetenceFilter, selectionIncludeExpiredCompetence, users]);
+
   const filteredScheduleEvents = useMemo(() => {
     return scheduleEvents.filter((event) => {
       if (resourceMode === 'MANNSKAP') {
@@ -228,6 +242,31 @@ function PlannerPageInner() {
     selectedEquipmentFilterId,
     selectedUserFilterId,
   ]);
+
+  const selectionAvailabilityByUserId = useMemo(() => {
+    const map = new Map<string, boolean>();
+    const startAt = toIso(selectionStart);
+    const endAt = toIso(selectionEnd);
+    if (!startAt || !endAt) {
+      selectionFilteredUsers.forEach((user) => map.set(user.id, true));
+      return map;
+    }
+
+    const selectedStart = new Date(startAt);
+    const selectedEnd = new Date(endAt);
+    selectionFilteredUsers.forEach((user) => {
+      const hasOverlap = scheduleEvents.some((event) => {
+        if (event.type !== 'workorder_schedule') return false;
+        if (event.resourceRef?.kind !== 'user' || event.resourceRef.id !== user.id) return false;
+        const eventStart = new Date(event.start);
+        const eventEnd = new Date(event.end);
+        return eventStart < selectedEnd && selectedStart < eventEnd;
+      });
+      map.set(user.id, !hasOverlap);
+    });
+
+    return map;
+  }, [scheduleEvents, selectionEnd, selectionFilteredUsers, selectionStart]);
 
   const availabilityBadge = useMemo(() => {
     const now = new Date();
@@ -404,10 +443,18 @@ function PlannerPageInner() {
     if (assigneeUserId && !filteredUsers.some((user) => user.id === assigneeUserId)) {
       setAssigneeUserId(filteredUsers.at(0)?.id ?? '');
     }
-    if (selectionUserId && !filteredUsers.some((user) => user.id === selectionUserId)) {
-      setSelectionUserId(filteredUsers.at(0)?.id ?? '');
+  }, [assigneeUserId, filteredUsers, resourceMode, selectedUserFilterId]);
+
+  useEffect(() => {
+    if (!selectionModalOpen || resourceMode !== 'MANNSKAP') return;
+    if (selectionFilteredUsers.length === 0) {
+      setSelectionUserId('');
+      return;
     }
-  }, [assigneeUserId, filteredUsers, resourceMode, selectedUserFilterId, selectionUserId]);
+    if (!selectionUserId || !selectionFilteredUsers.some((user) => user.id === selectionUserId)) {
+      setSelectionUserId(selectionFilteredUsers[0]?.id ?? '');
+    }
+  }, [resourceMode, selectionFilteredUsers, selectionModalOpen, selectionUserId]);
 
   useEffect(() => {
     const api = calendarRef.current?.getApi();
@@ -523,6 +570,8 @@ function PlannerPageInner() {
     setSelectionWorkOrderId(nextWorkOrderId);
     setSelectionUserId(nextUserId);
     setSelectionEquipmentId(nextEquipmentId);
+    setSelectionCompetenceFilter(competenceFilter);
+    setSelectionIncludeExpiredCompetence(includeExpiredCompetence);
     setSelectionModalOpen(true);
   }
 
@@ -1240,21 +1289,51 @@ function PlannerPageInner() {
               </select>
 
               {resourceMode === 'MANNSKAP' ? (
-                <select
-                  className="rounded border px-3 py-2 md:col-span-2"
-                  value={selectionUserId}
-                  onChange={(e) => setSelectionUserId(e.target.value)}
-                >
-                  {filteredUsers.length > 0 ? (
-                    filteredUsers.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.displayName}
-                      </option>
-                    ))
-                  ) : (
-                    <option value="">Ingen brukere matcher valgt kompetanse</option>
-                  )}
-                </select>
+                <>
+                  <select
+                    className="rounded border px-3 py-2 md:col-span-2"
+                    value={selectionCompetenceFilter}
+                    onChange={(e) => setSelectionCompetenceFilter(e.target.value)}
+                  >
+                    <option value="ALL">All kompetanse</option>
+                    {competenceFilterOptions
+                      .filter((item) => item !== 'ALL')
+                      .map((item) => (
+                        <option key={item} value={item}>
+                          {item}
+                        </option>
+                      ))}
+                  </select>
+
+                  <select
+                    className="rounded border px-3 py-2 md:col-span-2"
+                    value={selectionUserId}
+                    onChange={(e) => setSelectionUserId(e.target.value)}
+                  >
+                    {selectionFilteredUsers.length > 0 ? (
+                      selectionFilteredUsers.map((user) => {
+                        const isAvailable = selectionAvailabilityByUserId.get(user.id) ?? true;
+                        return (
+                          <option key={user.id} value={user.id}>
+                            {user.displayName}{' '}
+                            {isAvailable ? '(ledig i tidsrommet)' : '(ikke ledig i tidsrommet)'}
+                          </option>
+                        );
+                      })
+                    ) : (
+                      <option value="">Ingen brukere matcher valgt kompetanse</option>
+                    )}
+                  </select>
+
+                  <label className="inline-flex items-center gap-2 text-xs text-slate-700 md:col-span-2">
+                    <input
+                      type="checkbox"
+                      checked={selectionIncludeExpiredCompetence}
+                      onChange={(e) => setSelectionIncludeExpiredCompetence(e.target.checked)}
+                    />
+                    Inkluder utløpt kompetanse
+                  </label>
+                </>
               ) : (
                 <select
                   className="rounded border px-3 py-2 md:col-span-2"

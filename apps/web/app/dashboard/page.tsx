@@ -78,13 +78,13 @@ function getDateRange(rangeDays: number) {
 }
 
 function getBookingHref(booking: Reservation) {
-  const workOrderId = booking.workOrder?.id ?? booking.workOrderId;
-  if (workOrderId) return `/workorders/${workOrderId}`;
-
   const equipmentId = booking.equipmentItem?.id ?? booking.equipmentItemId;
   if (equipmentId) return `/equipment?equipmentItemId=${equipmentId}`;
 
-  return '/planner';
+  const workOrderId = booking.workOrder?.id ?? booking.workOrderId;
+  if (workOrderId) return `/workorders/${workOrderId}`;
+
+  return '/equipment';
 }
 
 function WidgetRenderer({ widget, data }: { widget: DashboardWidget; data: WidgetData }) {
@@ -127,7 +127,7 @@ function WidgetRenderer({ widget, data }: { widget: DashboardWidget; data: Widge
             </Link>
           ))}
           {data.bookings.length === 0 ? (
-            <div className="text-xs text-slate-500">Ingen bookinger funnet.</div>
+            <div className="text-xs text-slate-500">Ingen reservasjoner funnet.</div>
           ) : null}
         </div>
       );
@@ -204,6 +204,11 @@ function WidgetRenderer({ widget, data }: { widget: DashboardWidget; data: Widge
     default:
       return <div className="text-xs text-slate-500">Ukjent widget-type.</div>;
   }
+}
+
+function getWidgetDisplayTitle(widget: DashboardWidget) {
+  if (widget.type === 'BOOKINGS') return 'Reservasjoner';
+  return widget.title;
 }
 
 export default function DashboardPage() {
@@ -314,7 +319,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {(dashboard?.widgets ?? []).map((widget) => (
           <article key={widget.id} className="rounded border bg-white p-4">
-            <h3 className="font-medium">{widget.title}</h3>
+            <h3 className="font-medium">{getWidgetDisplayTitle(widget)}</h3>
             <p className="mb-2 text-xs text-slate-600">
               Type: {widget.type} · Antall: {widgetCountByType[widget.type] ?? 0}
             </p>

@@ -2,6 +2,10 @@
 
 ## Statusoppdatering (fullfort)
 
+- 2026-03-05: Kalender-bookingmodal viser nå kompetansefilter + ledig/ikke ledig i valgt tidsrom per ansatt.
+- 2026-03-05: Utstyrssiden har fått inline redigering av reservasjoner (start/slutt med Lagre/Avbryt).
+- 2026-03-05: Min side/oversikt bruker nå "Reservasjoner" som navn, og reservasjonslenker prioriterer utstyrssiden.
+- 2026-03-05: Arbeidsordreside viser tydelig "Arbeidsordre-ID" og bruker navnebaserte dropdowns for avdeling/lokasjon/prosjekt.
 - 2026-03-05: Timer/Føringer har fått kolonnene Arbeidsordre + Ordrenummer, og redigeringsmodus per føring (Lagre/Avbryt).
 - 2026-03-05: Min side-widgetene for Mine arbeidsordre og Bookinger er gjort klikkbare med navigering til arbeidsordre/utstyr/planner.
 - 2026-03-05: Ansattprofil utvidet med strukturert kompetanse (førerkort/kurs), utløpsdato og filterbar kompetansedata i Mannskap + Kalender-booking.
@@ -41,6 +45,7 @@
 ## Planer mottatt
 
 - [2026-03-04-opprydding-plan-dokumentasjon](./planer/2026-03-04-opprydding-plan-dokumentasjon.md)
+- [endringsonsker-logg](./planer/endringsonsker-logg.md)
 
 ## Arkiv
 
