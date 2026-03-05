@@ -21,9 +21,6 @@
 - Oppgrader/tilpass avhengigheter rundt SDK 54 pa en kontrollert mate (uten regresjon i token/secure-store).
 - Verifiser aktiv sesjonsflyt for start/pause/ferdig pa mobil.
 
-### Kalender og planlegging
-
-
 ### Generell CRUD-opprydding
 
 - Utvide slettingsmuligheter pa detaljsider for personell, utstyr og arbeidsordre (med guardrails).
