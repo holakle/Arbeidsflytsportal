@@ -17,6 +17,8 @@ type WorkOrder = {
   addressLine1?: string | null;
   postalCode?: string | null;
   city?: string | null;
+  lat?: number | null;
+  lng?: number | null;
   departmentId: string | null;
   locationId: string | null;
   projectId: string | null;
@@ -29,6 +31,34 @@ type WorkOrder = {
 function toErrorMessage(error: unknown, fallback: string) {
   if (error instanceof Error) return error.message;
   return fallback;
+}
+
+function toMapSearchUrl(params: { lat?: number | null; lng?: number | null; address?: string }) {
+  if (params.lat != null && params.lng != null) {
+    return `https://www.google.com/maps/search/?api=1&query=${params.lat},${params.lng}`;
+  }
+
+  const query = params.address?.trim();
+  if (!query) return null;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+
+function readFileAsBase64(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== 'string') {
+        reject(new Error('Kunne ikke lese vedlegget.'));
+        return;
+      }
+      const base64 = reader.result.includes(',')
+        ? (reader.result.split(',').at(-1) ?? '')
+        : reader.result;
+      resolve(base64);
+    };
+    reader.onerror = () => reject(new Error('Kunne ikke lese vedlegget.'));
+    reader.readAsDataURL(file);
+  });
 }
 
 function paginate<T>(items: T[], page: number, pageSize = 8) {
@@ -49,11 +79,27 @@ export default function WorkOrdersPage() {
   const [addressLine1, setAddressLine1] = useState('');
   const [postalCode, setPostalCode] = useState('');
   const [city, setCity] = useState('');
+  const [lat, setLat] = useState('');
+  const [lng, setLng] = useState('');
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [locating, setLocating] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const mapPreviewUrl = useMemo(() => {
+    const latNum = lat.trim() ? Number(lat.trim().replace(',', '.')) : null;
+    const lngNum = lng.trim() ? Number(lng.trim().replace(',', '.')) : null;
+    const address = [addressLine1, postalCode, city].filter((v) => v.trim()).join(', ');
+
+    if (latNum != null && Number.isFinite(latNum) && lngNum != null && Number.isFinite(lngNum)) {
+      return toMapSearchUrl({ lat: latNum, lng: lngNum, address });
+    }
+    return toMapSearchUrl({ address });
+  }, [addressLine1, city, lat, lng, postalCode]);
 
   async function load() {
     if (!token) {
@@ -73,8 +119,50 @@ export default function WorkOrdersPage() {
     void load();
   }, []);
 
+  function useCurrentLocation() {
+    if (!navigator.geolocation) {
+      setError('Geolokasjon er ikke støttet i denne nettleseren.');
+      return;
+    }
+
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLat(pos.coords.latitude.toFixed(6));
+        setLng(pos.coords.longitude.toFixed(6));
+        setSuccess('Posisjon hentet fra kart/GPS.');
+        setError(null);
+        setLocating(false);
+      },
+      () => {
+        setError('Kunne ikke hente posisjon fra kart/GPS.');
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
+    );
+  }
+
   async function createWorkOrder() {
-    if (!token || !title.trim()) return;
+    if (!token || !title.trim() || creating) return;
+
+    const latRaw = lat.trim();
+    const lngRaw = lng.trim();
+    const parsedLat = latRaw ? Number(latRaw.replace(',', '.')) : undefined;
+    const parsedLng = lngRaw ? Number(lngRaw.replace(',', '.')) : undefined;
+    if ((latRaw && !Number.isFinite(parsedLat)) || (lngRaw && !Number.isFinite(parsedLng))) {
+      setError('Koordinater må være gyldige tall.');
+      return;
+    }
+    if (parsedLat !== undefined && (parsedLat < -90 || parsedLat > 90)) {
+      setError('Latitude må være mellom -90 og 90.');
+      return;
+    }
+    if (parsedLng !== undefined && (parsedLng < -180 || parsedLng > 180)) {
+      setError('Longitude må være mellom -180 og 180.');
+      return;
+    }
+
+    setCreating(true);
     try {
       const created = (await apiClient(token).createWorkOrder({
         title: title.trim(),
@@ -85,7 +173,27 @@ export default function WorkOrdersPage() {
         addressLine1: addressLine1.trim() || undefined,
         postalCode: postalCode.trim() || undefined,
         city: city.trim() || undefined,
+        lat: parsedLat,
+        lng: parsedLng,
       })) as WorkOrder;
+
+      let uploaded = 0;
+      let uploadFailed = 0;
+      for (const file of selectedFiles) {
+        try {
+          const contentBase64 = await readFileAsBase64(file);
+          await apiClient(token).uploadWorkOrderAttachment(created.id, {
+            fileName: file.name,
+            mimeType: file.type || 'application/octet-stream',
+            contentBase64,
+            kind: 'GENERAL',
+          });
+          uploaded += 1;
+        } catch {
+          uploadFailed += 1;
+        }
+      }
+
       setTitle('');
       setDescription('');
       setCustomerName('');
@@ -94,12 +202,21 @@ export default function WorkOrdersPage() {
       setAddressLine1('');
       setPostalCode('');
       setCity('');
-      setSuccess(`Opprettet: ${created.title}`);
+      setLat('');
+      setLng('');
+      setSelectedFiles([]);
+      const uploadMessage =
+        uploaded > 0 || uploadFailed > 0
+          ? ` Vedlegg lastet opp: ${uploaded}${uploadFailed > 0 ? `, feilet: ${uploadFailed}` : ''}.`
+          : '';
+      setSuccess(`Opprettet: ${created.title}.${uploadMessage}`);
       setError(null);
       await load();
     } catch (err) {
       setSuccess(null);
       setError(toErrorMessage(err, 'Kunne ikke opprette arbeidsordre.'));
+    } finally {
+      setCreating(false);
     }
   }
 
@@ -198,12 +315,60 @@ export default function WorkOrdersPage() {
               placeholder="By"
             />
           </div>
+          <div className="grid gap-2 md:grid-cols-2">
+            <input
+              className="rounded border px-3 py-2"
+              value={lat}
+              onChange={(e) => setLat(e.target.value)}
+              placeholder="Latitude (valgfri)"
+            />
+            <input
+              className="rounded border px-3 py-2"
+              value={lng}
+              onChange={(e) => setLng(e.target.value)}
+              placeholder="Longitude (valgfri)"
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="rounded border px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
+              onClick={useCurrentLocation}
+              disabled={locating}
+            >
+              {locating ? 'Henter posisjon...' : 'Bruk min posisjon (kart)'}
+            </button>
+            {mapPreviewUrl ? (
+              <a
+                className="rounded border px-3 py-2 text-sm hover:bg-slate-50"
+                href={mapPreviewUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Åpne i kart
+              </a>
+            ) : null}
+          </div>
+          <div className="grid gap-2">
+            <label className="text-sm font-medium text-slate-700">Vedlegg (valgfri)</label>
+            <input
+              className="rounded border px-3 py-2 text-sm"
+              type="file"
+              multiple
+              onChange={(e) => setSelectedFiles(Array.from(e.target.files ?? []))}
+            />
+            {selectedFiles.length > 0 ? (
+              <div className="text-xs text-slate-600">
+                Valgte filer: {selectedFiles.map((file) => file.name).join(', ')}
+              </div>
+            ) : null}
+          </div>
           <button
             className="w-fit rounded bg-accent px-3 py-2 text-white disabled:opacity-50"
-            disabled={!title.trim()}
+            disabled={!title.trim() || creating}
             onClick={() => void createWorkOrder()}
           >
-            Opprett
+            {creating ? 'Oppretter...' : 'Opprett'}
           </button>
         </div>
       </section>

@@ -12,6 +12,8 @@ type WorkOrder = {
   title: string;
   description: string | null;
   status: string;
+  lat?: number | null;
+  lng?: number | null;
   customerName?: string | null;
   contactName?: string | null;
   contactPhone?: string | null;
@@ -121,6 +123,16 @@ function formatDurationHoursMinutes(startAt?: string, endAt?: string | null) {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
+function toMapSearchUrl(params: { lat?: number | null; lng?: number | null; address?: string }) {
+  if (params.lat != null && params.lng != null) {
+    return `https://www.google.com/maps/search/?api=1&query=${params.lat},${params.lng}`;
+  }
+
+  const query = params.address?.trim();
+  if (!query) return null;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+
 const statuses = [
   'DRAFT',
   'READY_FOR_PLANNING',
@@ -178,6 +190,15 @@ export default function WorkOrderDetailPage() {
     () => users.find((u) => u.id === planningOwnerUserId)?.displayName ?? '-',
     [planningOwnerUserId, users],
   );
+
+  const mapLink = useMemo(() => {
+    const latValue = workOrder?.lat ?? null;
+    const lngValue = workOrder?.lng ?? null;
+    const address = [addressLine1, postalCode, city]
+      .filter((v): v is string => Boolean(v))
+      .join(', ');
+    return toMapSearchUrl({ lat: latValue, lng: lngValue, address });
+  }, [addressLine1, city, postalCode, workOrder?.lat, workOrder?.lng]);
 
   async function load() {
     if (!token || !id) return;
@@ -284,11 +305,11 @@ export default function WorkOrderDetailPage() {
     if (!token || !id) return;
     try {
       await apiClient(token).startWorkOrder(id);
-      setSessionStatus('ArbeidsÃ¸kt startet');
+      setSessionStatus('Arbeidsøkt startet');
       await load();
     } catch (err) {
       setSessionStatus(null);
-      setError(toErrorMessage(err, 'Kunne ikke starte arbeidsÃ¸kt.'));
+      setError(toErrorMessage(err, 'Kunne ikke starte arbeidsøkt.'));
     }
   }
 
@@ -296,11 +317,11 @@ export default function WorkOrderDetailPage() {
     if (!token || !id) return;
     try {
       await apiClient(token).pauseWorkOrder(id);
-      setSessionStatus('ArbeidsÃ¸kt satt pÃ¥ pause');
+      setSessionStatus('Arbeidsøkt satt på pause');
       await load();
     } catch (err) {
       setSessionStatus(null);
-      setError(toErrorMessage(err, 'Kunne ikke pause arbeidsÃ¸kt.'));
+      setError(toErrorMessage(err, 'Kunne ikke pause arbeidsøkt.'));
     }
   }
 
@@ -310,12 +331,12 @@ export default function WorkOrderDetailPage() {
       const res = (await apiClient(token).finishWorkOrder(id)) as FinishWorkOrderResponse;
       const duration = formatDurationHoursMinutes(res?.session?.startedAt, res?.session?.endedAt);
       setSessionStatus(
-        duration ? `ArbeidsÃ¸kt avsluttet. Registrert tid: ${duration}` : 'ArbeidsÃ¸kt avsluttet',
+        duration ? `Arbeidsøkt avsluttet. Registrert tid: ${duration}` : 'Arbeidsøkt avsluttet',
       );
       await load();
     } catch (err) {
       setSessionStatus(null);
-      setError(toErrorMessage(err, 'Kunne ikke avslutte arbeidsÃ¸kt.'));
+      setError(toErrorMessage(err, 'Kunne ikke avslutte arbeidsøkt.'));
     }
   }
 
@@ -405,7 +426,7 @@ export default function WorkOrderDetailPage() {
 
   async function removeWorkOrder() {
     if (!token || !id || deletingWorkOrder) return;
-    const ok = window.confirm('Er du sikker pÃ¥ at du vil slette denne arbeidsordren?');
+    const ok = window.confirm('Er du sikker på at du vil slette denne arbeidsordren?');
     if (!ok) return;
 
     setDeletingWorkOrder(true);
@@ -438,6 +459,16 @@ export default function WorkOrderDetailPage() {
         <Link className="rounded border px-3 py-2 text-sm hover:bg-slate-50" href="/planner">
           Tilbake til Planner
         </Link>
+        {mapLink ? (
+          <a
+            className="rounded border px-3 py-2 text-sm hover:bg-slate-50"
+            href={mapLink}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Åpne i kart
+          </a>
+        ) : null}
         <button
           className="rounded border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700 hover:bg-rose-100 disabled:opacity-50"
           onClick={() => void removeWorkOrder()}
@@ -569,8 +600,8 @@ export default function WorkOrderDetailPage() {
               <tr className="border-b text-slate-600">
                 <th className="py-2">Type</th>
                 <th className="py-2">Mime</th>
-                <th className="py-2">StÃ¸rrelse</th>
-                <th className="py-2">LagringsnÃ¸kkel</th>
+                <th className="py-2">Størrelse</th>
+                <th className="py-2">Lagringsnøkkel</th>
                 <th className="py-2">Tid</th>
               </tr>
             </thead>
@@ -590,7 +621,7 @@ export default function WorkOrderDetailPage() {
       </section>
 
       <section className="rounded border bg-white p-4">
-        <h2 className="mb-2 text-lg">ArbeidsÃ¸kt</h2>
+        <h2 className="mb-2 text-lg">Arbeidsøkt</h2>
         <div className="flex gap-2">
           <button className="rounded bg-accent px-3 py-2 text-white" onClick={() => void startSession()}>
             Start
