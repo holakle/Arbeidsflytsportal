@@ -152,7 +152,7 @@ export default function TimesPage() {
           .me()
           .then((res) => res as MeResponse),
         apiClient(token)
-          .listWorkOrders('page=1&limit=200')
+          .listWorkOrders('page=1&limit=100')
           .then((res) => res.items as WorkOrder[]),
         apiClient(token)
           .listDevUsers()
