@@ -1,6 +1,6 @@
 # Arbeidsflytsportal Monorepo
 
-Produksjonsrettet monorepo med `pnpm workspaces` + `turborepo` for montasjeplattform (web + mobil), med fokus på Del 1 (arbeidsordre) og Del 4 (personlig arbeidsflate).
+Produksjonsrettet monorepo med `pnpm workspaces` + `turborepo` for montasjeplattform (web + mobil), med fokus paa Del 1 (arbeidsordre) og Del 4 (personlig arbeidsflate).
 
 ## Stack
 
@@ -13,10 +13,10 @@ Produksjonsrettet monorepo med `pnpm workspaces` + `turborepo` for montasjeplatt
 
 ## Multi-tenant og domene
 
-- `organizationId` er obligatorisk tenant-scope på alle forretningsentiteter.
+- `organizationId` er obligatorisk tenant-scope paa alle forretningsentiteter.
 - `Project` er flytende/valgfri dimensjon (nullable), uten tvunget hierarki.
-- `WorkOrder` og `TimesheetEntry` støtter nullable `projectId`.
-- `Department` og `Location` er også valgfrie dimensjoner.
+- `WorkOrder` og `TimesheetEntry` stoetter nullable `projectId`.
+- `Department` og `Location` er ogsaa valgfrie dimensjoner.
 
 ## Sikkerhet
 
@@ -51,63 +51,40 @@ Produksjonsrettet monorepo med `pnpm workspaces` + `turborepo` for montasjeplatt
 - `POST /notifications/read`
 - `GET /me/sessions/active`
 
-## Lokal oppstart
+## Operativ runbook
 
-1. Kopier `.env.example` til `.env` og juster ved behov.
-2. Kopier `.env` til `apps/api/.env` for Prisma CLI lokalt:
-   - `Copy-Item .env apps/api/.env` (PowerShell)
-3. Start database:
-   - `docker compose up -d postgres`
-4. Installer avhengigheter:
+README er operativ single source of truth for oppstart, daglig drift, tunnel og shutdown.
+
+### Foerste oppstart
+
+1. Kopier `.env.example` til `.env` og sett lokale verdier.
+2. Kopier `.env` til `apps/api/.env` for Prisma lokalt:
+   - `Copy-Item .env apps/api/.env`
+3. Installer avhengigheter:
    - `pnpm install`
-5. Prisma:
-   - `pnpm --filter @apps/api prisma:generate`
+4. Start database:
+   - `pnpm infra:up`
+5. Kjoer Prisma-oppsett:
    - `pnpm --filter @apps/api prisma:migrate:dev`
    - `pnpm --filter @apps/api prisma:seed`
-   - Hvis du har gammel lokal DB med inkonsistent migrasjonshistorikk: `pnpm --filter @apps/api exec prisma migrate reset --force`
-6. Kjør alt:
+6. Start standard lokal utvikling:
    - `pnpm dev`
-   - Merk: `pnpm dev` inkluderer mobile og kan feile pga Expo/Metro lokalt.
-   - Anbefalt for PC/web-pilot: `pnpm dev:core`
-7. Scanner pilot:
-   - Åpne `http://localhost:3000/scan`
-
-## Local dev with Docker
-
-1. Kopier miljofil:
-   - `Copy-Item .env.example .env` (PowerShell)
-2. Sett egne verdier i `.env`:
-   - `POSTGRES_USER`
-   - `POSTGRES_PASSWORD`
-   - `POSTGRES_DB`
-   - `DATABASE_URL`
-   - `JWT_SECRET`
-   - `RATE_LIMIT_TTL_MS` (millisekunder, f.eks. `60000`)
-3. Start compose (DB):
-   - `docker compose up -d postgres`
-4. Start API i compose (valgfritt, med healthcheck):
-   - `docker compose --profile core up -d api`
-5. Sjekk status:
-   - `docker compose ps postgres`
-   - `docker compose logs postgres --tail 40`
-6. Verifiser health:
-   - `http://localhost:3001/health`
-   - Forventet payload: `{ ok: true, uptime, timestamp, db }`
-
-## Anbefalt daglig drift (web+api)
-
-1. Start database:
-   - `pnpm infra:up`
-2. Start core-apps:
-   - `pnpm dev:core`
-3. Verifiser:
+7. Verifiser:
    - API: `http://localhost:3001/health`
    - Web: `http://localhost:3000/login`
-4. Start tunnel ved behov:
-   - `pnpm tunnel:up`
-   - Les URL: `docker logs workflow-tunnel --tail 80`
 
-## Dev token (lokal auth)
+### Daglig lokal utvikling (standard)
+
+1. Start database: `pnpm infra:up`
+2. Start API + web: `pnpm dev`
+3. Valgfritt ved behov for mobil samtidig: `pnpm dev:all`
+
+### Core dev-flyt
+
+- Standard core-flyt er `pnpm dev` (API + web).
+- Full flyt med API + web + mobile er `pnpm dev:all`.
+
+### Dev token (lokal auth)
 
 Generer et dev JWT med claims som matcher seed-data (`planner@demo.no`):
 
@@ -128,15 +105,33 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 NEXT_PUBLIC_DEV_TOKEN=<token>
 ```
 
-## Mobil scanning over HTTPS (dev)
+### Ekstern demo / tunnel (ved behov)
+
+1. Bekreft at API og web kjoerer lokalt (`pnpm dev`).
+2. Sett `CLOUDFLARE_TUNNEL_TOKEN` i `.env`.
+3. Start tunnel: `pnpm tunnel:up`.
+4. Hent ekstern URL: `docker logs workflow-tunnel --tail 80`.
+
+### Mobil scanning over HTTPS (dev)
 
 - LAN med Caddy (lokalt sertifikat):
-  - Sett `LAN_HOST` i `.env`, f.eks. `workflow.local`
+  - Sett `LAN_HOST` i `.env`, for eksempel `workflow.local`
   - Start: `docker compose --profile https up -d https`
   - Sett `NEXT_PUBLIC_API_URL=https://<LAN_HOST>/api` i `apps/web/.env.local`
 - Tunnel uten lokal CA:
   - Sett `CLOUDFLARE_TUNNEL_TOKEN` i `.env`
-  - Start: `docker compose --profile https --profile tunnel up -d https tunnel`
+  - Start: `pnpm tunnel:up`
+
+### Shutdown (standard)
+
+1. Stopp utviklingsprosesser (`Ctrl+C` i terminal for `pnpm dev` / `pnpm dev:all`).
+2. Hvis tunnel kjoerer: `pnpm tunnel:down`.
+3. Stopp lokal database: `docker compose stop postgres`.
+
+### Prisma feilsoking (avansert)
+
+- `pnpm --filter @apps/api prisma:generate` brukes kun ved klient-synkproblemer.
+- Ved inkonsistent lokal migrasjonshistorikk: `pnpm --filter @apps/api exec prisma migrate reset --force`.
 
 ## Kvalitet
 

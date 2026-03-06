@@ -21,17 +21,17 @@
 - Dependabot aktivert for npm-avhengigheter og GitHub Actions (ukentlig oppdateringsflyt).
 - Docker hardening: Postgres credentials flyttet til `.env`, `.env.example` bruker tydelige placeholders, og DB-port er bundet til localhost.
 - Rate limit TTL unit clarified: bruker `RATE_LIMIT_TTL_MS` (ms) for entydig throttler-konfig.
-- `/health + compose healthcheck`: API health-payload er utvidet, compose har healthcheck for API, og API-oppstart venter robust på DB.
-- Mobil-først fundament er lagt: dev-login i mobil, "mine jobber"/detalj, arbeidsøkter (start/pause/ferdig), draft timesheet, vedlegg metadata og notifikasjoner.
-- Multi-tenant kontrakter er utvidet i `packages/shared` og håndheves for nye endepunkt i API.
+- `/health + compose healthcheck`: API health-payload er utvidet, compose har healthcheck for API, og API-oppstart venter robust paa DB.
+- Mobil-forst fundament er lagt: dev-login i mobil, mine jobber/detalj, arbeidsokter (start/pause/ferdig), draft timesheet, vedlegg metadata og notifikasjoner.
+- Multi-tenant kontrakter er utvidet i `packages/shared` og haandheves for nye endepunkt i API.
 
 ## Hvordan verifisere
 
 - Kjor kommandoene fra repo-root:
 
 ```bash
-pnpm -w format
-pnpm -w format:check
+pnpm exec prettier . --write
+pnpm exec prettier . --check
 pnpm -w lint
 pnpm -w typecheck
 pnpm -w test
@@ -39,7 +39,7 @@ pnpm -w build
 ```
 
 - CI:
-  - `.github/workflows/ci.yml` kjører `pnpm -w format:check` for build.
+  - `.github/workflows/ci.yml` kjorer `pnpm exec prettier . --check` for build.
 
 - Forventet:
   - Kommandoene fullforer uten feil, eller

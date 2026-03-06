@@ -26,7 +26,12 @@ Formatet folger prinsippene fra Keep a Changelog.
 
 - Innfort repo-standarder for tekstfiler via `.editorconfig` (UTF-8, LF, final newline, trim trailing whitespace).
 - Lagt til enkel `.gitattributes` for LF-normalisering i git.
-- CI validerer na formattering med `pnpm -w format:check` for build-steg.
+- CI validerer na formattering med `pnpm exec prettier . --check` for build-steg.
+- Root-scriptflyt er forenklet: `pnpm dev` er standard core-flyt (API + web), mens full flyt er flyttet til `pnpm dev:all`.
+- Overlappende root-scripts (`dev:core`, `dev:api`, `dev:web`, `format`, `format:check`) er fjernet for aa redusere valgflate.
+- README er konsolidert som eneste operative runbook for oppstart, daglig drift, tunnel og shutdown.
+- `docs/oppstart_info.md` er redusert til peker mot README, og `docs/INFO.md` er strammet til arkitektur/prinsipper.
+- Flow-generator publiserer na rutedata kun i `docs/flows/routes.generated.md`; `docs/flows/frontend.md` er manuell forklaring.
 - `docker-compose.yml` bruker na miljovariabler fra `.env` for Postgres i stedet for hardkodede credentials.
 - Postgres-port er bundet til `127.0.0.1:5432` for a redusere utilsiktet LAN-eksponering.
 - `docker-compose.yml` har nå valgfri `api`-service med healthcheck og `depends_on` mot healthy Postgres.

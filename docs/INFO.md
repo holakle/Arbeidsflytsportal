@@ -1,42 +1,43 @@
 # INFO - Montasjeplattform (web + mobil)
 
-## Hva prosjektet er
+## Formaal
 
-Et tenant-basert system for arbeidsprosesser i montasjeselskap: arbeidsordre, ressursstyring og personlig arbeidsflate (timer/todo). Del 2 (avvik) og Del 3 (kvalitet/KB) kommer senere.
+Dette dokumentet er stabil referanse for arkitektur og prinsipper.
+Operativ oppstart/drift finnes kun i [README.md](../README.md).
 
 ## Monorepo-struktur
 
-- apps/api: NestJS API (RBAC + tenant + audit)
-- apps/web: Next.js web (planner + dashboard)
-- apps/mobile: Expo feltapp (mine ordre, timer, todo)
-- apps/worker: bakgrunnsjobber (outbox/eksport/indeksering)
-- packages/shared: Zod-first kontrakter + typed client
-- packages/ui: felles UI-byggesteiner
+- `apps/api`: NestJS API (RBAC + tenant + audit)
+- `apps/web`: Next.js web (planner + dashboard)
+- `apps/mobile`: Expo feltapp (mine ordre, timer, todo)
+- `apps/worker`: bakgrunnsjobber (outbox/eksport/indeksering)
+- `packages/shared`: Zod-first kontrakter + typed client
+- `packages/ui`: felles UI-byggesteiner
 
 ## Domeneprinsipper
 
-- `organizationId` er obligatorisk tenant-scope pa alle forretningsentiteter.
+- `organizationId` er obligatorisk tenant-scope paa alle forretningsentiteter.
 - `Project` er valgfri, flytende dimensjon (nullable) og skal ikke lase flyt/hierarki.
 - `TimesheetEntry` kan knyttes til `workOrderId` og/eller `projectId` (begge nullable).
 
 ## Sikkerhetsprinsipper
 
-- OIDC/OAuth2-adapter (dev JWT forst, prod senere)
-- RBAC guards + tenant enforcement pa alle routes
-- Inputvalidering pa alle endpoints (Zod/class-validator)
+- OIDC/OAuth2-adapter (dev JWT foerst, prod senere)
+- RBAC guards + tenant enforcement paa alle routes
+- Inputvalidering paa endpoints (Zod/class-validator)
 - Rate limiting, CORS allowlist, secure headers
-- Audit log pa kritiske endringer (ordrestatus, assignment, booking, timesheet submit)
+- Audit logg paa kritiske endringer (ordrestatus, assignment, booking, timesheet submit)
 
-## MVP na
+## MVP-scope
 
 - Del 1: WorkOrders + Assignments + EquipmentReservations
 - Del 4: Timesheets + Todo + Dashboard widgets
 - Dashboard widgets: Mine ordre, Bookinger, Timer denne uken, Todo
 - Utstyrstyper:
   - `EQUIPMENT`: bookbart utstyr
-  - `CONSUMABLE`: forbruksmateriell registreres pa arbeidsordre
+  - `CONSUMABLE`: forbruksmateriell registreres paa arbeidsordre
 
-## Arbeidsflyt mellom sider
+## Frontend-oversikt
 
 - `/overview`: data explorer for validering av API-kontrakter
 - `/dashboard`: personlige widgets med reelle data
@@ -46,36 +47,18 @@ Et tenant-basert system for arbeidsprosesser i montasjeselskap: arbeidsordre, re
 - `/workorders/[id]`: redigering, planansvarlig, schedule entries og forbruksmateriell
 - `/equipment`: utstyrsoversikt med filter og scanner-inngang
 
-## Mobilscanning i web dev
+## Endringshistorikk
 
-- Mal: teste `/scan` fra iPhone/Android over HTTPS.
-- Caddy LAN-oppsett:
-  - sett `LAN_HOST` i `.env`
-  - start proxy: `docker compose --profile https up -d https`
-  - sett `NEXT_PUBLIC_API_URL=https://<LAN_HOST>/api` i `apps/web/.env.local`
-- Cloudflare tunnel:
-  - sett `CLOUDFLARE_TUNNEL_TOKEN` i `.env`
-  - start: `docker compose --profile https --profile tunnel up -d https tunnel`
+- Arkitektur-beslutninger: se `docs/adr/`
+- Implementasjonshistorikk: se Git commits og PR-er
+
+## Vedlikehold av denne filen
+
+Oppdater kun ved endringer som paavirker:
+- API-kontrakter og modulgrenser
+- auth/claims-modell
+- tenant-scope eller domeneprinsipper
 
 ## Neste steg
 
-- Del 2: Avvik + rapport/eksport via OutboxEvent + worker
-- Del 3: Instrukser/KB + sok (intern indeks + eksterne connectors) + RAG/AI som eget subsystem
-- Verifisering pa `hardening/mobile-field-parity-v2`:
-  - `pnpm -w typecheck`, `pnpm -w test` og `pnpm -w build` feiler forelopig i `@apps/api`
-  - feil: Prisma EPERM ved rename av `query_engine-windows.dll.node`
-  - neste steg: stoppe prosess som holder fila last og kjor kommandoene pa nytt
-
-## Beslutningslogg
-
-| Dato       | Beslutning                            | Begrunnelse                                           |
-| ---------- | ------------------------------------- | ----------------------------------------------------- |
-| 2026-03-01 | Project = optional floating dimension | Fleksibel rapportering uten a lase arbeidsflyt        |
-| 2026-03-01 | organizationId pa alle entiteter      | Hindrer tenant-lekkasje og forenkler skalering        |
-| 2026-03-01 | Zod-first kontrakter i shared         | En kilde til sannhet for typer og validering          |
-| 2026-03-02 | Barcode-scan pilot via web `/scan`    | Rask mobil verifisering for native Expo-implementasjon |
-
-## Hvordan oppdatere denne filen
-
-- Oppdater ved endringer som pavirker API-kontrakter, auth/claims, tenant-scope eller modulgrenser.
-- Legg inn en ny rad i beslutningsloggen samme dag.
+- Fiks nullability i `apps/api/src/modules/schedule/schedule.service.ts` (`entry.workOrder` kan vaere `null`) for aa faa `pnpm -w typecheck` og `pnpm -w build` tilbake til groen status.

@@ -17,6 +17,7 @@ flowchart TD
   B --> R11["/todos"];
   B --> R12["/workorders"];
   B --> R13["/workorders/[id]"];
+  B --> R14["/workorders/[id]/suborders/[subOrderId]"];
 ```
 
 > Denne fila er auto-generert. Ikke rediger manuelt.
