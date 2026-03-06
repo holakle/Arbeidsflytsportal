@@ -67,13 +67,13 @@ export class EquipmentController {
   }
 
   @Post('reserve')
-  @Roles('planner', 'org_admin')
+  @Roles('planner', 'org_admin', 'technician', 'member')
   reserve(
     @CurrentUser() user: AuthUser,
     @Body(new ZodValidationPipe(reserveEquipmentSchema))
     body: {
       equipmentItemId: string;
-      workOrderId: string;
+      workOrderId?: string | null;
       startAt: string;
       endAt: string;
       allowConflict?: boolean;

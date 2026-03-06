@@ -9,6 +9,7 @@ import { getDevToken } from '@/lib/auth';
 type WorkOrder = {
   id: string;
   title: string;
+  timesheetCode: string;
   description: string | null;
   status: string;
   customerName?: string | null;
@@ -419,6 +420,7 @@ export default function WorkOrdersPage() {
             <thead>
               <tr className="border-b text-slate-600">
                 <th className="py-2">Tittel</th>
+                <th className="py-2">Hovedkode</th>
                 <th className="py-2">Status</th>
                 <th className="py-2">Avdeling</th>
                 <th className="py-2">Lokasjon</th>
@@ -447,6 +449,9 @@ export default function WorkOrdersPage() {
                       >
                         {item.title}
                       </Link>
+                    </td>
+                    <td className="py-2">
+                      <code className="text-xs">{item.timesheetCode}</code>
                     </td>
                     <td className="py-2">{item.status}</td>
                     <td className="py-2">{item.department?.name ?? '-'}</td>

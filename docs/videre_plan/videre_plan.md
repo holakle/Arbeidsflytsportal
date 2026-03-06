@@ -2,6 +2,8 @@
 
 ## Statusoppdatering (fullfort)
 
+- 2026-03-06: Mobil feltflyt v2 fase 1 levert med dashboard-widgetparitet, mine-kalender, mine arbeidsordre, timer (auto + manuell), utstyrscan/booking, pending operations-ko, synkstatus-side og topp-hoyre handlinger (innstillinger/varsler/hamburgermeny).
+- 2026-03-06: Delordrer er innført på arbeidsordre, med egen delordreside og automatisk generering av hovedkode/delordrekode for timeføring.
 - 2026-03-05: Kalender-bookingmodal viser nå kompetansefilter + ledig/ikke ledig i valgt tidsrom per ansatt.
 - 2026-03-05: Utstyrssiden har fått inline redigering av reservasjoner (start/slutt med Lagre/Avbryt).
 - 2026-03-05: Min side/oversikt bruker nå "Reservasjoner" som navn, og reservasjonslenker prioriterer utstyrssiden.
@@ -28,9 +30,9 @@
 
 ### Mobil
 
-- Stabiliser Expo-mobile slik at login -> mine jobber -> detalj fungerer uten runtime-feil.
-- Oppgrader/tilpass avhengigheter rundt SDK 54 pa en kontrollert mate (uten regresjon i token/secure-store).
-- Verifiser aktiv sesjonsflyt for start/pause/ferdig pa mobil.
+- Finjustere innhold og handlinger i hamburgermeny pa mobil (fase 2 UX).
+- Utvide synkstatus med konflikt-handtering per operasjon (rediger/retry enkeltrad).
+- Vurdere parity-gate i egen CI-jobb med eksplisitt feilmelding for dashboard-response mismatch.
 
 ### Generell CRUD-opprydding
 
@@ -45,6 +47,7 @@
 ## Planer mottatt
 
 - [2026-03-04-opprydding-plan-dokumentasjon](./planer/2026-03-04-opprydding-plan-dokumentasjon.md)
+- [2026-03-06-feltbruker-paritet-v2](./planer/2026-03-06-feltbruker-paritet-v2.md)
 - [endringsonsker-logg](./planer/endringsonsker-logg.md)
 
 ## Arkiv

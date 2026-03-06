@@ -14,9 +14,11 @@ import {
 import {
   addWorkOrderConsumableSchema,
   assignWorkOrderSchema,
+  createWorkOrderSubOrderSchema,
   createWorkOrderScheduleSchema,
   createWorkOrderSchema,
   setPlanningOwnerSchema,
+  updateWorkOrderSubOrderSchema,
   updateWorkOrderSchema,
   workOrderListQuerySchema,
 } from '@portal/shared';
@@ -99,6 +101,55 @@ export class WorkOrdersController {
     body: { equipmentItemId: string; quantity?: number; note?: string },
   ) {
     return this.service.addConsumable(user.organizationId, user.id, id, body);
+  }
+
+  @Get(':id/suborders')
+  @Roles('planner', 'technician', 'org_admin', 'member')
+  listSubOrders(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.service.listSubOrders(user.organizationId, id);
+  }
+
+  @Post(':id/suborders')
+  @Roles('planner', 'technician', 'org_admin')
+  createSubOrder(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(createWorkOrderSubOrderSchema))
+    body: { title: string; timesheetCode?: string; description?: string; status?: string },
+  ) {
+    return this.service.createSubOrder(user.organizationId, user.id, id, body);
+  }
+
+  @Get(':id/suborders/:subOrderId')
+  @Roles('planner', 'technician', 'org_admin', 'member')
+  getSubOrder(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('subOrderId') subOrderId: string,
+  ) {
+    return this.service.getSubOrder(user.organizationId, id, subOrderId);
+  }
+
+  @Patch(':id/suborders/:subOrderId')
+  @Roles('planner', 'technician', 'org_admin')
+  updateSubOrder(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('subOrderId') subOrderId: string,
+    @Body(new ZodValidationPipe(updateWorkOrderSubOrderSchema))
+    body: { title?: string; timesheetCode?: string; description?: string; status?: string },
+  ) {
+    return this.service.updateSubOrder(user.organizationId, user.id, id, subOrderId, body);
+  }
+
+  @Delete(':id/suborders/:subOrderId')
+  @Roles('planner', 'technician', 'org_admin')
+  deleteSubOrder(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('subOrderId') subOrderId: string,
+  ) {
+    return this.service.deleteSubOrder(user.organizationId, user.id, id, subOrderId);
   }
 
   @Get(':id/schedule')

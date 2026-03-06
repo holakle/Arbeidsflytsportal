@@ -1,10 +1,24 @@
 import { z } from 'zod';
 import { workOrderStatuses } from '../enums';
 
+export const workOrderSubOrderSchema = z.object({
+  id: z.string().uuid(),
+  organizationId: z.string().uuid(),
+  workOrderId: z.string().uuid(),
+  title: z.string().min(1),
+  timesheetCode: z.string().min(1),
+  description: z.string().nullable(),
+  status: z.enum(workOrderStatuses),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  deletedAt: z.string().nullable().optional(),
+});
+
 export const workOrderSchema = z.object({
   id: z.string().uuid(),
   organizationId: z.string().uuid(),
   title: z.string().min(1),
+  timesheetCode: z.string().min(1),
   description: z.string().nullable(),
   status: z.enum(workOrderStatuses),
   customerName: z.string().nullable().optional(),
@@ -42,12 +56,14 @@ export const workOrderSchema = z.object({
     })
     .nullable()
     .optional(),
+  subOrders: z.array(workOrderSubOrderSchema).optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
 
 export const createWorkOrderSchema = z.object({
   title: z.string().min(1),
+  timesheetCode: z.string().trim().min(1).max(80).optional(),
   description: z.string().optional(),
   status: z.enum(workOrderStatuses).optional(),
   customerName: z.string().trim().min(1).max(200).optional(),
@@ -69,6 +85,15 @@ export const createWorkOrderSchema = z.object({
 export const updateWorkOrderSchema = createWorkOrderSchema.partial().extend({
   status: z.enum(workOrderStatuses).optional(),
 });
+
+export const createWorkOrderSubOrderSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  timesheetCode: z.string().trim().min(1).max(80).optional(),
+  description: z.string().trim().min(1).max(2000).optional(),
+  status: z.enum(workOrderStatuses).optional(),
+});
+
+export const updateWorkOrderSubOrderSchema = createWorkOrderSubOrderSchema.partial();
 
 export const assignWorkOrderSchema = z
   .object({
@@ -112,3 +137,4 @@ export const workOrderConsumableSchema = z.object({
 });
 
 export type WorkOrder = z.infer<typeof workOrderSchema>;
+export type WorkOrderSubOrder = z.infer<typeof workOrderSubOrderSchema>;

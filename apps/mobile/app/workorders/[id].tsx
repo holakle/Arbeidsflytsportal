@@ -2,6 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { mobileApiClient } from '../../src/api/client';
+import { setLastOpenedWorkOrderId } from '../../src/workorders/last-opened-store';
 
 type WorkOrder = {
   id: string;
@@ -23,29 +24,104 @@ type Attachment = {
   createdAt: string;
 };
 
+function formatDurationHoursMinutes(startAt?: string, endAt?: string | null) {
+  if (!startAt || !endAt) return null;
+  const start = new Date(startAt);
+  const end = new Date(endAt);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return null;
+
+  const totalMinutes = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+function formatDecimalHours(hours: number) {
+  if (!Number.isFinite(hours) || hours < 0) return null;
+  const totalMinutes = Math.round(hours * 60);
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+function formatElapsedClock(startAt: string, nowMs: number) {
+  const started = new Date(startAt);
+  if (Number.isNaN(started.getTime())) return null;
+  const diffSeconds = Math.max(0, Math.floor((nowMs - started.getTime()) / 1000));
+  const hours = Math.floor(diffSeconds / 3600);
+  const minutes = Math.floor((diffSeconds % 3600) / 60);
+  const seconds = diffSeconds % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
 export default function WorkorderDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id?: string | string[] }>();
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const [workOrder, setWorkOrder] = useState<WorkOrder | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [activeSessionStartedAt, setActiveSessionStartedAt] = useState<string | null>(null);
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
   async function load() {
     if (!id) return;
     try {
+      setWarning(null);
       const api = await mobileApiClient();
-      const [wo, list, active] = await Promise.all([
-        api.getWorkOrder(id),
+      const wo = await api.getWorkOrder(id);
+      setWorkOrder(wo as WorkOrder);
+      await setLastOpenedWorkOrderId(id);
+
+      const [attachmentsResult, activeSessionResult] = await Promise.allSettled([
         api.listWorkOrderAttachments(id),
         api.getActiveSession(),
       ]);
-      setWorkOrder(wo as WorkOrder);
-      setAttachments(list as Attachment[]);
-      const session = active as { id: string; workOrderId: string } | null;
-      setActiveSessionId(session?.workOrderId === id ? session.id : null);
+
+      let attachmentsFailed = false;
+      let activeSessionFailed = false;
+
+      if (attachmentsResult.status === 'fulfilled') {
+        setAttachments(attachmentsResult.value as Attachment[]);
+      } else {
+        attachmentsFailed = true;
+        setAttachments([]);
+      }
+
+      if (activeSessionResult.status === 'fulfilled') {
+        const session = activeSessionResult.value as {
+          id: string;
+          workOrderId: string;
+          startedAt?: string;
+        } | null;
+        if (session?.workOrderId === id) {
+          setActiveSessionId(session.id);
+          setActiveSessionStartedAt(session.startedAt ?? null);
+        } else {
+          setActiveSessionId(null);
+          setActiveSessionStartedAt(null);
+        }
+      } else {
+        activeSessionFailed = true;
+        setActiveSessionId(null);
+        setActiveSessionStartedAt(null);
+      }
+
+      if (attachmentsFailed && activeSessionFailed) {
+        setWarning('Arbeidsordren er lastet, men vedlegg og oktstatus kunne ikke hentes.');
+      } else if (attachmentsFailed) {
+        setWarning('Arbeidsordren er lastet, men vedlegg kunne ikke hentes.');
+      } else if (activeSessionFailed) {
+        setWarning(null);
+      } else {
+        setWarning(null);
+      }
+
       setError(null);
     } catch (err) {
+      setWarning(null);
       setError(err instanceof Error ? err.message : 'Kunne ikke hente arbeidsordre');
     }
   }
@@ -54,14 +130,25 @@ export default function WorkorderDetailScreen() {
     void load();
   }, [id]);
 
+  useEffect(() => {
+    if (!activeSessionStartedAt) return;
+    setNowMs(Date.now());
+    const timer = setInterval(() => {
+      setNowMs(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [activeSessionStartedAt]);
+
   async function handleStart() {
     if (!id) return;
     try {
+      setError(null);
       const api = await mobileApiClient();
       await api.startWorkOrder(id);
-      setStatusMessage('Arbeidsøkt startet');
+      setStatusMessage('Arbeidsokt startet');
       await load();
     } catch (err) {
+      setStatusMessage(null);
       setError(err instanceof Error ? err.message : 'Start feilet');
     }
   }
@@ -69,11 +156,13 @@ export default function WorkorderDetailScreen() {
   async function handlePause() {
     if (!id) return;
     try {
+      setError(null);
       const api = await mobileApiClient();
       await api.pauseWorkOrder(id);
-      setStatusMessage('Arbeidsøkt satt på pause');
+      setStatusMessage('Arbeidsokt satt pa pause');
       await load();
     } catch (err) {
+      setStatusMessage(null);
       setError(err instanceof Error ? err.message : 'Pause feilet');
     }
   }
@@ -81,15 +170,23 @@ export default function WorkorderDetailScreen() {
   async function handleFinish() {
     if (!id) return;
     try {
+      setError(null);
       const api = await mobileApiClient();
-      const result = (await api.finishWorkOrder(id)) as { timesheetDraftId?: string | null };
+      const result = (await api.finishWorkOrder(id)) as {
+        session?: { startedAt?: string; endedAt?: string | null };
+        timesheetDraftHours?: number;
+      };
+      const duration =
+        (typeof result.timesheetDraftHours === 'number'
+          ? formatDecimalHours(result.timesheetDraftHours)
+          : null) ??
+        formatDurationHoursMinutes(result.session?.startedAt, result.session?.endedAt);
       setStatusMessage(
-        result.timesheetDraftId
-          ? `Arbeidsøkt avsluttet. Draft-timer: ${result.timesheetDraftId}`
-          : 'Arbeidsøkt avsluttet',
+        duration ? `Arbeidsokt avsluttet. Registrert tid: ${duration}` : 'Arbeidsokt avsluttet',
       );
       await load();
     } catch (err) {
+      setStatusMessage(null);
       setError(err instanceof Error ? err.message : 'Finish feilet');
     }
   }
@@ -97,6 +194,7 @@ export default function WorkorderDetailScreen() {
   async function addDemoAttachment() {
     if (!id) return;
     try {
+      setError(null);
       const api = await mobileApiClient();
       await api.uploadWorkOrderAttachment(id, {
         fileName: `note-${Date.now()}.txt`,
@@ -107,6 +205,7 @@ export default function WorkorderDetailScreen() {
       setStatusMessage('Vedlegg lagt til');
       await load();
     } catch (err) {
+      setStatusMessage(null);
       setError(err instanceof Error ? err.message : 'Opplasting feilet');
     }
   }
@@ -134,19 +233,36 @@ export default function WorkorderDetailScreen() {
       </Pressable>
 
       <View style={{ flexDirection: 'row', gap: 8 }}>
-        <Pressable onPress={() => void handleStart()} style={{ backgroundColor: '#0f766e', borderRadius: 6, padding: 10 }}>
+        <Pressable
+          onPress={() => void handleStart()}
+          style={{ backgroundColor: '#0f766e', borderRadius: 6, padding: 10 }}
+        >
           <Text style={{ color: '#fff' }}>Start</Text>
         </Pressable>
-        <Pressable onPress={() => void handlePause()} style={{ backgroundColor: '#334155', borderRadius: 6, padding: 10 }}>
+        <Pressable
+          onPress={() => void handlePause()}
+          style={{ backgroundColor: '#334155', borderRadius: 6, padding: 10 }}
+        >
           <Text style={{ color: '#fff' }}>Pause</Text>
         </Pressable>
-        <Pressable onPress={() => void handleFinish()} style={{ backgroundColor: '#166534', borderRadius: 6, padding: 10 }}>
+        <Pressable
+          onPress={() => void handleFinish()}
+          style={{ backgroundColor: '#166534', borderRadius: 6, padding: 10 }}
+        >
           <Text style={{ color: '#fff' }}>Ferdig</Text>
         </Pressable>
       </View>
-      <Text>{activeSessionId ? 'Aktiv økt på denne ordren' : 'Ingen aktiv økt på denne ordren'}</Text>
+      <Text>{activeSessionId ? 'Aktiv okt pa denne ordren' : 'Ingen aktiv okt pa denne ordren'}</Text>
+      {activeSessionStartedAt && activeSessionId ? (
+        <Text style={{ fontWeight: '700', color: '#0f766e' }}>
+          Timer: {formatElapsedClock(activeSessionStartedAt, nowMs) ?? '--:--:--'}
+        </Text>
+      ) : null}
 
-      <Pressable onPress={() => void addDemoAttachment()} style={{ borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 8 }}>
+      <Pressable
+        onPress={() => void addDemoAttachment()}
+        style={{ borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 8 }}
+      >
         <Text>Last opp test-vedlegg</Text>
       </Pressable>
 
@@ -159,6 +275,7 @@ export default function WorkorderDetailScreen() {
 
       {statusMessage ? <Text style={{ color: '#0f766e' }}>{statusMessage}</Text> : null}
       {error ? <Text style={{ color: '#b91c1c' }}>{error}</Text> : null}
+      {warning ? <Text style={{ color: '#a16207' }}>{warning}</Text> : null}
     </ScrollView>
   );
 }

@@ -13,7 +13,7 @@ export const equipmentItemSchema = z.object({
 
 export const reserveEquipmentSchema = z.object({
   equipmentItemId: z.string().min(1),
-  workOrderId: z.string().min(1),
+  workOrderId: z.string().min(1).nullable().optional(),
   startAt: z.string().datetime(),
   endAt: z.string().datetime(),
   allowConflict: z.boolean().optional(),
@@ -22,7 +22,7 @@ export const reserveEquipmentSchema = z.object({
 export const equipmentReservationSchema = z.object({
   id: z.string().uuid(),
   equipmentItemId: z.string().uuid(),
-  workOrderId: z.string().uuid(),
+  workOrderId: z.string().uuid().nullable(),
   startAt: z.string(),
   endAt: z.string(),
   equipmentItem: z
@@ -39,6 +39,7 @@ export const equipmentReservationSchema = z.object({
       title: z.string().min(1),
       status: z.string(),
     })
+    .nullable()
     .optional(),
 });
 

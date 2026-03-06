@@ -16,4 +16,5 @@ export const workSessionSchema = z.object({
 export const workSessionActionResponseSchema = z.object({
   session: workSessionSchema,
   timesheetDraftId: z.string().uuid().nullable().optional(),
+  timesheetDraftHours: z.number().nonnegative().optional(),
 });

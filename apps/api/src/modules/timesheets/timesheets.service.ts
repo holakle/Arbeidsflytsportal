@@ -1,4 +1,4 @@
-import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, type TimesheetStatus } from '@prisma/client';
 import { AuditService } from '../../common/audit/audit.service.js';
 import { PrismaService } from '../../common/prisma/prisma.service.js';
@@ -52,6 +52,15 @@ export class TimesheetsService {
           select: {
             id: true,
             title: true,
+            timesheetCode: true,
+          },
+        },
+        subOrder: {
+          select: {
+            id: true,
+            title: true,
+            workOrderId: true,
+            timesheetCode: true,
           },
         },
         project: {
@@ -74,6 +83,7 @@ export class TimesheetsService {
       activityType: string;
       userId?: string | null;
       workOrderId?: string | null;
+      subOrderId?: string | null;
       projectId?: string | null;
       note?: string;
       status?: 'DRAFT' | 'SUBMITTED' | 'APPROVED';
@@ -85,6 +95,11 @@ export class TimesheetsService {
       roles,
       payload.userId ?? undefined,
     );
+    const resolvedRefs = await this.resolveWorkOrderAndSubOrder(
+      organizationId,
+      payload.workOrderId ?? null,
+      payload.subOrderId ?? null,
+    );
     const entry = await this.prisma.timesheetEntry.create({
       data: {
         organizationId,
@@ -92,7 +107,8 @@ export class TimesheetsService {
         date: new Date(payload.date),
         hours: new Prisma.Decimal(payload.hours),
         activityType: payload.activityType,
-        workOrderId: payload.workOrderId ?? null,
+        workOrderId: resolvedRefs.workOrderId,
+        subOrderId: resolvedRefs.subOrderId,
         projectId: payload.projectId ?? null,
         note: payload.note ?? null,
         status: payload.status ?? 'SUBMITTED',
@@ -121,6 +137,15 @@ export class TimesheetsService {
       where: { id, organizationId, userId },
     });
     if (!existing) throw new NotFoundException('Timesheet not found');
+    const nextWorkOrderId =
+      payload.workOrderId !== undefined ? (payload.workOrderId as string | null) : existing.workOrderId;
+    const nextSubOrderId =
+      payload.subOrderId !== undefined ? (payload.subOrderId as string | null) : existing.subOrderId;
+    const resolvedRefs = await this.resolveWorkOrderAndSubOrder(
+      organizationId,
+      nextWorkOrderId,
+      nextSubOrderId,
+    );
 
     return this.prisma.timesheetEntry.update({
       where: { id },
@@ -128,8 +153,8 @@ export class TimesheetsService {
         date: payload.date ? new Date(String(payload.date)) : undefined,
         hours: payload.hours ? new Prisma.Decimal(Number(payload.hours)) : undefined,
         activityType: payload.activityType ? String(payload.activityType) : undefined,
-        workOrderId:
-          payload.workOrderId !== undefined ? (payload.workOrderId as string | null) : undefined,
+        workOrderId: resolvedRefs.workOrderId,
+        subOrderId: resolvedRefs.subOrderId,
         projectId:
           payload.projectId !== undefined ? (payload.projectId as string | null) : undefined,
         note: payload.note !== undefined ? (payload.note as string | null) : undefined,
@@ -211,5 +236,45 @@ export class TimesheetsService {
       throw new NotFoundException('Target user not found');
     }
     return targetUser.id;
+  }
+
+  private async resolveWorkOrderAndSubOrder(
+    organizationId: string,
+    workOrderId: string | null,
+    subOrderId: string | null,
+  ) {
+    const normalizedWorkOrderId = workOrderId?.trim() || null;
+    const normalizedSubOrderId = subOrderId?.trim() || null;
+
+    if (normalizedSubOrderId) {
+      const subOrder = await this.prisma.workOrderSubOrder.findFirst({
+        where: {
+          id: normalizedSubOrderId,
+          organizationId,
+          deletedAt: null,
+        },
+        select: { id: true, workOrderId: true },
+      });
+      if (!subOrder) {
+        throw new NotFoundException('Sub-order not found');
+      }
+      if (normalizedWorkOrderId && normalizedWorkOrderId !== subOrder.workOrderId) {
+        throw new BadRequestException('Sub-order does not belong to selected work order');
+      }
+      return { workOrderId: subOrder.workOrderId, subOrderId: subOrder.id };
+    }
+
+    if (normalizedWorkOrderId) {
+      const workOrder = await this.prisma.workOrder.findFirst({
+        where: { id: normalizedWorkOrderId, organizationId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!workOrder) {
+        throw new NotFoundException('Work order not found');
+      }
+      return { workOrderId: workOrder.id, subOrderId: null };
+    }
+
+    return { workOrderId: null, subOrderId: null };
   }
 }

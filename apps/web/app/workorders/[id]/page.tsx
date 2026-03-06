@@ -185,6 +185,7 @@ export default function WorkOrderDetailPage() {
   const [planningOwnerUserId, setPlanningOwnerUserId] = useState('');
   const [assignmentUserId, setAssignmentUserId] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [loadWarning, setLoadWarning] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [departmentOptions, setDepartmentOptions] = useState<NamedRefOption[]>([]);
   const [locationOptions, setLocationOptions] = useState<NamedRefOption[]>([]);
@@ -212,7 +213,10 @@ export default function WorkOrderDetailPage() {
   const [subOrderStatus, setSubOrderStatus] = useState('DRAFT');
 
   const planningOwnerLabel = useMemo(
-    () => users.find((u) => u.id === planningOwnerUserId)?.displayName ?? '-',
+    () =>
+      planningOwnerUserId
+        ? users.find((u) => u.id === planningOwnerUserId)?.displayName ?? planningOwnerUserId
+        : '-',
     [planningOwnerUserId, users],
   );
 
@@ -238,20 +242,9 @@ export default function WorkOrderDetailPage() {
   async function load() {
     if (!token || !id) return;
     try {
-      const [woRes, consumableRes, catalogRes, userRes, scheduleRes, attachmentRes, workOrderListRes] =
-        await Promise.all([
-        apiClient(token).getWorkOrder(id),
-        apiClient(token).listWorkOrderConsumables(id),
-        apiClient(token).listEquipment('type=CONSUMABLE'),
-        apiClient(token).listDevUsers(),
-        apiClient(token).listWorkOrderSchedule(id),
-        apiClient(token).listWorkOrderAttachments(id),
-        apiClient(token).listWorkOrders('page=1&limit=200'),
-      ]);
-
-      const wo = woRes as WorkOrder;
-      const devUsers = userRes as DevUser[];
-      const entries = scheduleRes as WorkOrderScheduleEntry[];
+      setLoadWarning(null);
+      const wo = (await apiClient(token).getWorkOrder(id)) as WorkOrder;
+      const sortByName = (a: NamedRefOption, b: NamedRefOption) => a.name.localeCompare(b.name, 'no');
 
       setWorkOrder(wo);
       setTitle(wo.title ?? '');
@@ -270,75 +263,21 @@ export default function WorkOrderDetailPage() {
       setAccessNotes(wo.accessNotes ?? '');
       setHmsNotes(wo.hmsNotes ?? '');
       setPlanningOwnerUserId(wo.planningOwnerUserId ?? '');
-      setUsers(devUsers);
-      if (!assignmentUserId && devUsers.length > 0) {
-        const firstUser = devUsers.at(0);
-        if (firstUser) setAssignmentUserId(firstUser.id);
-      }
-
-      setConsumables(consumableRes as WorkOrderConsumable[]);
-      const catalog = catalogRes as ConsumableItem[];
-      setConsumableCatalog(catalog);
-      if (!selectedConsumableId && catalog.length > 0) {
-        const firstConsumable = catalog.at(0);
-        if (firstConsumable) {
-          setSelectedConsumableId(firstConsumable.id);
-        }
-      }
-
-      setScheduleEntries(entries);
-      setAttachments(attachmentRes as AttachmentEntry[]);
-
-      const allWorkOrders = (workOrderListRes.items ?? []) as WorkOrder[];
-      const departmentMap = new Map<string, string>();
-      const locationMap = new Map<string, string>();
-      const projectMap = new Map<string, string>();
-
-      for (const item of allWorkOrders) {
-        if (item.departmentId) {
-          departmentMap.set(item.departmentId, item.department?.name ?? item.departmentId);
-        }
-        if (item.locationId) {
-          locationMap.set(item.locationId, item.location?.name ?? item.locationId);
-        }
-        if (item.projectId) {
-          projectMap.set(item.projectId, item.project?.name ?? item.projectId);
-        }
-      }
-
-      if (wo.departmentId) {
-        departmentMap.set(wo.departmentId, wo.department?.name ?? wo.departmentId);
-      }
-      if (wo.locationId) {
-        locationMap.set(wo.locationId, wo.location?.name ?? wo.locationId);
-      }
-      if (wo.projectId) {
-        projectMap.set(wo.projectId, wo.project?.name ?? wo.projectId);
-      }
-
-      const sortByName = (a: NamedRefOption, b: NamedRefOption) => a.name.localeCompare(b.name, 'no');
+      setConsumables([]);
+      setConsumableCatalog([]);
+      setUsers([]);
+      setScheduleEntries([]);
+      setAttachments([]);
       setDepartmentOptions(
-        Array.from(departmentMap.entries())
-          .map(([refId, name]) => ({ id: refId, name }))
-          .sort(sortByName),
+        wo.departmentId ? [{ id: wo.departmentId, name: wo.department?.name ?? wo.departmentId }] : [],
       );
       setLocationOptions(
-        Array.from(locationMap.entries())
-          .map(([refId, name]) => ({ id: refId, name }))
-          .sort(sortByName),
+        wo.locationId ? [{ id: wo.locationId, name: wo.location?.name ?? wo.locationId }] : [],
       );
       setProjectOptions(
-        Array.from(projectMap.entries())
-          .map(([refId, name]) => ({ id: refId, name }))
-          .sort(sortByName),
+        wo.projectId ? [{ id: wo.projectId, name: wo.project?.name ?? wo.projectId }] : [],
       );
 
-      if (!scheduleAssigneeUserId && devUsers.length > 0) {
-        const firstUser = devUsers.at(0);
-        if (firstUser) {
-          setScheduleAssigneeUserId(firstUser.id);
-        }
-      }
       if (!scheduleStart || !scheduleEnd) {
         const now = new Date();
         const plusTwoHours = new Date(now.getTime() + 2 * 60 * 60 * 1000);
@@ -346,8 +285,132 @@ export default function WorkOrderDetailPage() {
         setScheduleEnd(toLocalDateTime(plusTwoHours.toISOString()));
       }
 
+      const [
+        consumableRes,
+        catalogRes,
+        userRes,
+        scheduleRes,
+        attachmentRes,
+        workOrderListRes,
+      ] = await Promise.allSettled([
+        apiClient(token).listWorkOrderConsumables(id),
+        apiClient(token).listEquipment('type=CONSUMABLE'),
+        apiClient(token).listDevUsers(),
+        apiClient(token).listWorkOrderSchedule(id),
+        apiClient(token).listWorkOrderAttachments(id),
+        apiClient(token).listWorkOrders('page=1&limit=100'),
+      ]);
+
+      let secondaryFailures = 0;
+
+      if (consumableRes.status === 'fulfilled') {
+        setConsumables(consumableRes.value as WorkOrderConsumable[]);
+      } else {
+        secondaryFailures += 1;
+      }
+
+      if (catalogRes.status === 'fulfilled') {
+        const catalog = catalogRes.value as ConsumableItem[];
+        setConsumableCatalog(catalog);
+        if ((!selectedConsumableId || !catalog.some((item) => item.id === selectedConsumableId)) && catalog.length > 0) {
+          const firstConsumable = catalog.at(0);
+          if (firstConsumable) {
+            setSelectedConsumableId(firstConsumable.id);
+          }
+        }
+      } else {
+        secondaryFailures += 1;
+        setSelectedConsumableId('');
+      }
+
+      if (userRes.status === 'fulfilled') {
+        const devUsers = userRes.value as DevUser[];
+        setUsers(devUsers);
+        if ((!assignmentUserId || !devUsers.some((user) => user.id === assignmentUserId)) && devUsers.length > 0) {
+          const firstUser = devUsers.at(0);
+          if (firstUser) setAssignmentUserId(firstUser.id);
+        }
+        if (
+          (!scheduleAssigneeUserId || !devUsers.some((user) => user.id === scheduleAssigneeUserId)) &&
+          devUsers.length > 0
+        ) {
+          const firstUser = devUsers.at(0);
+          if (firstUser) {
+            setScheduleAssigneeUserId(firstUser.id);
+          }
+        }
+      } else {
+        secondaryFailures += 1;
+        setAssignmentUserId('');
+        setScheduleAssigneeUserId('');
+      }
+
+      if (scheduleRes.status === 'fulfilled') {
+        setScheduleEntries(scheduleRes.value as WorkOrderScheduleEntry[]);
+      } else {
+        secondaryFailures += 1;
+      }
+
+      if (attachmentRes.status === 'fulfilled') {
+        setAttachments(attachmentRes.value as AttachmentEntry[]);
+      } else {
+        secondaryFailures += 1;
+      }
+
+      if (workOrderListRes.status === 'fulfilled') {
+        const allWorkOrders = ((workOrderListRes.value as { items?: WorkOrder[] }).items ?? []) as WorkOrder[];
+        const departmentMap = new Map<string, string>();
+        const locationMap = new Map<string, string>();
+        const projectMap = new Map<string, string>();
+
+        for (const item of allWorkOrders) {
+          if (item.departmentId) {
+            departmentMap.set(item.departmentId, item.department?.name ?? item.departmentId);
+          }
+          if (item.locationId) {
+            locationMap.set(item.locationId, item.location?.name ?? item.locationId);
+          }
+          if (item.projectId) {
+            projectMap.set(item.projectId, item.project?.name ?? item.projectId);
+          }
+        }
+
+        if (wo.departmentId) {
+          departmentMap.set(wo.departmentId, wo.department?.name ?? wo.departmentId);
+        }
+        if (wo.locationId) {
+          locationMap.set(wo.locationId, wo.location?.name ?? wo.locationId);
+        }
+        if (wo.projectId) {
+          projectMap.set(wo.projectId, wo.project?.name ?? wo.projectId);
+        }
+
+        setDepartmentOptions(
+          Array.from(departmentMap.entries())
+            .map(([refId, name]) => ({ id: refId, name }))
+            .sort(sortByName),
+        );
+        setLocationOptions(
+          Array.from(locationMap.entries())
+            .map(([refId, name]) => ({ id: refId, name }))
+            .sort(sortByName),
+        );
+        setProjectOptions(
+          Array.from(projectMap.entries())
+            .map(([refId, name]) => ({ id: refId, name }))
+            .sort(sortByName),
+        );
+      } else {
+        secondaryFailures += 1;
+      }
+
+      if (secondaryFailures > 0) {
+        setLoadWarning('Arbeidsordren er lastet, men enkelte tilleggsdata kunne ikke hentes.');
+      }
+
       setError(null);
     } catch (err) {
+      setLoadWarning(null);
       setError(toErrorMessage(err, 'Kunne ikke hente arbeidsordre.'));
     }
   }
@@ -609,6 +672,11 @@ export default function WorkOrderDetailPage() {
       {error ? (
         <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
           {error}
+        </div>
+      ) : null}
+      {loadWarning ? (
+        <div className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          {loadWarning}
         </div>
       ) : null}
       {success ? (

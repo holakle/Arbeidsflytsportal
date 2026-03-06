@@ -362,6 +362,7 @@ async function main() {
   const workOrder1 = await prisma.workOrder.upsert({
     where: { id: ids.workOrder1 },
     update: {
+      timesheetCode: 'WO-1001',
       title: 'Monter stålrammer i fløy A',
       description: 'Bruk lift og scanner for justering før feste.',
       status: 'IN_PROGRESS',
@@ -385,6 +386,7 @@ async function main() {
     },
     create: {
       id: ids.workOrder1,
+      timesheetCode: 'WO-1001',
       title: 'Monter stålrammer i fløy A',
       description: 'Bruk lift og scanner for justering før feste.',
       status: 'IN_PROGRESS',
@@ -410,6 +412,7 @@ async function main() {
   const workOrder2 = await prisma.workOrder.upsert({
     where: { id: ids.workOrder2 },
     update: {
+      timesheetCode: 'WO-1002',
       title: 'Kabeltrekking sceneområde',
       description: 'Trekk og merk kabler i teknisk rom.',
       status: 'READY_FOR_PLANNING',
@@ -427,6 +430,7 @@ async function main() {
     },
     create: {
       id: ids.workOrder2,
+      timesheetCode: 'WO-1002',
       title: 'Kabeltrekking sceneområde',
       description: 'Trekk og merk kabler i teknisk rom.',
       status: 'READY_FOR_PLANNING',
@@ -446,6 +450,7 @@ async function main() {
   await prisma.workOrder.upsert({
     where: { id: ids.workOrder3 },
     update: {
+      timesheetCode: 'WO-1003',
       title: 'Sluttkontroll av installasjon',
       description: 'Sjekk låspunkter og mål avvik.',
       status: 'DONE',
@@ -463,6 +468,7 @@ async function main() {
     },
     create: {
       id: ids.workOrder3,
+      timesheetCode: 'WO-1003',
       title: 'Sluttkontroll av installasjon',
       description: 'Sjekk låspunkter og mål avvik.',
       status: 'DONE',
@@ -482,6 +488,7 @@ async function main() {
   await prisma.workOrder.upsert({
     where: { id: ids.workOrder4 },
     update: {
+      timesheetCode: 'WO-1004',
       title: 'Kontroll av porter lager B',
       description: 'Sikkerhetskontroll og funksjonstest.',
       status: 'DRAFT',
@@ -498,6 +505,7 @@ async function main() {
     },
     create: {
       id: ids.workOrder4,
+      timesheetCode: 'WO-1004',
       title: 'Kontroll av porter lager B',
       description: 'Sikkerhetskontroll og funksjonstest.',
       status: 'DRAFT',
@@ -516,6 +524,7 @@ async function main() {
   await prisma.workOrder.upsert({
     where: { id: ids.workOrder5 },
     update: {
+      timesheetCode: 'WO-1005',
       title: 'Prosjektering lysrigg ny sal',
       description: 'Planlegging med kundemøte og oppmåling.',
       status: 'PLANNED',
@@ -533,6 +542,7 @@ async function main() {
     },
     create: {
       id: ids.workOrder5,
+      timesheetCode: 'WO-1005',
       title: 'Prosjektering lysrigg ny sal',
       description: 'Planlegging med kundemøte og oppmåling.',
       status: 'PLANNED',
@@ -552,6 +562,7 @@ async function main() {
   await prisma.workOrder.upsert({
     where: { id: ids.workOrder6 },
     update: {
+      timesheetCode: 'WO-1006',
       title: 'Skifte styreskap hovedscene',
       description: 'Mangler komponenter, avventer levering.',
       status: 'BLOCKED',
@@ -568,6 +579,7 @@ async function main() {
     },
     create: {
       id: ids.workOrder6,
+      timesheetCode: 'WO-1006',
       title: 'Skifte styreskap hovedscene',
       description: 'Mangler komponenter, avventer levering.',
       status: 'BLOCKED',
@@ -586,6 +598,7 @@ async function main() {
   await prisma.workOrder.upsert({
     where: { id: ids.workOrder7 },
     update: {
+      timesheetCode: 'WO-1007',
       title: 'Demontering gammel kabelbro',
       description: 'Oppdrag kansellert etter kundebeslutning.',
       status: 'CANCELLED',
@@ -602,6 +615,7 @@ async function main() {
     },
     create: {
       id: ids.workOrder7,
+      timesheetCode: 'WO-1007',
       title: 'Demontering gammel kabelbro',
       description: 'Oppdrag kansellert etter kundebeslutning.',
       status: 'CANCELLED',
@@ -1171,3 +1185,4 @@ async function main() {
 }
 
 main().finally(async () => prisma.$disconnect());
+

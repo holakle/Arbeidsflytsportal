@@ -13,10 +13,20 @@ type TimesheetEntry = {
   activityType: string;
   note: string | null;
   workOrderId: string | null;
+  subOrderId: string | null;
   projectId: string | null;
-  workOrder?: { id: string; title: string } | null;
+  workOrder?: { id: string; title: string; timesheetCode?: string } | null;
+  subOrder?: { id: string; title: string; workOrderId: string; timesheetCode: string } | null;
   project?: { id: string; name: string } | null;
   status?: string;
+};
+
+type WorkOrderSubOrder = {
+  id: string;
+  title: string;
+  timesheetCode: string;
+  status: string;
+  workOrderId: string;
 };
 
 type WeeklySummary = {
@@ -28,9 +38,11 @@ type WeeklySummary = {
 type WorkOrder = {
   id: string;
   title: string;
+  timesheetCode: string;
   status: string;
   projectId: string | null;
   project?: { id: string; name: string } | null;
+  subOrders?: WorkOrderSubOrder[];
 };
 
 type DevUser = {
@@ -60,6 +72,7 @@ type EntryEditState = {
   hours: string;
   activityType: string;
   workOrderId: string;
+  subOrderId: string;
   projectId: string;
   note: string;
   status: TimesheetStatus;
@@ -106,6 +119,7 @@ export default function TimesPage() {
   const [activityType, setActivityType] = useState('INSTALLATION');
   const [note, setNote] = useState('');
   const [workOrderId, setWorkOrderId] = useState('');
+  const [subOrderId, setSubOrderId] = useState('');
   const [projectId, setProjectId] = useState('');
   const [selectedWorkerId, setSelectedWorkerId] = useState('');
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
@@ -128,17 +142,6 @@ export default function TimesPage() {
     return selectedWorkerId || me.user.id;
   }, [canManageOtherUsers, me, selectedWorkerId]);
 
-  const projectOptions = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const wo of workOrders) {
-      if (!wo.projectId) continue;
-      if (!map.has(wo.projectId)) {
-        map.set(wo.projectId, wo.project?.name ?? `Prosjekt ${wo.projectId.slice(0, 8)}`);
-      }
-    }
-    return [...map.entries()].map(([id, label]) => ({ id, label }));
-  }, [workOrders]);
-
   const totalListedHours = useMemo(
     () => entries.reduce((sum, entry) => sum + Number(entry.hours), 0),
     [entries],
@@ -149,6 +152,21 @@ export default function TimesPage() {
     for (const item of workOrders) map.set(item.id, item);
     return map;
   }, [workOrders]);
+
+  const subOrderById = useMemo(() => {
+    const map = new Map<string, WorkOrderSubOrder>();
+    for (const workOrder of workOrders) {
+      for (const subOrder of workOrder.subOrders ?? []) {
+        map.set(subOrder.id, subOrder);
+      }
+    }
+    return map;
+  }, [workOrders]);
+
+  const subOrderOptions = useMemo(() => {
+    if (!workOrderId) return [];
+    return workOrderById.get(workOrderId)?.subOrders ?? [];
+  }, [workOrderById, workOrderId]);
 
   async function loadEntriesAndSummary(nextTargetUserId: string) {
     if (!token) return;
@@ -227,6 +245,7 @@ export default function TimesPage() {
       hours: number;
       activityType: string;
       workOrderId: string | null;
+      subOrderId: string | null;
       projectId: string | null;
       note?: string;
       userId?: string;
@@ -235,6 +254,7 @@ export default function TimesPage() {
       hours: numericHours,
       activityType,
       workOrderId: workOrderId.trim() ? workOrderId.trim() : null,
+      subOrderId: subOrderId.trim() ? subOrderId.trim() : null,
       projectId: projectId.trim() ? projectId.trim() : null,
       note: note.trim() ? note.trim() : undefined,
     };
@@ -288,6 +308,7 @@ export default function TimesPage() {
       hours: String(entry.hours),
       activityType: entry.activityType,
       workOrderId: entry.workOrderId ?? '',
+      subOrderId: entry.subOrderId ?? '',
       projectId: entry.projectId ?? '',
       note: entry.note ?? '',
       status: (entry.status as TimesheetStatus | undefined) ?? 'DRAFT',
@@ -308,6 +329,7 @@ export default function TimesPage() {
     setEditState({
       ...editState,
       workOrderId: nextWorkOrderId,
+      subOrderId: '',
       projectId: selected?.projectId ?? editState.projectId,
     });
   }
@@ -328,6 +350,7 @@ export default function TimesPage() {
         hours: numericHours,
         activityType: editState.activityType,
         workOrderId: editState.workOrderId.trim() ? editState.workOrderId.trim() : null,
+        subOrderId: editState.subOrderId.trim() ? editState.subOrderId.trim() : null,
         projectId: editState.projectId.trim() ? editState.projectId.trim() : null,
         note: editState.note.trim() ? editState.note.trim() : undefined,
         status: editState.status,
@@ -346,6 +369,7 @@ export default function TimesPage() {
 
   function onWorkOrderChange(nextWorkOrderId: string) {
     setWorkOrderId(nextWorkOrderId);
+    setSubOrderId('');
     const selected = workOrders.find((wo) => wo.id === nextWorkOrderId);
     if (selected?.projectId) {
       setProjectId(selected.projectId);
@@ -432,20 +456,21 @@ export default function TimesPage() {
             <option value="">Ingen arbeidsordre</option>
             {workOrders.map((wo) => (
               <option key={wo.id} value={wo.id}>
-                {wo.title} ({wo.status})
+                {wo.title} ({wo.timesheetCode})
               </option>
             ))}
           </select>
 
           <select
             className="rounded border px-3 py-2"
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
+            value={subOrderId}
+            onChange={(e) => setSubOrderId(e.target.value)}
+            disabled={!workOrderId}
           >
-            <option value="">Ingen prosjekt</option>
-            {projectOptions.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.label}
+            <option value="">Ingen delordre</option>
+            {subOrderOptions.map((subOrder) => (
+              <option key={subOrder.id} value={subOrder.id}>
+                {subOrder.title} ({subOrder.timesheetCode})
               </option>
             ))}
           </select>
@@ -487,7 +512,9 @@ export default function TimesPage() {
                 <th className="py-2">Timer</th>
                 <th className="py-2">Aktivitet</th>
                 <th className="py-2">Arbeidsordre</th>
-                <th className="py-2">Ordrenummer</th>
+                <th className="py-2">Hovedkode</th>
+                <th className="py-2">Delordre</th>
+                <th className="py-2">Delordrekode</th>
                 <th className="py-2">Status</th>
                 <th className="py-2">Notat</th>
                 <th className="py-2">Handling</th>
@@ -500,6 +527,14 @@ export default function TimesPage() {
                   (entry.workOrderId ? workOrderById.get(entry.workOrderId) : null) ??
                   entry.workOrder ??
                   null;
+                const linkedSubOrder =
+                  (entry.subOrderId ? subOrderById.get(entry.subOrderId) : null) ??
+                  entry.subOrder ??
+                  null;
+                const editSubOrderOptions =
+                  isEditing && editState?.workOrderId
+                    ? workOrderById.get(editState.workOrderId)?.subOrders ?? []
+                    : [];
 
                 return (
                   <tr key={entry.id} className="border-b">
@@ -553,7 +588,7 @@ export default function TimesPage() {
                           <option value="">Ingen arbeidsordre</option>
                           {workOrders.map((wo) => (
                             <option key={wo.id} value={wo.id}>
-                              {wo.title}
+                              {wo.title} ({wo.timesheetCode})
                             </option>
                           ))}
                         </select>
@@ -570,10 +605,55 @@ export default function TimesPage() {
                     </td>
                     <td className="py-2">
                       {isEditing && editState ? (
-                        <code className="text-xs text-slate-600">{editState.workOrderId || '-'}</code>
-                      ) : entry.workOrderId ? (
-                        <code className="text-xs" title={entry.workOrderId}>
-                          {entry.workOrderId}
+                        <code className="text-xs text-slate-600">
+                          {workOrderById.get(editState.workOrderId)?.timesheetCode ?? '-'}
+                        </code>
+                      ) : linkedWorkOrder?.timesheetCode ? (
+                        <code className="text-xs" title={linkedWorkOrder.timesheetCode}>
+                          {linkedWorkOrder.timesheetCode}
+                        </code>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                    <td className="py-2">
+                      {isEditing && editState ? (
+                        <select
+                          className="w-56 rounded border px-2 py-1"
+                          value={editState.subOrderId}
+                          onChange={(e) =>
+                            setEditState({
+                              ...editState,
+                              subOrderId: e.target.value,
+                            })
+                          }
+                        >
+                          <option value="">Ingen delordre</option>
+                          {editSubOrderOptions.map((subOrder) => (
+                            <option key={subOrder.id} value={subOrder.id}>
+                              {subOrder.title}
+                            </option>
+                          ))}
+                        </select>
+                      ) : linkedSubOrder ? (
+                        <Link
+                          className="text-sky-700 hover:underline"
+                          href={`/workorders/${linkedSubOrder.workOrderId}/suborders/${linkedSubOrder.id}`}
+                        >
+                          {linkedSubOrder.title}
+                        </Link>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                    <td className="py-2">
+                      {isEditing && editState ? (
+                        <code className="text-xs text-slate-600">
+                          {subOrderById.get(editState.subOrderId)?.timesheetCode ?? '-'}
+                        </code>
+                      ) : linkedSubOrder?.timesheetCode ? (
+                        <code className="text-xs" title={linkedSubOrder.timesheetCode}>
+                          {linkedSubOrder.timesheetCode}
                         </code>
                       ) : (
                         '-'
@@ -664,7 +744,7 @@ export default function TimesPage() {
               })}
               {entries.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-3 text-center text-slate-500">
+                  <td colSpan={10} className="py-3 text-center text-slate-500">
                     Ingen føringer registrert enda.
                   </td>
                 </tr>

@@ -8,6 +8,7 @@ import { NotificationsService } from '../notifications/notifications.service.js'
 
 type CreateOrUpdateWorkOrderPayload = {
   title?: string;
+  timesheetCode?: string;
   description?: string | null;
   status?: WorkOrderStatus;
   customerName?: string;
@@ -25,6 +26,25 @@ type CreateOrUpdateWorkOrderPayload = {
   projectId?: string | null;
   planningOwnerUserId?: string | null;
 };
+
+type CreateOrUpdateSubOrderPayload = {
+  title?: string;
+  timesheetCode?: string;
+  description?: string | null;
+  status?: string;
+};
+
+function normalizedOptional(value: string | null | undefined) {
+  if (value == null) return null;
+  const normalized = String(value).trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+function buildTimesheetCode(prefix: 'WO' | 'DO') {
+  const now = Date.now().toString(36).toUpperCase();
+  const random = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `${prefix}-${now}-${random}`;
+}
 
 @Injectable()
 export class WorkOrdersService {
@@ -69,6 +89,10 @@ export class WorkOrdersService {
           department: { select: { id: true, name: true } },
           location: { select: { id: true, name: true } },
           project: { select: { id: true, name: true } },
+          subOrders: {
+            where: { deletedAt: null },
+            orderBy: { createdAt: 'asc' },
+          },
         },
       }),
       this.prisma.workOrder.count({ where }),
@@ -78,29 +102,45 @@ export class WorkOrdersService {
   }
 
   create(organizationId: string, userId: string, body: CreateOrUpdateWorkOrderPayload) {
-    return this.prisma.workOrder.create({
-      data: {
-        organizationId,
-        createdByUserId: userId,
-        title: String(body.title),
-        description: body.description ?? null,
-        status: body.status ?? 'READY_FOR_PLANNING',
-        customerName: body.customerName ?? null,
-        contactName: body.contactName ?? null,
-        contactPhone: body.contactPhone ?? null,
-        addressLine1: body.addressLine1 ?? null,
-        postalCode: body.postalCode ?? null,
-        city: body.city ?? null,
-        lat: body.lat !== undefined ? new Prisma.Decimal(body.lat) : null,
-        lng: body.lng !== undefined ? new Prisma.Decimal(body.lng) : null,
-        accessNotes: body.accessNotes ?? null,
-        hmsNotes: body.hmsNotes ?? null,
-        departmentId: body.departmentId ?? null,
-        locationId: body.locationId ?? null,
-        projectId: body.projectId ?? null,
-        planningOwnerUserId: body.planningOwnerUserId ?? null,
-      },
-    });
+    const title = String(body.title ?? '').trim();
+    if (!title) {
+      throw new BadRequestException('Title is required');
+    }
+
+    return this.prisma.workOrder
+      .create({
+        data: {
+          organizationId,
+          createdByUserId: userId,
+          title,
+          timesheetCode: normalizedOptional(body.timesheetCode) ?? buildTimesheetCode('WO'),
+          description: normalizedOptional(body.description),
+          status: body.status ?? 'READY_FOR_PLANNING',
+          customerName: normalizedOptional(body.customerName),
+          contactName: normalizedOptional(body.contactName),
+          contactPhone: normalizedOptional(body.contactPhone),
+          addressLine1: normalizedOptional(body.addressLine1),
+          postalCode: normalizedOptional(body.postalCode),
+          city: normalizedOptional(body.city),
+          lat: body.lat !== undefined ? new Prisma.Decimal(body.lat) : null,
+          lng: body.lng !== undefined ? new Prisma.Decimal(body.lng) : null,
+          accessNotes: normalizedOptional(body.accessNotes),
+          hmsNotes: normalizedOptional(body.hmsNotes),
+          departmentId: body.departmentId ?? null,
+          locationId: body.locationId ?? null,
+          projectId: body.projectId ?? null,
+          planningOwnerUserId: body.planningOwnerUserId ?? null,
+        },
+      })
+      .catch((error: unknown) => {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          throw new BadRequestException('Timesheet code already exists in this organization');
+        }
+        throw error;
+      });
   }
 
   async get(organizationId: string, id: string) {
@@ -111,6 +151,10 @@ export class WorkOrdersService {
         department: { select: { id: true, name: true } },
         location: { select: { id: true, name: true } },
         project: { select: { id: true, name: true } },
+        subOrders: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: 'asc' },
+        },
       },
     });
     if (!wo) throw new NotFoundException('WorkOrder not found');
@@ -124,29 +168,54 @@ export class WorkOrdersService {
     body: CreateOrUpdateWorkOrderPayload,
   ) {
     const existing = await this.get(organizationId, id);
-    const updated = await this.prisma.workOrder.update({
-      where: { id },
-      data: {
-        title: body.title ?? undefined,
-        description: body.description !== undefined ? body.description : undefined,
-        status: body.status ?? undefined,
-        customerName: body.customerName !== undefined ? body.customerName : undefined,
-        contactName: body.contactName !== undefined ? body.contactName : undefined,
-        contactPhone: body.contactPhone !== undefined ? body.contactPhone : undefined,
-        addressLine1: body.addressLine1 !== undefined ? body.addressLine1 : undefined,
-        postalCode: body.postalCode !== undefined ? body.postalCode : undefined,
-        city: body.city !== undefined ? body.city : undefined,
-        lat: body.lat !== undefined ? new Prisma.Decimal(body.lat) : undefined,
-        lng: body.lng !== undefined ? new Prisma.Decimal(body.lng) : undefined,
-        accessNotes: body.accessNotes !== undefined ? body.accessNotes : undefined,
-        hmsNotes: body.hmsNotes !== undefined ? body.hmsNotes : undefined,
-        departmentId: body.departmentId !== undefined ? body.departmentId : undefined,
-        locationId: body.locationId !== undefined ? body.locationId : undefined,
-        projectId: body.projectId !== undefined ? body.projectId : undefined,
-        planningOwnerUserId:
-          body.planningOwnerUserId !== undefined ? body.planningOwnerUserId : undefined,
-      },
-    });
+    if (body.title !== undefined && !String(body.title).trim()) {
+      throw new BadRequestException('Title cannot be empty');
+    }
+    if (body.timesheetCode !== undefined && !normalizedOptional(body.timesheetCode)) {
+      throw new BadRequestException('Timesheet code cannot be empty');
+    }
+    const updated = await this.prisma.workOrder
+      .update({
+        where: { id },
+        data: {
+          title: body.title !== undefined ? String(body.title).trim() : undefined,
+          timesheetCode:
+            body.timesheetCode !== undefined ? String(body.timesheetCode).trim() : undefined,
+          description:
+            body.description !== undefined ? normalizedOptional(body.description) : undefined,
+          status: body.status ?? undefined,
+          customerName:
+            body.customerName !== undefined ? normalizedOptional(body.customerName) : undefined,
+          contactName:
+            body.contactName !== undefined ? normalizedOptional(body.contactName) : undefined,
+          contactPhone:
+            body.contactPhone !== undefined ? normalizedOptional(body.contactPhone) : undefined,
+          addressLine1:
+            body.addressLine1 !== undefined ? normalizedOptional(body.addressLine1) : undefined,
+          postalCode:
+            body.postalCode !== undefined ? normalizedOptional(body.postalCode) : undefined,
+          city: body.city !== undefined ? normalizedOptional(body.city) : undefined,
+          lat: body.lat !== undefined ? new Prisma.Decimal(body.lat) : undefined,
+          lng: body.lng !== undefined ? new Prisma.Decimal(body.lng) : undefined,
+          accessNotes:
+            body.accessNotes !== undefined ? normalizedOptional(body.accessNotes) : undefined,
+          hmsNotes: body.hmsNotes !== undefined ? normalizedOptional(body.hmsNotes) : undefined,
+          departmentId: body.departmentId !== undefined ? body.departmentId : undefined,
+          locationId: body.locationId !== undefined ? body.locationId : undefined,
+          projectId: body.projectId !== undefined ? body.projectId : undefined,
+          planningOwnerUserId:
+            body.planningOwnerUserId !== undefined ? body.planningOwnerUserId : undefined,
+        },
+      })
+      .catch((error: unknown) => {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          throw new BadRequestException('Timesheet code already exists in this organization');
+        }
+        throw error;
+      });
 
     if (existing.status !== updated.status) {
       await this.audit.log({
@@ -269,6 +338,155 @@ export class WorkOrdersService {
     });
 
     return record;
+  }
+
+  async listSubOrders(organizationId: string, workOrderId: string) {
+    await this.get(organizationId, workOrderId);
+    return this.prisma.workOrderSubOrder.findMany({
+      where: { organizationId, workOrderId, deletedAt: null },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async getSubOrder(organizationId: string, workOrderId: string, subOrderId: string) {
+    await this.get(organizationId, workOrderId);
+    const record = await this.prisma.workOrderSubOrder.findFirst({
+      where: {
+        id: subOrderId,
+        organizationId,
+        workOrderId,
+        deletedAt: null,
+      },
+    });
+    if (!record) {
+      throw new NotFoundException('Sub-order not found');
+    }
+    return record;
+  }
+
+  async createSubOrder(
+    organizationId: string,
+    actorUserId: string,
+    workOrderId: string,
+    payload: CreateOrUpdateSubOrderPayload,
+  ) {
+    const workOrder = await this.get(organizationId, workOrderId);
+    const title = String(payload.title ?? '').trim();
+    const timesheetCode =
+      normalizedOptional(payload.timesheetCode) ??
+      (await this.generateSubOrderTimesheetCode(organizationId, workOrder.timesheetCode));
+    if (!title) {
+      throw new BadRequestException('Sub-order title is required');
+    }
+
+    return this.prisma.workOrderSubOrder
+      .create({
+        data: {
+          organizationId,
+          workOrderId,
+          title,
+          timesheetCode,
+          description: normalizedOptional(payload.description),
+          status: (payload.status as WorkOrderStatus | undefined) ?? 'DRAFT',
+        },
+      })
+      .then(async (record) => {
+        await this.audit.log({
+          organizationId,
+          actorUserId,
+          action: 'workorder.suborder_created',
+          entityType: 'WorkOrderSubOrder',
+          entityId: record.id,
+          after: {
+            workOrderId,
+            title: record.title,
+            timesheetCode: record.timesheetCode,
+          },
+        });
+        return record;
+      })
+      .catch((error: unknown) => {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          throw new BadRequestException('Sub-order timesheet code already exists in this organization');
+        }
+        throw error;
+      });
+  }
+
+  async updateSubOrder(
+    organizationId: string,
+    actorUserId: string,
+    workOrderId: string,
+    subOrderId: string,
+    payload: CreateOrUpdateSubOrderPayload,
+  ) {
+    await this.getSubOrder(organizationId, workOrderId, subOrderId);
+    if (payload.title !== undefined && !String(payload.title).trim()) {
+      throw new BadRequestException('Sub-order title cannot be empty');
+    }
+    if (payload.timesheetCode !== undefined && !normalizedOptional(payload.timesheetCode)) {
+      throw new BadRequestException('Sub-order timesheet code cannot be empty');
+    }
+
+    return this.prisma.workOrderSubOrder
+      .update({
+        where: { id: subOrderId },
+        data: {
+          title: payload.title !== undefined ? String(payload.title).trim() : undefined,
+          timesheetCode:
+            payload.timesheetCode !== undefined
+              ? String(payload.timesheetCode).trim()
+              : undefined,
+          description:
+            payload.description !== undefined ? normalizedOptional(payload.description) : undefined,
+          status: (payload.status as WorkOrderStatus | undefined) ?? undefined,
+        },
+      })
+      .then(async (record) => {
+        await this.audit.log({
+          organizationId,
+          actorUserId,
+          action: 'workorder.suborder_updated',
+          entityType: 'WorkOrderSubOrder',
+          entityId: record.id,
+          after: payload,
+        });
+        return record;
+      })
+      .catch((error: unknown) => {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          throw new BadRequestException('Sub-order timesheet code already exists in this organization');
+        }
+        throw error;
+      });
+  }
+
+  async deleteSubOrder(
+    organizationId: string,
+    actorUserId: string,
+    workOrderId: string,
+    subOrderId: string,
+  ) {
+    await this.getSubOrder(organizationId, workOrderId, subOrderId);
+    await this.prisma.workOrderSubOrder.update({
+      where: { id: subOrderId },
+      data: { deletedAt: new Date() },
+    });
+    await this.audit.log({
+      organizationId,
+      actorUserId,
+      action: 'workorder.suborder_deleted',
+      entityType: 'WorkOrderSubOrder',
+      entityId: subOrderId,
+      after: { workOrderId },
+    });
+    return { success: true as const };
   }
 
   async setPlanningOwner(
@@ -511,7 +729,11 @@ export class WorkOrdersService {
       },
     });
 
-    return { session, timesheetDraftId: timesheet.id };
+    return {
+      session,
+      timesheetDraftId: timesheet.id,
+      timesheetDraftHours: Number(hours.toFixed(2)),
+    };
   }
 
   async listAttachments(organizationId: string, workOrderId: string) {
@@ -596,5 +818,22 @@ export class WorkOrdersService {
     return (
       roles.includes('planner') || roles.includes('org_admin') || roles.includes('system_admin')
     );
+  }
+
+  private async generateSubOrderTimesheetCode(organizationId: string, parentTimesheetCode: string) {
+    const prefix = `${parentTimesheetCode}-D`;
+    const existing = await this.prisma.workOrderSubOrder.findMany({
+      where: {
+        organizationId,
+        timesheetCode: { startsWith: prefix },
+      },
+      select: { timesheetCode: true },
+    });
+    const existingSet = new Set(existing.map((item) => item.timesheetCode));
+    let index = 1;
+    while (existingSet.has(`${prefix}${index}`)) {
+      index += 1;
+    }
+    return `${prefix}${index}`;
   }
 }

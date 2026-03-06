@@ -9,11 +9,22 @@ export const timesheetEntrySchema = z.object({
   hours: z.number().positive().max(24),
   activityType: z.enum(activityTypes),
   workOrderId: z.string().uuid().nullable(),
+  subOrderId: z.string().uuid().nullable(),
   projectId: z.string().uuid().nullable(),
   workOrder: z
     .object({
       id: z.string().uuid(),
       title: z.string().min(1),
+      timesheetCode: z.string().min(1).optional(),
+    })
+    .nullable()
+    .optional(),
+  subOrder: z
+    .object({
+      id: z.string().uuid(),
+      title: z.string().min(1),
+      workOrderId: z.string().uuid(),
+      timesheetCode: z.string().min(1),
     })
     .nullable()
     .optional(),
@@ -34,6 +45,7 @@ export const createTimesheetSchema = z.object({
   activityType: z.enum(activityTypes),
   userId: z.string().min(1).nullable().optional(),
   workOrderId: z.string().min(1).nullable().optional(),
+  subOrderId: z.string().min(1).nullable().optional(),
   projectId: z.string().min(1).nullable().optional(),
   note: z.string().optional(),
   status: z.enum(timesheetStatuses).optional(),

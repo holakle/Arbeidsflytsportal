@@ -7,7 +7,11 @@ import type {
   equipmentLookupResponseSchema,
   equipmentReservationSchema,
 } from '../schemas/equipment.schema';
-import type { WorkOrder, workOrderConsumableSchema } from '../schemas/workorder.schema';
+import type {
+  WorkOrder,
+  WorkOrderSubOrder,
+  workOrderConsumableSchema,
+} from '../schemas/workorder.schema';
 import type { attachmentSchema } from '../schemas/attachment.schema';
 import type { notificationSchema } from '../schemas/notification.schema';
 import type { workSessionActionResponseSchema, workSessionSchema } from '../schemas/work-session.schema';
@@ -71,6 +75,36 @@ export class ApiClient {
     return this.http.request(`/workorders/${id}`, { method: 'PATCH', body });
   }
 
+  listWorkOrderSubOrders(id: string): Promise<WorkOrderSubOrder[]> {
+    return this.http.request(`/workorders/${id}/suborders`);
+  }
+
+  getWorkOrderSubOrder(id: string, subOrderId: string): Promise<WorkOrderSubOrder> {
+    return this.http.request(`/workorders/${id}/suborders/${subOrderId}`);
+  }
+
+  createWorkOrderSubOrder(
+    id: string,
+    body: { title: string; timesheetCode?: string; description?: string; status?: string },
+  ): Promise<WorkOrderSubOrder> {
+    return this.http.request(`/workorders/${id}/suborders`, { method: 'POST', body });
+  }
+
+  updateWorkOrderSubOrder(
+    id: string,
+    subOrderId: string,
+    body: { title?: string; timesheetCode?: string; description?: string; status?: string },
+  ): Promise<WorkOrderSubOrder> {
+    return this.http.request(`/workorders/${id}/suborders/${subOrderId}`, {
+      method: 'PATCH',
+      body,
+    });
+  }
+
+  deleteWorkOrderSubOrder(id: string, subOrderId: string): Promise<{ success: true }> {
+    return this.http.request(`/workorders/${id}/suborders/${subOrderId}`, { method: 'DELETE' });
+  }
+
   listWorkOrderConsumables(id: string): Promise<WorkOrderConsumable[]> {
     return this.http.request(`/workorders/${id}/consumables`);
   }
@@ -122,7 +156,7 @@ export class ApiClient {
 
   reserveEquipment(body: {
     equipmentItemId: string;
-    workOrderId: string;
+    workOrderId?: string | null;
     startAt: string;
     endAt: string;
     allowConflict?: boolean;

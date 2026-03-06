@@ -27,6 +27,7 @@ model Organization {
   auditLogs   AuditLog[]
   workOrderConsumables WorkOrderConsumable[]
   workOrderSchedules WorkOrderSchedule[]
+  workOrderSubOrders WorkOrderSubOrder[]
   workSessions WorkSession[]
   attachments Attachment[]
   notifications Notification[]
@@ -186,6 +187,7 @@ model WorkOrder {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   title          String
+  timesheetCode  String
   description    String?
   status         WorkOrderStatus @default(READY_FOR_PLANNING)
   customerName   String?
@@ -211,6 +213,7 @@ model WorkOrder {
   assignments    Assignment[]
   schedules      WorkOrderSchedule[]
   tasks          WorkTask[]
+  subOrders      WorkOrderSubOrder[]
   reservations   EquipmentReservation[]
   consumables    WorkOrderConsumable[]
   timesheetEntries TimesheetEntry[]
@@ -219,6 +222,27 @@ model WorkOrder {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   deletedAt      DateTime?
+
+  @@unique([organizationId, timesheetCode])
+}
+
+model WorkOrderSubOrder {
+  id             String @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  workOrderId    String
+  workOrder      WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  title          String
+  timesheetCode  String
+  description    String?
+  status         WorkOrderStatus @default(DRAFT)
+  timesheetEntries TimesheetEntry[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  @@index([organizationId, workOrderId, createdAt])
+  @@unique([organizationId, timesheetCode])
 }
 
 model WorkTask {
@@ -300,8 +324,8 @@ model EquipmentReservation {
   id              String @id @default(uuid())
   equipmentItemId String
   equipmentItem   EquipmentItem @relation(fields: [equipmentItemId], references: [id], onDelete: Cascade)
-  workOrderId     String
-  workOrder       WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  workOrderId     String?
+  workOrder       WorkOrder? @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
   startAt         DateTime
   endAt           DateTime
   @@index([equipmentItemId, startAt, endAt])
@@ -318,6 +342,8 @@ model TimesheetEntry {
   activityType   String
   workOrderId    String?
   workOrder      WorkOrder? @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+  subOrderId     String?
+  subOrder       WorkOrderSubOrder? @relation(fields: [subOrderId], references: [id], onDelete: SetNull)
   projectId      String?
   project        Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   note           String?

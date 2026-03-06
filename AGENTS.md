@@ -1,6 +1,8 @@
 # AGENTS.md
 
 Dette dokumentet beskriver standard arbeidsflyt for Codex i dette repoet.
+Arbeid som agent gjør skal alltid være etter prinsiple of least action:
+For eksempel: Erstatte linjer i koden istedenfor å slette og skrive alt på nytt.
 
 ## Branch-strategi
 

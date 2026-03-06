@@ -1,6 +1,7 @@
 # Fremtidig arbeid
 
-## Cloudflare tunnel med fast domene (token-basert)
+## Innfør dette kunn når det bees om eksplisit:
+### Cloudflare tunnel med fast domene (token-basert)
 
 Vi kjører nå `trycloudflare` for rask mobiltesting uten token.
 
@@ -27,7 +28,9 @@ command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
 docker compose --profile https --profile tunnel up -d https tunnel
 ```
 
-## Notat
+ Notat:
 
 - Behold `NEXT_PUBLIC_API_URL=/api` i web for å bruke samme origin bak Caddy/tunnel.
 - Ved overgang til fast tunnel kan `trycloudflare`-kommando fjernes.
+
+

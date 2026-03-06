@@ -1316,7 +1316,7 @@ function PlannerPageInner() {
                         return (
                           <option key={user.id} value={user.id}>
                             {user.displayName}{' '}
-                            {isAvailable ? '(ledig i tidsrommet)' : '(ikke ledig i tidsrommet)'}
+                            {isAvailable ? '(Ledig)' : '(Opptatt)'}
                           </option>
                         );
                       })

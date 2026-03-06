@@ -18,5 +18,5 @@ Denne loggen brukes når nye små endringsønsker kommer inn fortløpende.
 
 - 2026-03-05 | Status: Fullført | Område: web | Ønske: Reservasjoner-klikk fra Min side skal gå til utstyrssiden.
 - 2026-03-05 | Status: Fullført | Område: web | Ønske: Inline redigering av reservasjoner i reservasjonstabellen på utstyrssiden.
-- 2026-03-05 | Status: Fullført | Område: web | Ønske: Bookingmodal i kalender skal vise ledig/ikke ledig i valgt tidsrom og ha kompetansefilter.
+- 2026-03-05 | Status: Fullført | Område: web | Ønske: Bookingmodel i kalender (pop up) skal vise ledig/ikke ledig for den valgte ansatte i valgt tidsrom og ha kompetansefilter slik at en kan velge .
 - 2026-03-05 | Status: Fullført | Område: web | Ønske: Arbeidsordresiden skal vise arbeidsordre-ID tydelig og bruke navnebaserte dropdowns for avdeling/lokasjon/prosjekt.

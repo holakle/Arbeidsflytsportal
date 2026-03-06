@@ -178,7 +178,7 @@ export class EquipmentService {
     actorUserId: string,
     payload: {
       equipmentItemId: string;
-      workOrderId: string;
+      workOrderId?: string | null;
       startAt: string;
       endAt: string;
       allowConflict?: boolean;
@@ -198,6 +198,17 @@ export class EquipmentService {
       throw new BadRequestException('Consumables cannot be reserved');
     }
 
+    const workOrderId = payload.workOrderId ?? null;
+    if (workOrderId) {
+      const workOrder = await this.prisma.workOrder.findFirst({
+        where: { id: workOrderId, organizationId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!workOrder) {
+        throw new NotFoundException('Work order not found');
+      }
+    }
+
     const conflict = await this.prisma.equipmentReservation.findFirst({
       where: {
         equipmentItemId: payload.equipmentItemId,
@@ -212,7 +223,7 @@ export class EquipmentService {
     const reservation = await this.prisma.equipmentReservation.create({
       data: {
         equipmentItemId: payload.equipmentItemId,
-        workOrderId: payload.workOrderId,
+        workOrderId,
         startAt,
         endAt,
       },
@@ -224,7 +235,7 @@ export class EquipmentService {
       action: 'equipment.reserved',
       entityType: 'EquipmentReservation',
       entityId: reservation.id,
-      after: payload,
+      after: { ...payload, workOrderId },
     });
 
     return reservation;
