@@ -6,7 +6,6 @@ export type ActiveUser = {
   roles: string[];
 };
 
-const TOKEN_KEY = 'portal.dev.token';
 const USER_KEY = 'portal.dev.user';
 const COOKIE_KEY = 'portal_dev_token';
 
@@ -16,10 +15,12 @@ function isBrowser() {
 
 export function getDevToken(): string {
   if (isBrowser()) {
-    const token = window.localStorage.getItem(TOKEN_KEY);
-    if (token) return token;
+    const match = document.cookie
+      .split('; ')
+      .find((row) => row.startsWith(`${COOKIE_KEY}=`));
+    if (match) return decodeURIComponent(match.split('=')[1]);
   }
-  return process.env.NEXT_PUBLIC_DEV_TOKEN ?? '';
+  return '';
 }
 
 export function getActiveUser(): ActiveUser | null {
@@ -35,14 +36,12 @@ export function getActiveUser(): ActiveUser | null {
 
 export function setDevSession(token: string, user: ActiveUser) {
   if (!isBrowser()) return;
-  window.localStorage.setItem(TOKEN_KEY, token);
   window.localStorage.setItem(USER_KEY, JSON.stringify(user));
-  document.cookie = `${COOKIE_KEY}=${encodeURIComponent(token)}; Path=/; SameSite=Lax`;
+  document.cookie = `${COOKIE_KEY}=${encodeURIComponent(token)}; Path=/; SameSite=Strict; Secure`;
 }
 
 export function clearDevSession() {
   if (!isBrowser()) return;
-  window.localStorage.removeItem(TOKEN_KEY);
   window.localStorage.removeItem(USER_KEY);
-  document.cookie = `${COOKIE_KEY}=; Path=/; Max-Age=0; SameSite=Lax`;
+  document.cookie = `${COOKIE_KEY}=; Path=/; Max-Age=0; SameSite=Strict; Secure`;
 }

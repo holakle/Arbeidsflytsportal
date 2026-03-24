@@ -33,6 +33,8 @@ export class DevAuthService {
     }
 
     const roles = user.userRoles.map((r) => r.role.code);
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) throw new Error('JWT_SECRET is not configured');
     const token = jwt.sign(
       {
         sub: user.id,
@@ -41,10 +43,10 @@ export class DevAuthService {
         organizationId: user.organizationId,
         roles,
       },
-      process.env.JWT_SECRET ?? 'change-this-dev-secret',
+      jwtSecret,
       {
-        issuer: process.env.JWT_ISSUER ?? 'workflow-dev',
-        audience: process.env.JWT_AUDIENCE ?? 'workflow-clients',
+        issuer: process.env.JWT_ISSUER,
+        audience: process.env.JWT_AUDIENCE,
         expiresIn: '24h',
       },
     );

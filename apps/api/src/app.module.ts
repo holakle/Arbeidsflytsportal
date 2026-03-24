@@ -15,7 +15,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module.js';
 import { DevAuthModule } from './modules/dev-auth/dev-auth.module.js';
 import { ScheduleModule } from './modules/schedule/schedule.module.js';
 
-const enableDevAuth = process.env.ENABLE_DEV_AUTH === 'true' || process.env.NODE_ENV !== 'production';
+const enableDevAuth = process.env.ENABLE_DEV_AUTH === 'true' && process.env.NODE_ENV !== 'production';
 
 @Module({
   imports: [

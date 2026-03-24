@@ -11,7 +11,24 @@ for (const envPath of [resolve(process.cwd(), '.env'), resolve(process.cwd(), '.
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'"],
+          imgSrc: ["'self'", 'data:'],
+          connectSrc: ["'self'"],
+          frameSrc: ["'none'"],
+          objectSrc: ["'none'"],
+        },
+      },
+      frameguard: { action: 'deny' },
+      hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    }),
+  );
 
   const origins = (process.env.CORS_ORIGINS ?? 'http://localhost:3000').split(',');
   app.enableCors({

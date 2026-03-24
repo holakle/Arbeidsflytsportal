@@ -7,7 +7,9 @@ import type { AuthUser } from '../types.js';
 export class DevJwtAdapter implements OidcAdapter {
   async verify(token: string): Promise<AuthUser> {
     try {
-      const payload = jwt.verify(token, process.env.JWT_SECRET ?? 'change-this-dev-secret', {
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) throw new UnauthorizedException('JWT_SECRET is not configured');
+      const payload = jwt.verify(token, jwtSecret, {
         issuer: process.env.JWT_ISSUER ?? 'workflow-dev',
         audience: process.env.JWT_AUDIENCE ?? 'workflow-clients',
       }) as jwt.JwtPayload;

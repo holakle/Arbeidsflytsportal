@@ -14,7 +14,7 @@ export async function getServerToken(): Promise<string | null> {
   const cookieToken = cookieStore.get('portal_dev_token')?.value;
   if (cookieToken) return cookieToken;
   if (process.env.NODE_ENV !== 'production') {
-    return process.env.NEXT_PUBLIC_DEV_TOKEN ?? null;
+    return process.env.DEV_TOKEN ?? null;
   }
   return null;
 }
